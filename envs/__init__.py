@@ -19,3 +19,10 @@ gym.envs.register(
      entry_point='envs.four_room:Shapes',
      max_episode_steps=200
 )
+
+
+gym.envs.register(
+     id='SimpleRoom-v0',
+     entry_point='envs.room_modified:Shapes',
+     max_episode_steps=100
+)
