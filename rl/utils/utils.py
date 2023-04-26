@@ -5,7 +5,9 @@ import random
 from torch import nn
 from typing import Iterable, List, Union
 from pymoo.factory import get_performance_indicator
-
+# NOTE: method above is deprecated, need to use following instead
+# Check out this link: https://pymoo.org/misc/indicators.html
+from pymoo.indicators.hv import HV
 
 def layer_init(layer, method='xavier', weight_gain=1, bias_const=0):
     if isinstance(layer, nn.Linear):
@@ -134,8 +136,10 @@ def linearly_decaying_epsilon(initial_epsilon, decay_period, step, warmup_steps,
     return final_epsilon + bonus
 
 def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
-    hv = get_performance_indicator("hv", ref_point=ref_point*-1)
-    return hv.do(np.array(points)*-1)
+    # hv = get_performance_indicator("hv", ref_point=ref_point*-1)
+    # NOTE: Commented line above due to deprecation
+    hv = HV(ref_point=ref_point*-1)
+    return hv(np.array(points)*-1)
 
 def seed_everything(seed: int = 42):
     random.seed(seed)

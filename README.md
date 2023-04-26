@@ -1,5 +1,15 @@
 # SFOLS
 
+
+## (Personal modifications)
+Consider a room environment with four doorways, one on each of the cardinal directions. We want to have a set of policies/$Q$-functions such that, given a preference for each of the doorways (value function/reward for these states) the agent could retrieve an optimal policy conditional to such preference values.   
+
+For such purpose, I have created the toy example in ```envs/room_modified.py```
+
+However, the size of the CSS depends on the initial state distribution, for a uniform distribution the size is 22...
+
+_________________
+
 Code for the paper "Optimistic Linear Support and Successor Features as a Basis for Optimal Policy Transfer" at ICML 2022.
 
 Paper: https://arxiv.org/abs/2206.11326

@@ -9,6 +9,7 @@ import envs
 import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
+import pickle as pkl
 
 
 def run(algo):
@@ -57,11 +58,11 @@ def run(algo):
             w = random_weights(dim=4)
         print('next w', w)
 
-        gpi_agent.learn(total_timesteps=10000,
+        gpi_agent.learn(total_timesteps=100000,
                         use_gpi=True,
                         w=w,
                         eval_env=eval_env,
-                        eval_freq=75,
+                        eval_freq=100,
                         reset_num_timesteps=False,
                         reset_learning_starts=True,
                         reuse_value_ind=ols.get_set_max_policy_index(w))
@@ -89,6 +90,22 @@ def run(algo):
                 wb.log({'eval/hypervolume': hypervolume(np.zeros(4), ols.ccs), 'iteration': i}) 
                 wb.log({'eval/hypervolume_GPI': hypervolume(np.zeros(4), returns+returns_ccs), 'iteration': i})
             break
+
+
+    for i, pi in enumerate(gpi_agent.policies):
+
+        d = vars(pi)
+        d.pop("replay_buffer")
+        d.pop("env")
+        d.pop("gpi")
+
+        with open(f"discovered_policy_{i+1}.pkl", "wb") as fp:
+
+            pkl.dump(d, fp)
+
+       
+    with open("discovered_policies.pkl", "wb") as fp:
+        pkl.dump(gpi_agent.policies, fp)
 
     gpi_agent.close_wandb()
 

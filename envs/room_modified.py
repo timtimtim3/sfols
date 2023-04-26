@@ -6,11 +6,11 @@ import gym
 from gym.spaces import Discrete, Box
 
 MAZE=np.array([['X','X','X','1','X','X','X'],
-               ['X',' ',' ',' ',' ',' ','X'], 
+               ['X',' ',' ','_',' ',' ','X'], 
                ['X',' ',' ',' ',' ',' ','X'],
-               ['2',' ',' ',' ',' ',' ','3'],
+               ['2','_',' ','_',' ','_','3'],
+               ['X',' ',' ',' ',' ',' ','X'],
                ['X',' ',' ','_',' ',' ','X'],
-               ['X',' ',' ',' ',' ',' ','X'],
                ['X','X','X','4','X','X','X']])
 
 class Shapes(gym.Env):
@@ -123,7 +123,7 @@ class Shapes(gym.Env):
             collected[shape_id] = 1
             collected = tuple(collected)
             self.state = (s1, collected)
-            phi = self.features(old_state, action, self.state)
+            phi = self.features(self.state, action, self.state)
             reward = np.dot(phi, self.w)
             return self.state_to_array(self.state), reward, True, {'phi': phi}
         
@@ -161,6 +161,9 @@ class Shapes(gym.Env):
                 phi[shape_index] = 1.
         elif s1 == self.goal:
             phi[nc] = np.ones(nc, dtype=np.float32)
+
+        phi = np.asarray(collected)
+
         return phi
     
     def feature_dim(self):

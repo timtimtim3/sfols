@@ -30,7 +30,8 @@ class SF(RLAlgorithm):
                 envelope: bool = False,
                 project_name: str = 'sf',
                 experiment_name: str = 'sf',
-                log: bool = False):
+                log: bool = False,
+                base_values: dict = {}):
 
         super().__init__(env, device=None)
         self.phi_dim = len(env.unwrapped.w)
@@ -51,6 +52,11 @@ class SF(RLAlgorithm):
         self.envelope = envelope
 
         self.q_table = dict()
+        # NOTE: Modified this to include the "SF values" actually in the terminal states
+        if len(base_values):
+            for k in base_values:
+                self.q_table[k] = base_values[k]
+        
         if self.use_replay:
             if self.per:
                 self.replay_buffer = PrioritizedReplayBuffer(self.observation_dim, 1, rew_dim=self.phi_dim, max_size=buffer_size, obs_dtype=np.int32, action_dtype=np.int32)
