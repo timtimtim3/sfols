@@ -2,12 +2,18 @@
 
 
 ## (Personal modifications)
-Consider a room environment with four doorways, one on each of the cardinal directions. We want to have a set of policies/$Q$-functions such that, given a preference for each of the doorways (value function/reward for these states) the agent could retrieve an optimal policy conditional to such preference values.   
+Consider a room environment with four doorways, one on each of the cardinal directions which are goal states. We want to have a set of policies/$Q$-functions such that, given a new reward function that is a convex combination of those for which we have previously learned an optimal policy, the agent could retrieve an optimal policy for this new task.  
 
-For such purpose, I have created the toy example in ```envs/room_modified.py```
+For such purpose, I have created the toy example in ```envs/room_modified.py``` that represents a room with 4 doorways, each of which is a goal state.
 
-However, the size of the CSS depends on the initial state distribution, for a uniform distribution the size is 22...
+I had to modify the way the SFs are constructed with regard to the other problems. Here we want a one-hot encoding of the SFs for each of the goal states, and not the states that are one step away like their examples.
 
+However, the size of the CSS depends on the initial state distribution. For a uniform distribution the size seems to be 22.
+
+My results can be reproduced with the following script and the initial states can be manually set in the environment above.
+``` 
+python experiments/run_room.py
+```
 _________________
 
 Code for the paper "Optimistic Linear Support and Successor Features as a Basis for Optimal Policy Transfer" at ICML 2022.
