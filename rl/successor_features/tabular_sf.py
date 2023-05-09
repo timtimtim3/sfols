@@ -34,6 +34,7 @@ class SF(RLAlgorithm):
                 base_values: dict = {}):
 
         super().__init__(env, device=None)
+
         self.phi_dim = len(env.unwrapped.w)
         self.alpha = alpha
         self.gamma = gamma
@@ -95,6 +96,7 @@ class SF(RLAlgorithm):
     
     def q_values(self, obs: np.array, w: np.array) -> np.array:
         obs = tuple(obs)
+
         if obs not in self.q_table:
             self.q_table[obs] = np.zeros((self.action_dim, self.phi_dim))
         return np.dot(self.q_table[obs], w)

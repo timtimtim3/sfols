@@ -26,3 +26,9 @@ gym.envs.register(
      entry_point='envs.room_modified:Shapes',
      max_episode_steps=100
 )
+
+gym.envs.register(
+     id='Hallway-v0',
+     entry_point='envs.hallway:Hallway',
+     max_episode_steps=100
+)

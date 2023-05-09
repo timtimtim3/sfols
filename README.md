@@ -2,7 +2,14 @@
 
 
 ## (Personal modifications)
-Consider a room environment with four doorways, one on each of the cardinal directions which are goal states. We want to have a set of policies/$Q$-functions such that, given a new reward function that is a convex combination of those for which we have previously learned an optimal policy, the agent could retrieve an optimal policy for this new task.  
+Four purpose let's consider two toy examples; a small room with several 
+
+Consider a room environment with four doorways, one on each of the cardinal directions which are goal states. We want to have a set of policies/$Q$-functions such that, given a new reward function that is a convex combination of those for which we have previously learned an optimal policy, the agent could retrieve an optimal policy for this new task. 
+
+
+<img src="hallway.png">
+
+$\phi_i(s, a, s') = \delta_{s'=i}$ 
 
 For such purpose, I have created the toy example in ```envs/room_modified.py``` that represents a room with 4 doorways, each of which is a goal state.
 

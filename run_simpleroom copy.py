@@ -18,18 +18,19 @@ if __name__ == "__main__":
     env = gym.make("SimpleRoom-v0")
     eval_env = gym.make("SimpleRoom-v0")
 
-    base_values = {(3, 0, 1, 0, 0, 0): np.asarray([4*[[1, 0, 0, 0]]][0]),
-                   (0, 3, 0, 1, 0, 0): np.asarray([4*[[0, 1, 0, 0]]][0]),
-                   (6, 3, 0, 0, 1, 0): np.asarray([4*[[0, 0, 1, 0]]][0]),
-                   (3, 6, 0, 0, 0, 1): np.asarray([4*[[0, 0, 0, 1]]][0]),
-    }
+    # These base values are needed to represent the SF at the `terminal` states
+    # base_values = {(2, 0, 1, 0): np.asarray([2*[[1, 0]]][0]),
+    #                (2, 4, 0, 1): np.asarray([2*[[0, 1]]][0]),
+    # }
+
+    base_values = {}
 
     agent_constructor = lambda: SF(env,
                                 alpha=0.3,
                                 gamma=0.95,
-                                initial_epsilon=1,
-                                final_epsilon=0.05,
-                                epsilon_decay_steps=900000,
+                                initial_epsilon=0.9,
+                                final_epsilon=0.01,
+                                epsilon_decay_steps=1000,
                                 use_replay=True,
                                 per=True,
                                 use_gpi=True,
@@ -43,22 +44,20 @@ if __name__ == "__main__":
     gpi_agent = GPI(env,
                     agent_constructor,
                     log=False,
-                    project_name='FourRoom-SFOLS',
+                    project_name='SimpleRoom-SFOLS',
                     experiment_name="SFOLS_")
 
-    ols = OLS(m=4, epsilon=0.01, reverse_extremum=True)
-    test_tasks = random_weights(dim=4, seed=42, n=30) + ols.extrema_weights()
-    max_iter = 30
 
-    sip_weights = []
-    for i in range(4):
-        w = -1 * np.ones(4)
-        w[i] = 1
-        sip_weights.append(w)
+    # Number of shapes
+    M = 4
+
+    ols = OLS(m=M, epsilon=0.01, reverse_extremum=True)
+    test_tasks = random_weights(dim=M, seed=42, n=30) + ols.extrema_weights()
+    max_iter = 30
 
     for iter in range(max_iter):
         w = ols.next_w()
-        print('next w', w)
+        print('next w', w) 
 
         gpi_agent.learn(total_timesteps=1000,
                         use_gpi=True,
@@ -70,10 +69,11 @@ if __name__ == "__main__":
                         reuse_value_ind=ols.get_set_max_policy_index(w))
                     
         value = policy_evaluation_mo(gpi_agent, eval_env, w, rep=5)
-        remove_policies = ols.add_solution(value, w, gpi_agent=gpi_agent, env=eval_env)      
+        remove_policies = ols.add_solution(value, w, gpi_agent=gpi_agent, env=eval_env) 
+
         gpi_agent.delete_policies(remove_policies)
 
-        print("CCS", ols.ccs)
+        #print("CCS", ols.ccs)
 
         returns = [policy_evaluation_mo(gpi_agent, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks]
         returns_ccs = [policy_evaluation_mo(gpi_agent, eval_env, w, rep=5, return_scalarized_value=False) for w in ols.ccs_weights]
@@ -86,6 +86,7 @@ if __name__ == "__main__":
                 pass
             break
     
+    print(len(ols.css))
     for i, pi in enumerate(gpi_agent.policies):
 
         d = vars(pi)
@@ -93,7 +94,7 @@ if __name__ == "__main__":
         d.pop("env")
         d.pop("gpi")
 
-        with open(f"policies/discovered_policy_{i+1}.pkl", "wb") as fp:
+        with open(f"policies/simpleroom/discovered_policy_{i+1}.pkl", "wb") as fp:
 
             pkl.dump(d, fp)
 

@@ -5,13 +5,11 @@ import random
 import gym
 from gym.spaces import Discrete, Box
 
-MAZE=np.array([['X','X','R','X','X'],
-               ['X','_','_','_','X'],
-               ['P','_','_','_','B'],
-               ['X','_','_','_','X'],
-               ['X','X','Y','X','X']])
+MAZE=np.array([['X','X','X','X','X','X','X','X','X'],
+               ['X','L',' ',' ','_',' ',' ','R','X'],
+               ['X','X','X','X','X','X','X','X','X']])
 
-class Shapes(gym.Env):
+class Hallway(gym.Env):
     """
     A discretized version of the gridworld environment introduced in [1]. 
     The gridworld is split into four rooms separated by walls with passage-ways.
@@ -21,7 +19,7 @@ class Shapes(gym.Env):
     [1] Barreto, André, et al. "Successor Features for Transfer in Reinforcement Learning." NIPS. 2017.
     """
 
-    LEFT, UP, RIGHT, DOWN = 0, 1, 2, 3
+    LEFT, RIGHT = 0, 1
  
     def __init__(self, maze=MAZE):
         """
@@ -44,7 +42,7 @@ class Shapes(gym.Env):
         self.height, self.width = maze.shape
         self.maze = maze
         #self.shape_rewards = shape_rewards
-        shape_types = ['R', 'B', 'P', 'Y']  # sorted(list(shape_rewards.keys()))
+        shape_types = ['L', 'R',]  # sorted(list(shape_rewards.keys()))
         self.all_shapes = dict(zip(shape_types, range(len(shape_types))))
         
         self.goal = None
@@ -59,11 +57,11 @@ class Shapes(gym.Env):
                     self.initial.append((r, c))
                 elif maze[r, c] == 'X':
                     self.occupied.add((r, c))
-                elif maze[r, c] in {'R', 'B', 'P', 'Y'}: #{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}:
+                elif maze[r, c] in {'L', 'R'}: #{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}:
                     self.shape_ids[(r, c)] = len(self.shape_ids)
         
-        self.w = np.zeros(4) #NOTE: Modify this depending on the number of 'shapes' considered (2, 3,).
-        self.action_space = Discrete(4)
+        self.w = np.zeros(2) #NOTE: Modify this depending on the number of 'shapes' considered (2, 3,).
+        self.action_space = Discrete(2)
         self.observation_space = Box(low=np.zeros(2+len(self.shape_ids)), high=np.ones(2+len(self.shape_ids)))
 
     def state_to_array(self, state):
@@ -78,15 +76,21 @@ class Shapes(gym.Env):
         old_state = self.state
         (row, col), collected = self.state
         
+        # Consider noise for the transition.
+
+        effective_action = action
+
+        if random.uniform(0, 1) < 0.15:
+            if action == Hallway.RIGHT:
+                effective_action = Hallway.LEFT
+            if action == Hallway.LEFT:
+                effective_action = Hallway.RIGHT        
+        
         # perform the movement
-        if action == Shapes.LEFT: 
+        if effective_action == Hallway.LEFT: 
             col -= 1
-        elif action == Shapes.UP: 
-            row -= 1
-        elif action == Shapes.RIGHT: 
+        elif effective_action == Hallway.RIGHT: 
             col += 1
-        elif action == Shapes.DOWN: 
-            row += 1
         else:
             raise Exception('bad action {}'.format(action))
         
@@ -161,7 +165,6 @@ class Shapes(gym.Env):
                 phi[shape_index] = 1.
         elif s1 == self.goal:
             phi[nc] = np.ones(nc, dtype=np.float32)
-        
         return phi
     
     def feature_dim(self):

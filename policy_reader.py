@@ -4,10 +4,14 @@ import numpy as np
 
 if __name__ == "__main__":
 
-    with open("discovered_policy_1.pkl", "rb") as fp:
-        policy = pkl.load(fp)
 
-    q = policy["q_table"]
+    policies = [1,2]
 
-    for obs in q:
-        print(obs, q[obs])
+    for i in policies:
+            with open(f"policies/hallway/discovered_policy_{i}.pkl", "rb") as fp:
+                policy = pkl.load(fp)
+            print(policy["reward"])
+            q = policy["q_table"]
+
+            for obs in q:
+                print(obs, q[obs])
