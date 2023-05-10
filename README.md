@@ -2,12 +2,20 @@
 
 
 ## (Personal modifications)
-Four purpose let's consider two toy examples; a small room with several 
+For our purpose let's consider a toy example to understand which policies constitute the set of policies.
+The hallway environment, depicted in the next figure, has two terminal at both extremes. The agent can only go either way.  
+<img src="hallway.png">
+
+For the deterministic case in which the next state upon execution of an action corresponds to the expected outcome, we will distinguish two cases:
+- When the initial state is right in the mid-point between the two terminal states.
+- When the agent can start the episode at any of the empty cells.
+
+For the first case, it is straightforward to see that two SFs representations are sufficient.
+For the second case, as many as five SFs representations are needed to retrieve the optimal behavior for any downstream task.  
 
 Consider a room environment with four doorways, one on each of the cardinal directions which are goal states. We want to have a set of policies/$Q$-functions such that, given a new reward function that is a convex combination of those for which we have previously learned an optimal policy, the agent could retrieve an optimal policy for this new task. 
 
 
-<img src="hallway.png">
 
 $\phi_i(s, a, s') = \delta_{s'=i}$ 
 

@@ -10,10 +10,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
 import pickle as pkl
-
+import os
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dir", type=str, default="hallway-single")
+    args = parser.parse_args()
+
+    directory = args.dir
+
+    assert os.path.exists(
+        f"policies/{directory}/"), "Saving path does not exist."
 
     env = gym.make("Hallway-v0")
     eval_env = gym.make("Hallway-v0")
@@ -25,28 +33,27 @@ if __name__ == "__main__":
 
     base_values = {}
 
-    agent_constructor = lambda: SF(env,
-                                alpha=0.3,
-                                gamma=0.95,
-                                initial_epsilon=1,
-                                final_epsilon=0.01,
-                                epsilon_decay_steps=1000,
-                                use_replay=True,
-                                per=True,
-                                use_gpi=True,
-                                envelope=False,
-                                batch_size=5,
-                                buffer_size=1000000,
-                                project_name='SimpleRoom-SFOLS',
-                                log=False, 
-                                base_values=base_values)
-    
+    def agent_constructor(): return SF(env,
+                                       alpha=0.3,
+                                       gamma=0.95,
+                                       initial_epsilon=1,
+                                       final_epsilon=0.01,
+                                       epsilon_decay_steps=500,
+                                       use_replay=True,
+                                       per=True,
+                                       use_gpi=True,
+                                       envelope=False,
+                                       batch_size=5,
+                                       buffer_size=1000000,
+                                       project_name='SimpleRoom-SFOLS',
+                                       log=False,
+                                       base_values=base_values)
+
     gpi_agent = GPI(env,
                     agent_constructor,
                     log=False,
                     project_name='SimpleRoom-SFOLS',
                     experiment_name="SFOLS_")
-
 
     # Number of shapes
     M = 2
@@ -57,36 +64,44 @@ if __name__ == "__main__":
 
     for iter in range(max_iter):
         w = ols.next_w()
-        print('next w', w) 
+        print('next w', w)
 
         gpi_agent.learn(total_timesteps=100000,
                         use_gpi=True,
                         w=w,
                         eval_env=eval_env,
-                        eval_freq=1000,
+                        eval_freq=500,
                         reset_num_timesteps=False,
                         reset_learning_starts=True,
                         reuse_value_ind=ols.get_set_max_policy_index(w))
-                    
+
         value = policy_evaluation_mo(gpi_agent, eval_env, w, rep=5)
-        remove_policies = ols.add_solution(value, w, gpi_agent=gpi_agent, env=eval_env) 
+        remove_policies = ols.add_solution(
+            value, w, gpi_agent=gpi_agent, env=eval_env)
 
         gpi_agent.delete_policies(remove_policies)
 
-        #print("CCS", ols.ccs)
+        # print("CCS", ols.ccs)
 
-        returns = [policy_evaluation_mo(gpi_agent, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks]
-        returns_ccs = [policy_evaluation_mo(gpi_agent, eval_env, w, rep=5, return_scalarized_value=False) for w in ols.ccs_weights]
-        mean_test = np.mean([np.dot(psi, w) for (psi, w) in zip(returns, test_tasks)], axis=0)
-        mean_test_smp = np.mean([ols.max_scalarized_value(w_test) for w_test in test_tasks], dtype=np.float64)
+        returns = [policy_evaluation_mo(
+            gpi_agent, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks]
+        returns_ccs = [policy_evaluation_mo(
+            gpi_agent, eval_env, w, rep=5, return_scalarized_value=False) for w in ols.ccs_weights]
+        mean_test = np.mean([np.dot(psi, w)
+                            for (psi, w) in zip(returns, test_tasks)], axis=0)
+        mean_test_smp = np.mean([ols.max_scalarized_value(w_test)
+                                for w_test in test_tasks], dtype=np.float64)
 
         if ols.ended():
             print("ended at iteration", iter)
             print(len(ols.ccs))
             for i in range(ols.iteration + 1, max_iter + 1):
                 pass
+
             break
-    
+
+    print(gpi_agent.policies)
+
     for i, pi in enumerate(gpi_agent.policies):
 
         d = vars(pi)
@@ -94,9 +109,8 @@ if __name__ == "__main__":
         d.pop("env")
         d.pop("gpi")
 
-        with open(f"policies/hallway/discovered_policy_{i+1}.pkl", "wb") as fp:
+        with open(f"policies/{directory}/discovered_policy_{i+1}.pkl", "wb") as fp:
 
             pkl.dump(d, fp)
 
-
-    #gpi_agent.close_wandb()
+    # gpi_agent.close_wandb()
