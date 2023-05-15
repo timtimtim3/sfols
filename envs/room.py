@@ -1,32 +1,33 @@
-# -*- coding: UTF-8 -*- 
+# -*- coding: UTF-8 -*-
 # Code from: https://github.com/mike-gimelfarb/deep-successor-features-for-transfer/blob/main/source/tasks/gridworld.py
 import numpy as np
 import random
 import gym
 from gym.spaces import Discrete, Box
 
-MAZE=np.array([['X','X','R','X','X'],
-               ['X','_','_','_','X'],
-               ['P','_','_','_','B'],
-               ['X','_','_','_','X'],
-               ['X','X','Y','X','X']])
+MAZE = np.array([['X', 'X', 'R', 'X', 'X'],
+                 ['X', '_', '_', '_', 'X'],
+                 ['P', '_', '_', '_', 'B'],
+                 ['X', '_', '_', '_', 'X'],
+                 ['X', 'X', 'Y', 'X', 'X']])
+
 
 class Shapes(gym.Env):
     """
     A discretized version of the gridworld environment introduced in [1]. 
     The gridworld is split into four rooms separated by walls with passage-ways.
-    
+
     References
     ----------
     [1] Barreto, André, et al. "Successor Features for Transfer in Reinforcement Learning." NIPS. 2017.
     """
 
     LEFT, UP, RIGHT, DOWN = 0, 1, 2, 3
- 
+
     def __init__(self, maze=MAZE):
         """
         Creates a new instance of the shapes environment.
-        
+
         Parameters
         ----------
         maze : np.ndarray
@@ -43,10 +44,11 @@ class Shapes(gym.Env):
         """
         self.height, self.width = maze.shape
         self.maze = maze
-        #self.shape_rewards = shape_rewards
-        shape_types = ['R', 'B', 'P', 'Y']  # sorted(list(shape_rewards.keys()))
+        # self.shape_rewards = shape_rewards
+        # sorted(list(shape_rewards.keys()))
+        shape_types = ['R', 'B', 'P', 'Y']
         self.all_shapes = dict(zip(shape_types, range(len(shape_types))))
-        
+
         self.goal = None
         self.initial = []
         self.occupied = set()
@@ -59,37 +61,41 @@ class Shapes(gym.Env):
                     self.initial.append((r, c))
                 elif maze[r, c] == 'X':
                     self.occupied.add((r, c))
-                elif maze[r, c] in {'R', 'B', 'P', 'Y'}: #{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}:
+                # {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}:
+                elif maze[r, c] in {'R', 'B', 'P', 'Y'}:
                     self.shape_ids[(r, c)] = len(self.shape_ids)
-        
-        self.w = np.zeros(4) #NOTE: Modify this depending on the number of 'shapes' considered (2, 3,).
+
+        # NOTE: Modify this depending on the number of 'shapes' considered (2, 3,).
+        self.w = np.zeros(4)
         self.action_space = Discrete(4)
-        self.observation_space = Box(low=np.zeros(2+len(self.shape_ids)), high=np.ones(2+len(self.shape_ids)))
+        self.observation_space = Box(low=np.zeros(
+            2 + len(self.shape_ids)), high=np.ones(2 + len(self.shape_ids)))
 
     def state_to_array(self, state):
         s = [element for tupl in state for element in tupl]
         return np.array(s, dtype=np.int32)
 
     def reset(self):
-        self.state = (random.choice(self.initial), tuple(0 for _ in range(len(self.shape_ids))))
+        self.state = (random.choice(self.initial), tuple(
+            0 for _ in range(len(self.shape_ids))))
         return self.state_to_array(self.state)
-    
-    def step(self, action): 
+
+    def step(self, action):
         old_state = self.state
         (row, col), collected = self.state
-        
+
         # perform the movement
-        if action == Shapes.LEFT: 
+        if action == Shapes.LEFT:
             col -= 1
-        elif action == Shapes.UP: 
+        elif action == Shapes.UP:
             row -= 1
-        elif action == Shapes.RIGHT: 
+        elif action == Shapes.RIGHT:
             col += 1
-        elif action == Shapes.DOWN: 
+        elif action == Shapes.DOWN:
             row += 1
         else:
             raise Exception('bad action {}'.format(action))
-        
+
         # out of bounds, cannot move
         if col < 0 or col >= self.width or row < 0 or row >= self.height:
             return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
@@ -98,15 +104,15 @@ class Shapes(gym.Env):
         s1 = (row, col)
         if s1 in self.occupied:
             return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
-        
+
         # can now move
         self.state = (s1, collected)
-        
+
         # into a goal cell
         if s1 == self.goal:
             phi = np.ones(len(self.all_shapes), dtype=np.float32)
             return self.state_to_array(self.state), 1., True, {'phi': phi}
-        
+
         # into a shape cell
         if s1 in self.shape_ids:
 
@@ -117,7 +123,7 @@ class Shapes(gym.Env):
             #     # already collected this flag
             #     return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
             # else:
-                # collect the new flag
+            # collect the new flag
             collected = list(collected)
             collected[shape_id] = 1
             collected = tuple(collected)
@@ -125,7 +131,6 @@ class Shapes(gym.Env):
             phi = self.features(old_state, action, self.state)
             reward = np.dot(phi, self.w)
             return self.state_to_array(self.state), reward, True, {'phi': phi}
-
 
         # into an empty cell
         return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
@@ -142,10 +147,10 @@ class Shapes(gym.Env):
         result[n_state:] = np.array(coll)
         result = result.reshape((1, -1))
         return result
-    
+
     def encode_dim(self):
         return self.width + self.height + len(self.shape_ids)
-        
+
     # ===========================================================================
     # SUCCESSOR FEATURES
     # ===========================================================================
@@ -161,12 +166,12 @@ class Shapes(gym.Env):
                 phi[shape_index] = 1.
         elif s1 == self.goal:
             phi[nc] = np.ones(nc, dtype=np.float32)
-        
+
         return phi
-    
+
     def feature_dim(self):
         return len(self.all_shapes)
-    
+
     """ def get_w(self):
         ns = len(self.all_shapes)
         w = np.zeros((ns + 1, 1))
@@ -174,4 +179,3 @@ class Shapes(gym.Env):
             w[shape_index, 0] = self.shape_rewards[shape]
         w[ns, 0] = 1.
         return w """
-            

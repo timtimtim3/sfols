@@ -1,30 +1,31 @@
-# -*- coding: UTF-8 -*- 
+# -*- coding: UTF-8 -*-
 # Code from: https://github.com/mike-gimelfarb/deep-successor-features-for-transfer/blob/main/source/tasks/gridworld.py
 import numpy as np
 import random
 import gym
 from gym.spaces import Discrete, Box
 
-MAZE=np.array([['X','X','X','X','X','X','X','X','X'],
-               ['X','L','_','_','_','_','_','R','X'],
-               ['X','X','X','X','X','X','X','X','X']])
+MAZE = np.array([['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
+                 ['X', 'L', ' ', ' ', '_', ' ', ' ', 'R', 'X'],
+                 ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']])
+
 
 class Hallway(gym.Env):
     """
     A discretized version of the gridworld environment introduced in [1]. 
     The gridworld is split into four rooms separated by walls with passage-ways.
-    
+
     References
     ----------
     [1] Barreto, André, et al. "Successor Features for Transfer in Reinforcement Learning." NIPS. 2017.
     """
 
     LEFT, RIGHT = 0, 1
- 
+
     def __init__(self, maze=MAZE):
         """
         Creates a new instance of the shapes environment.
-        
+
         Parameters
         ----------
         maze : np.ndarray
@@ -41,10 +42,10 @@ class Hallway(gym.Env):
         """
         self.height, self.width = maze.shape
         self.maze = maze
-        #self.shape_rewards = shape_rewards
+        # self.shape_rewards = shape_rewards
         shape_types = ['L', 'R',]  # sorted(list(shape_rewards.keys()))
         self.all_shapes = dict(zip(shape_types, range(len(shape_types))))
-        
+
         self.goal = None
         self.initial = []
         self.occupied = set()
@@ -57,25 +58,29 @@ class Hallway(gym.Env):
                     self.initial.append((r, c))
                 elif maze[r, c] == 'X':
                     self.occupied.add((r, c))
-                elif maze[r, c] in {'L', 'R'}: #{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}:
+                # {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}:
+                elif maze[r, c] in {'L', 'R'}:
                     self.shape_ids[(r, c)] = len(self.shape_ids)
-        
-        self.w = np.zeros(2) #NOTE: Modify this depending on the number of 'shapes' considered (2, 3,).
+
+        # NOTE: Modify this depending on the number of 'shapes' considered (2, 3,).
+        self.w = np.zeros(2)
         self.action_space = Discrete(2)
-        self.observation_space = Box(low=np.zeros(2+len(self.shape_ids)), high=np.ones(2+len(self.shape_ids)))
+        self.observation_space = Box(low=np.zeros(
+            2 + len(self.shape_ids)), high=np.ones(2 + len(self.shape_ids)))
 
     def state_to_array(self, state):
         s = [element for tupl in state for element in tupl]
         return np.array(s, dtype=np.int32)
 
     def reset(self):
-        self.state = (random.choice(self.initial), tuple(0 for _ in range(len(self.shape_ids))))
+        self.state = (random.choice(self.initial), tuple(
+            0 for _ in range(len(self.shape_ids))))
         return self.state_to_array(self.state)
-    
-    def step(self, action): 
+
+    def step(self, action):
         old_state = self.state
         (row, col), collected = self.state
-        
+
         # Consider noise for the transition.
 
         effective_action = action
@@ -84,16 +89,16 @@ class Hallway(gym.Env):
             if action == Hallway.RIGHT:
                 effective_action = Hallway.LEFT
             if action == Hallway.LEFT:
-                effective_action = Hallway.RIGHT        
-        
+                effective_action = Hallway.RIGHT
+
         # perform the movement
-        if effective_action == Hallway.LEFT: 
+        if effective_action == Hallway.LEFT:
             col -= 1
-        elif effective_action == Hallway.RIGHT: 
+        elif effective_action == Hallway.RIGHT:
             col += 1
         else:
             raise Exception('bad action {}'.format(action))
-        
+
         # out of bounds, cannot move
         if col < 0 or col >= self.width or row < 0 or row >= self.height:
             return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
@@ -102,15 +107,15 @@ class Hallway(gym.Env):
         s1 = (row, col)
         if s1 in self.occupied:
             return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
-        
+
         # can now move
         self.state = (s1, collected)
-        
+
         # into a goal cell
         if s1 == self.goal:
             phi = np.ones(len(self.all_shapes), dtype=np.float32)
             return self.state_to_array(self.state), 1., True, {'phi': phi}
-        
+
         # into a shape cell
         if s1 in self.shape_ids:
 
@@ -121,7 +126,7 @@ class Hallway(gym.Env):
             #     # already collected this flag
             #     return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
             # else:
-                # collect the new flag
+            # collect the new flag
             collected = list(collected)
             collected[shape_id] = 1
             collected = tuple(collected)
@@ -129,7 +134,6 @@ class Hallway(gym.Env):
             phi = self.features(old_state, action, self.state)
             reward = np.dot(phi, self.w)
             return self.state_to_array(self.state), reward, True, {'phi': phi}
-
 
         # into an empty cell
         return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
@@ -146,10 +150,10 @@ class Hallway(gym.Env):
         result[n_state:] = np.array(coll)
         result = result.reshape((1, -1))
         return result
-    
+
     def encode_dim(self):
         return self.width + self.height + len(self.shape_ids)
-        
+
     # ===========================================================================
     # SUCCESSOR FEATURES
     # ===========================================================================
@@ -166,10 +170,10 @@ class Hallway(gym.Env):
         elif s1 == self.goal:
             phi[nc] = np.ones(nc, dtype=np.float32)
         return phi
-    
+
     def feature_dim(self):
         return len(self.all_shapes)
-    
+
     """ def get_w(self):
         ns = len(self.all_shapes)
         w = np.zeros((ns + 1, 1))
@@ -177,4 +181,3 @@ class Hallway(gym.Env):
             w[shape_index, 0] = self.shape_rewards[shape]
         w[ns, 0] = 1.
         return w """
-            

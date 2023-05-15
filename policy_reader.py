@@ -1,15 +1,22 @@
 import pickle as pkl
 import numpy as np
-
+import os
+import argparse
 
 if __name__ == "__main__":
 
     # This is to check how the SF representation of the discovered policies look like
 
-    policies = [1, 2, 3, 4, 5]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", type=str, required=True)
 
-    for i in policies:
-        with open(f"policies/hallway-multiple/discovered_policy_{i}.pkl", "rb") as fp:
+    args = parser.parse_args()
+    dir = args.input
+
+    dirpath = os.path.abspath(f"policies/{dir}")
+
+    for i, file in enumerate(os.listdir(dirpath)):
+        with open(os.path.join(dirpath, file), "rb") as fp:
             policy = pkl.load(fp)
 
         print(f"\nPolicy {i}")

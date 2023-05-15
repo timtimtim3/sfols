@@ -15,7 +15,7 @@ import os
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dir", type=str, default="hallway-single")
+    parser.add_argument("--dir", type=str, default="room-single")
     args = parser.parse_args()
 
     directory = args.dir
@@ -23,8 +23,8 @@ if __name__ == "__main__":
     assert os.path.exists(
         f"policies/{directory}/"), "Saving path does not exist."
 
-    env = gym.make("Hallway-v0")
-    eval_env = gym.make("Hallway-v0")
+    env = gym.make("SimpleRoom-v0")
+    eval_env = gym.make("SimpleRoom-v0")
 
     # These base values are needed to represent the SF at the `terminal` states
     # base_values = {(2, 0, 1, 0): np.asarray([2*[[1, 0]]][0]),
@@ -45,18 +45,18 @@ if __name__ == "__main__":
                                        envelope=False,
                                        batch_size=5,
                                        buffer_size=1000000,
-                                       project_name='Hallwat-SFOLS',
+                                       project_name='SimpleRoom-SFOLS',
                                        log=False,
                                        base_values=base_values)
 
     gpi_agent = GPI(env,
                     agent_constructor,
                     log=False,
-                    project_name='Hallway-SFOLS',
+                    project_name='SimpleRoom-SFOLS',
                     experiment_name="SFOLS_")
 
     # Number of shapes
-    M = 2
+    M = 4
 
     ols = OLS(m=M, epsilon=0.01, reverse_extremum=True)
     test_tasks = random_weights(dim=M, seed=42, n=30) + ols.extrema_weights()
@@ -70,7 +70,7 @@ if __name__ == "__main__":
                         use_gpi=True,
                         w=w,
                         eval_env=eval_env,
-                        eval_freq=500,
+                        eval_freq=100,
                         reset_num_timesteps=False,
                         reset_learning_starts=True,
                         reuse_value_ind=ols.get_set_max_policy_index(w))
@@ -94,12 +94,11 @@ if __name__ == "__main__":
 
         if ols.ended():
             print("ended at iteration", iter)
-            print(len(ols.ccs))
             for i in range(ols.iteration + 1, max_iter + 1):
                 pass
-
             break
 
+    print(len(ols.css))
     for i, pi in enumerate(gpi_agent.policies):
 
         d = vars(pi)

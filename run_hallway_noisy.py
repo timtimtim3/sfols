@@ -23,8 +23,8 @@ if __name__ == "__main__":
     assert os.path.exists(
         f"policies/{directory}/"), "Saving path does not exist."
 
-    env = gym.make("Hallway-v0")
-    eval_env = gym.make("Hallway-v0")
+    env = gym.make("HallwayNoisy-v0")
+    eval_env = gym.make("HallwayNoisy-v0")
 
     # These base values are needed to represent the SF at the `terminal` states
     # base_values = {(2, 0, 1, 0): np.asarray([2*[[1, 0]]][0]),
@@ -45,14 +45,14 @@ if __name__ == "__main__":
                                        envelope=False,
                                        batch_size=5,
                                        buffer_size=1000000,
-                                       project_name='Hallwat-SFOLS',
+                                       project_name='SimpleRoom-SFOLS',
                                        log=False,
                                        base_values=base_values)
 
     gpi_agent = GPI(env,
                     agent_constructor,
                     log=False,
-                    project_name='Hallway-SFOLS',
+                    project_name='SimpleRoom-SFOLS',
                     experiment_name="SFOLS_")
 
     # Number of shapes
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         w = ols.next_w()
         print('next w', w)
 
-        gpi_agent.learn(total_timesteps=100000,
+        gpi_agent.learn(total_timesteps=1000000,
                         use_gpi=True,
                         w=w,
                         eval_env=eval_env,
