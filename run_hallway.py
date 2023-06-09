@@ -10,13 +10,17 @@ import matplotlib.pyplot as plt
 import argparse
 import pickle as pkl
 import os
+import shutil
 
 if __name__ == "__main__":
 
-    env = gym.make("HallwayMultiple-v0")
-    eval_env = gym.make("HallwayMultiple-v0")
+    env = gym.make("HallwaySingle-v0")
+    eval_env = gym.make("HallwaySingle-v0")
 
     directory = env.unwrapped.spec.id
+
+    shutil.rmtree(f"policies/{directory}")
+
     os.makedirs(f"policies/{directory}", exist_ok=True)
 
     # These base values are needed to represent the SF at the `terminal` states
@@ -32,7 +36,7 @@ if __name__ == "__main__":
                                        initial_epsilon=0.9,
                                        final_epsilon=0.01,
                                        epsilon_decay_steps=500,
-                                       use_replay=True,
+                                       use_replay=False,
                                        per=True,
                                        use_gpi=True,
                                        envelope=False,
@@ -87,7 +91,7 @@ if __name__ == "__main__":
 
         if ols.ended():
             print("ended at iteration", iter)
-            print(len(ols.ccs))
+            print(len(ols.ccs), gpi_agent.super().epsilon)
             for i in range(ols.iteration + 1, max_iter + 1):
                 pass
 

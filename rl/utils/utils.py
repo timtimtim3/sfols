@@ -7,7 +7,7 @@ from typing import Iterable, List, Union
 from pymoo.factory import get_performance_indicator
 # NOTE: method above is deprecated, need to use following instead
 # Check out this link: https://pymoo.org/misc/indicators.html
-from pymoo.indicators.hv import HV
+
 
 def layer_init(layer, method='xavier', weight_gain=1, bias_const=0):
     if isinstance(layer, nn.Linear):
@@ -17,6 +17,7 @@ def layer_init(layer, method='xavier', weight_gain=1, bias_const=0):
             th.nn.init.orthogonal_(layer.weight, gain=weight_gain)
         th.nn.init.constant_(layer.bias, bias_const)
 
+
 def polyak_update(params: Iterable[th.nn.Parameter], target_params: Iterable[th.nn.Parameter], tau: float) -> None:
     with th.no_grad():
         for param, target_param in zip(params, target_params):
@@ -24,10 +25,13 @@ def polyak_update(params: Iterable[th.nn.Parameter], target_params: Iterable[th.
                 target_param.data.copy_(param.data)
             else:
                 target_param.data.mul_(1.0 - tau)
-                th.add(target_param.data, param.data, alpha=tau, out=target_param.data)
+                th.add(target_param.data, param.data,
+                       alpha=tau, out=target_param.data)
+
 
 def huber(x, min_priority=0.01):
     return th.where(x < min_priority, 0.5 * x.pow(2), min_priority * x).mean()
+
 
 def generate_weights(count=1, n=3, m=1):
     """Source: https://github.com/axelabels/DynMORL/blob/db15c29bc2cf149c9bda6b8890fee05b1ac1e19e/utils.py#L281"""
@@ -41,11 +45,13 @@ def generate_weights(count=1, n=3, m=1):
             all_weights.append(target)
         else:
             for i in range(m):
-                i_w = target * (i + 1) / float(m) + prev_t * (m - i - 1) / float(m)
+                i_w = target * (i + 1) / float(m) + prev_t * \
+                    (m - i - 1) / float(m)
                 all_weights.append(i_w)
         prev_t = target + 0.
 
     return all_weights
+
 
 def random_weights(dim, seed=None, n=1):
     """ Generate random normalized weights from a Dirichlet distribution alpha=1
@@ -64,6 +70,7 @@ def random_weights(dim, seed=None, n=1):
         return weights[0]
     return weights
 
+
 def eval(agent, env, render=False):
     obs = env.reset()
     done = False
@@ -77,6 +84,7 @@ def eval(agent, env, render=False):
         discounted_return += gamma * r
         gamma *= agent.gamma
     return total_reward, discounted_return
+
 
 def eval_mo(agent, env, w, render=False):
     """
@@ -94,7 +102,8 @@ def eval_mo(agent, env, w, render=False):
         total_vec_reward += info['phi']
         vec_return += gamma * info['phi']
         gamma *= agent.gamma
-    return np.dot(w, total_vec_reward), np.dot(w,vec_return), total_vec_reward, vec_return
+    return np.dot(w, total_vec_reward), np.dot(w, vec_return), total_vec_reward, vec_return
+
 
 def policy_evaluation_mo(agent, env, w, rep=5, return_scalarized_value=False):
     """Returns vectorized value of the policy (mean of the returns)"""
@@ -104,16 +113,20 @@ def policy_evaluation_mo(agent, env, w, rep=5, return_scalarized_value=False):
         returns = [eval_mo(agent, env, w)[3] for _ in range(rep)]
     return np.mean(returns, axis=0)
 
+
 def eval_test_tasks(agent, env, tasks, rep=10):
     """Returns mean scalar value of the policy"""
-    returns = [policy_evaluation_mo(agent, env, w, rep=rep, return_scalarized_value=True) for w in tasks]
+    returns = [policy_evaluation_mo(
+        agent, env, w, rep=rep, return_scalarized_value=True) for w in tasks]
     return np.mean(returns, axis=0)
 
-def moving_average(interval: Union[np.array,List], window_size: int) -> np.array:
+
+def moving_average(interval: Union[np.array, List], window_size: int) -> np.array:
     if window_size == 1:
         return interval
-    window = np.ones(int(window_size))/float(window_size)
+    window = np.ones(int(window_size)) / float(window_size)
     return np.convolve(interval, window, 'same')
+
 
 def linearly_decaying_epsilon(initial_epsilon, decay_period, step, warmup_steps, final_epsilon):
     """Returns the current epsilon for the agent's epsilon-greedy policy.
@@ -135,11 +148,13 @@ def linearly_decaying_epsilon(initial_epsilon, decay_period, step, warmup_steps,
     bonus = np.clip(bonus, 0., 1. - final_epsilon)
     return final_epsilon + bonus
 
+
 def hypervolume(ref_point: np.ndarray, points: List[np.ndarray]) -> float:
     # hv = get_performance_indicator("hv", ref_point=ref_point*-1)
     # NOTE: Commented line above due to deprecation
-    hv = HV(ref_point=ref_point*-1)
-    return hv(np.array(points)*-1)
+    hv = get_performance_indicator("hv", ref_point=ref_point * -1)
+    return hv.do(np.array(points) * -1)
+
 
 def seed_everything(seed: int = 42):
     random.seed(seed)
@@ -150,7 +165,8 @@ def seed_everything(seed: int = 42):
     th.backends.cudnn.deterministic = True
     th.backends.cudnn.benchmark = True
 
+
 if __name__ == '__main__':
 
-    #print(generate_weights(10,3,10))
+    # print(generate_weights(10,3,10))
     print(random_weights())
