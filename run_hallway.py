@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     directory = env.unwrapped.spec.id
 
-    shutil.rmtree(f"policies/{directory}")
+    shutil.rmtree(f"policies/{directory}", ignore_errors=True)
 
     os.makedirs(f"policies/{directory}", exist_ok=True)
 
