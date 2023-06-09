@@ -22,7 +22,7 @@ class Hallway(gym.Env):
 
     LEFT, RIGHT = 0, 1
 
-    def __init__(self, maze=MAZE):
+    def __init__(self, maze=MAZE, noise=0):
         """
         Creates a new instance of the shapes environment.
 
@@ -68,6 +68,8 @@ class Hallway(gym.Env):
         self.observation_space = Box(low=np.zeros(
             2 + len(self.shape_ids)), high=np.ones(2 + len(self.shape_ids)))
 
+        self.noise = noise
+
     def state_to_array(self, state):
         s = [element for tupl in state for element in tupl]
         return np.array(s, dtype=np.int32)
@@ -85,11 +87,11 @@ class Hallway(gym.Env):
 
         effective_action = action
 
-        # if random.uniform(0, 1) < 0.15:
-        #     if action == Hallway.RIGHT:
-        #         effective_action = Hallway.LEFT
-        #     if action == Hallway.LEFT:
-        #         effective_action = Hallway.RIGHT
+        if random.uniform(0, 1) < self.noise:
+            if action == Hallway.RIGHT:
+                effective_action = Hallway.LEFT
+            if action == Hallway.LEFT:
+                effective_action = Hallway.RIGHT
 
         # perform the movement
         if effective_action == Hallway.LEFT:

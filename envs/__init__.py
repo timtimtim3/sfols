@@ -11,7 +11,7 @@ gym.envs.register(
 gym.envs.register(
     id='ReacherMultiTask-v0',
     entry_point='envs.reacher:ReacherBulletEnv',
-    max_episode_steps=100
+    max_episode_steps=100,
 )
 
 gym.envs.register(
@@ -33,14 +33,45 @@ gym.envs.register(
     max_episode_steps=100
 )
 
+# Hallway
 gym.envs.register(
-    id='Hallway-v0',
-    entry_point='envs.hallway:Hallway',
-    max_episode_steps=100
+    id='HallwaySingle-v0',
+    entry_point='envs.hallway-single:Hallway',
+    max_episode_steps=100,
+    kwargs={'noise': 0}
 )
 
 gym.envs.register(
-    id='HallwayNoisy-v0',
-    entry_point='envs.hallway-noisy:Hallway',
-    max_episode_steps=100
+    id='HallwayNoisy-v1',
+    entry_point='envs.hallway-single:Hallway',
+    max_episode_steps=100,
+    kwargs={'noise': 0.15}
+)
+
+gym.envs.register(
+    id='HallwayNoisy-v2',
+    entry_point='envs.hallway-single:Hallway',
+    max_episode_steps=100,
+    kwargs={'noise': 0.5}
+)
+
+gym.envs.register(
+    id='HallwayMultiple-v0',
+    entry_point='envs.hallway-multiple:Hallway',
+    max_episode_steps=100,
+    kwargs={'noise': 0}
+)
+
+gym.envs.register(
+    id='HallwayNoisyMultiple-v1',
+    entry_point='envs.hallway-multiple:Hallway',
+    max_episode_steps=100,
+    kwargs={'noise': 0.15}
+)
+
+gym.envs.register(
+    id='HallwayNoisyMultiple-v2',
+    entry_point='envs.hallway-multiple:Hallway',
+    max_episode_steps=100,
+    kwargs={'noise': 0.5}
 )

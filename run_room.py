@@ -2,12 +2,11 @@ import numpy as np
 import gym
 import wandb as wb
 from rl.successor_features.ols import OLS
-from rl.utils.utils import eval_test_tasks, hypervolume, policy_evaluation_mo, random_weights
+from rl.utils.utils import policy_evaluation_mo, random_weights
 from rl.successor_features.tabular_sf import SF
 from rl.successor_features.gpi import GPI
 import envs
 import matplotlib.pyplot as plt
-import seaborn as sns
 import argparse
 import pickle as pkl
 import os
@@ -98,7 +97,6 @@ if __name__ == "__main__":
                 pass
             break
 
-    print(len(ols.css))
     for i, pi in enumerate(gpi_agent.policies):
 
         d = vars(pi)

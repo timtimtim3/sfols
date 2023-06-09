@@ -14,17 +14,13 @@ import os
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dir", type=str, default="hallway-single")
-    args = parser.parse_args()
+    env = gym.make("HallwayNoisy-v2")
+    eval_env = gym.make("HallwayNoisy-v2")
 
-    directory = args.dir
+    envid = env.unwrapped.spec.id
+    os.makedirs(f"policies/{envid}", exist_ok=True)
 
-    assert os.path.exists(
-        f"policies/{directory}/"), "Saving path does not exist."
-
-    env = gym.make("HallwayNoisy-v0")
-    eval_env = gym.make("HallwayNoisy-v0")
+    print(env.noise)
 
     # These base values are needed to represent the SF at the `terminal` states
     # base_values = {(2, 0, 1, 0): np.asarray([2*[[1, 0]]][0]),
@@ -33,26 +29,27 @@ if __name__ == "__main__":
 
     base_values = {}
 
+    # Constructs a SF agent
     def agent_constructor(): return SF(env,
                                        alpha=0.3,
                                        gamma=0.95,
                                        initial_epsilon=1,
                                        final_epsilon=0.01,
                                        epsilon_decay_steps=500,
-                                       use_replay=True,
+                                       use_replay=False,
                                        per=True,
                                        use_gpi=True,
                                        envelope=False,
                                        batch_size=5,
-                                       buffer_size=1000000,
-                                       project_name='SimpleRoom-SFOLS',
+                                       buffer_size=10000,
+                                       project_name=f'{envid}-SFOLS',
                                        log=False,
                                        base_values=base_values)
 
     gpi_agent = GPI(env,
                     agent_constructor,
                     log=False,
-                    project_name='SimpleRoom-SFOLS',
+                    project_name=f'{envid}-SFOLS',
                     experiment_name="SFOLS_")
 
     # Number of shapes
@@ -66,7 +63,7 @@ if __name__ == "__main__":
         w = ols.next_w()
         print('next w', w)
 
-        gpi_agent.learn(total_timesteps=1000000,
+        gpi_agent.learn(total_timesteps=100000,
                         use_gpi=True,
                         w=w,
                         eval_env=eval_env,
@@ -94,7 +91,7 @@ if __name__ == "__main__":
 
         if ols.ended():
             print("ended at iteration", iter)
-            print(len(ols.ccs))
+            print("Policies in the CCS", len(ols.ccs))
             for i in range(ols.iteration + 1, max_iter + 1):
                 pass
 
@@ -107,7 +104,7 @@ if __name__ == "__main__":
         d.pop("env")
         d.pop("gpi")
 
-        with open(f"policies/{directory}/discovered_policy_{i+1}.pkl", "wb") as fp:
+        with open(f"policies/{envid}/discovered_policy_{i+1}.pkl", "wb") as fp:
 
             pkl.dump(d, fp)
 

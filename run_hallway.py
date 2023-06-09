@@ -2,29 +2,22 @@ import numpy as np
 import gym
 import wandb as wb
 from rl.successor_features.ols import OLS
-from rl.utils.utils import eval_test_tasks, hypervolume, policy_evaluation_mo, random_weights
+from rl.utils.utils import policy_evaluation_mo, random_weights
 from rl.successor_features.tabular_sf import SF
 from rl.successor_features.gpi import GPI
 import envs
 import matplotlib.pyplot as plt
-import seaborn as sns
 import argparse
 import pickle as pkl
 import os
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dir", type=str, default="hallway-single")
-    args = parser.parse_args()
+    env = gym.make("HallwayMultiple-v0")
+    eval_env = gym.make("HallwayMultiple-v0")
 
-    directory = args.dir
-
-    assert os.path.exists(
-        f"policies/{directory}/"), "Saving path does not exist."
-
-    env = gym.make("Hallway-v0")
-    eval_env = gym.make("Hallway-v0")
+    directory = env.unwrapped.spec.id
+    os.makedirs(f"policies/{directory}", exist_ok=True)
 
     # These base values are needed to represent the SF at the `terminal` states
     # base_values = {(2, 0, 1, 0): np.asarray([2*[[1, 0]]][0]),
@@ -36,7 +29,7 @@ if __name__ == "__main__":
     def agent_constructor(): return SF(env,
                                        alpha=0.3,
                                        gamma=0.95,
-                                       initial_epsilon=1,
+                                       initial_epsilon=0.9,
                                        final_epsilon=0.01,
                                        epsilon_decay_steps=500,
                                        use_replay=True,
@@ -44,15 +37,15 @@ if __name__ == "__main__":
                                        use_gpi=True,
                                        envelope=False,
                                        batch_size=5,
-                                       buffer_size=1000000,
-                                       project_name='Hallwat-SFOLS',
+                                       buffer_size=50000,
+                                       project_name=f'{directory}-SFOLS',
                                        log=False,
                                        base_values=base_values)
 
     gpi_agent = GPI(env,
                     agent_constructor,
                     log=False,
-                    project_name='Hallway-SFOLS',
+                    project_name=f'{directory}-SFOLS',
                     experiment_name="SFOLS_")
 
     # Number of shapes
@@ -66,7 +59,7 @@ if __name__ == "__main__":
         w = ols.next_w()
         print('next w', w)
 
-        gpi_agent.learn(total_timesteps=100000,
+        gpi_agent.learn(total_timesteps=500000,
                         use_gpi=True,
                         w=w,
                         eval_env=eval_env,
@@ -107,7 +100,7 @@ if __name__ == "__main__":
         d.pop("env")
         d.pop("gpi")
 
-        with open(f"policies/{directory}/discovered_policy_{i+1}.pkl", "wb") as fp:
+        with open(f"policies/{env.unwrapped.spec.id}/discovered_policy_{i+1}.pkl", "wb") as fp:
 
             pkl.dump(d, fp)
 
