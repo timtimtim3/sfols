@@ -6,12 +6,14 @@ import gym
 from gym.spaces import Discrete, Box
 
 MAZE = np.array([['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
+                 ['X', ' ', ' ', ' ', 'X', 'O2', ' ', ' ', ' ', 'X'],
                  ['X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', 'X'],
+                 ['X', ' ', ' ', ' ', 'X', 'C2', ' ', ' ', ' ', 'X'],
                  ['X', ' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' ', 'X'],
-                 ['X', ' ', ' ', ' ', ' ', 'X', 'C2', ' ', ' ', 'X'],
+                 ['X', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X'],
                  ['X', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X'],
                  ['X', ' ', ' ', '_', ' ', ' ', ' ', ' ', ' ', 'X'],
-                 ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
+                 ['X', 'O1', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
                  ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']])
 
 
@@ -50,7 +52,7 @@ class Coffee(gym.Env):
         self.maze = maze
         # self.shape_rewards = shape_rewards
         # sorted(list(shape_rewards.keys()))
-        object_types = ['C1', 'C2']
+        object_types = ['C1', 'C2', 'O1', 'O2']
         self.all_objects = dict(zip(object_types, range(len(object_types))))
 
         self.goal = None
@@ -66,12 +68,12 @@ class Coffee(gym.Env):
                 elif maze[r, c] == 'X':
                     self.occupied.add((r, c))
                 # {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}:
-                elif maze[r, c] in {'C1', 'C2'}:
+                elif maze[r, c] in {'C1', 'C2', 'O1', 'O2'}:
                     self.object_ids[(r, c)] = len(self.object_ids)
 
         # NOTE: Modify this depending on the number of 'objects' considered.
         # Here 2 coffe machine and 1 office locations are considered
-        self.w = np.zeros(2)
+        self.w = np.zeros(4)
         self.action_space = Discrete(4)
         # NOTE: The osbservation_space is (X, Y, <objects_collected>)
         self.observation_space = Box(low=np.zeros(
@@ -136,7 +138,7 @@ class Coffee(gym.Env):
                 self.state = (s1, collected)
                 phi = self.features(old_state, action, self.state)
                 reward = np.dot(phi, self.w)
-                return self.state_to_array(self.state), reward, True, {'phi': phi}
+                return self.state_to_array(self.state), reward, False, {'phi': phi}
 
         # into an empty cell
         return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_objects), dtype=np.float32)}

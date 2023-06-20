@@ -3,13 +3,11 @@ import numpy as np
 import os
 import argparse
 
-
-action_dict = ["LEFT", "UP", "RIGHT", "DOWN"]
-# LEFT, UP, RIGHT, DOWN = 0, 1, 2, 3
-
 if __name__ == "__main__":
 
     # This is to check how the SF representation of the discovered policies look like
+
+    actions = ["LEFT", "UP", "RIGHT", "DOWN"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=str, required=True)
@@ -26,13 +24,9 @@ if __name__ == "__main__":
         print(f"\nPolicy {i}")
         print(policy["reward"])
         q = policy["q_table"]
-
-        ss = sorted(q.keys())
-
-        for obs in ss:
-
-            for i in range(q[obs].shape[0]):
-
-                print(obs, action_dict[i], np.round(q[obs][i], 16))
-
-            print(15 * '--')
+        w = np.asarray([0.7737809366318175, 0.95])
+        qc1 = np.dot(q[(6, 6, 0, 0)], w)
+        # qc2 = np.dot(q[(3, 6, 0, 0)], w)
+        print('c1', np.max(qc1), actions[np.argmax(qc1)], qc1)
+        # print('c2', np.max(qc2), np.argmax(qc2))
+        print(15 * '--')

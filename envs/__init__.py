@@ -75,3 +75,16 @@ gym.envs.register(
     max_episode_steps=100,
     kwargs={'noise': 0.5}
 )
+
+gym.envs.register(
+    id='Coffee-v0',
+    entry_point='envs.coffee:Coffee',
+    max_episode_steps=100,
+)
+
+
+gym.envs.register(
+    id='Office-v0',
+    entry_point='envs.office:Office',
+    max_episode_steps=100,
+)

@@ -6,19 +6,19 @@ import gym
 from gym.spaces import Discrete, Box
 
 MAZE = np.array([['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-                 ['X', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', 'X'],
-                 ['X', ' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' ', 'X'],
-                 ['X', ' ', ' ', ' ', ' ', 'X', 'C2', ' ', ' ', 'X'],
+                 ['X', ' ', ' ', ' ', 'X', ' ', 'O2', ' ', ' ', 'X'],
+                 ['X', ' ', ' ', ' ', 'X', 'X', ' ', ' ', ' ', 'X'],
+                 ['X', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X'],
                  ['X', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'X'],
                  ['X', ' ', ' ', '_', ' ', ' ', ' ', ' ', ' ', 'X'],
-                 ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
+                 ['X', 'O1', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
                  ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']])
 
 
-class Coffee(gym.Env):
+class Office(gym.Env):
     """
     A simplified version of the office environment introduced in [1].
-    This simplified version consists of 2 coffee machines and 2 office locations.
+    This simplified version consists of 2 Office machines and 2 office locations.
 
     References
     ----------
@@ -29,7 +29,7 @@ class Coffee(gym.Env):
 
     def __init__(self, maze=MAZE):
         """
-        Creates a new instance of the coffee environment.
+        Creates a new instance of the Office environment.
 
         Parameters
         ----------
@@ -39,7 +39,7 @@ class Coffee(gym.Env):
                 _ indicates an initial state (there can be multiple, and one is selected at random
                     at the start of each episode)
                 X indicates a barrier
-                Ci, Oi indicates the type of cell (either coffee machine or office location)
+                Ci, Oi indicates the type of cell (either Office machine or office location)
                 entries containing other characters are treated as regular empty cells
         object_rewards : dict
             a dictionary mapping the type of object (C1, O1, ... ) to a corresponding reward to provide
@@ -50,7 +50,7 @@ class Coffee(gym.Env):
         self.maze = maze
         # self.shape_rewards = shape_rewards
         # sorted(list(shape_rewards.keys()))
-        object_types = ['C1', 'C2']
+        object_types = ['O1', 'O2']
         self.all_objects = dict(zip(object_types, range(len(object_types))))
 
         self.goal = None
@@ -66,7 +66,7 @@ class Coffee(gym.Env):
                 elif maze[r, c] == 'X':
                     self.occupied.add((r, c))
                 # {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}:
-                elif maze[r, c] in {'C1', 'C2'}:
+                elif maze[r, c] in {'O1', 'O2'}:
                     self.object_ids[(r, c)] = len(self.object_ids)
 
         # NOTE: Modify this depending on the number of 'objects' considered.
@@ -91,13 +91,13 @@ class Coffee(gym.Env):
         (row, col), collected = self.state
 
         # move
-        if action == Coffee.LEFT:
+        if action == Office.LEFT:
             col -= 1
-        elif action == Coffee.UP:
+        elif action == Office.UP:
             row -= 1
-        elif action == Coffee.RIGHT:
+        elif action == Office.RIGHT:
             col += 1
-        elif action == Coffee.DOWN:
+        elif action == Office.DOWN:
             row += 1
         else:
             raise Exception('bad action {}'.format(action))
