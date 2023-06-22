@@ -27,7 +27,7 @@ class Office(gym.Env):
 
     LEFT, UP, RIGHT, DOWN = 0, 1, 2, 3
 
-    def __init__(self, maze=MAZE):
+    def __init__(self, maze=MAZE, noise=0):
         """
         Creates a new instance of the Office environment.
 
@@ -46,6 +46,8 @@ class Office(gym.Env):
             to the agent for collecting an object of that type
             # TODO: What exactly is this line above?
         """
+        self.noise = noise
+
         self.height, self.width = maze.shape
         self.maze = maze
         # self.shape_rewards = shape_rewards
@@ -90,14 +92,21 @@ class Office(gym.Env):
         old_state = self.state
         (row, col), collected = self.state
 
+        effective_action = action
+
+        if random.uniform(0, 1) < self.noise:
+            nactions = [0, 1, 2, 3]
+            nactions.remove(action)
+            effective_action = np.random.choice(nactions)
+
         # move
-        if action == Office.LEFT:
+        if effective_action == Office.LEFT:
             col -= 1
-        elif action == Office.UP:
+        elif effective_action == Office.UP:
             row -= 1
-        elif action == Office.RIGHT:
+        elif effective_action == Office.RIGHT:
             col += 1
-        elif action == Office.DOWN:
+        elif effective_action == Office.DOWN:
             row += 1
         else:
             raise Exception('bad action {}'.format(action))
