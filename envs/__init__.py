@@ -102,3 +102,9 @@ gym.envs.register(
     max_episode_steps=100,
     kwargs={'noise': 0.3}
 )
+
+gym.envs.register(
+    id='Teleport-v0',
+    entry_point='envs.teleport:Teleport',
+    max_episode_steps=100,
+)
