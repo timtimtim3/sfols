@@ -41,9 +41,12 @@ class GPI(RLAlgorithm):
         else:
             q_vals = np.stack([policy.q_values(obs, w)
                               for policy in self.policies if policy is not exclude])
+            # policy_index, action = np.unravel_index(
+            #     np.argmax(q_vals), q_vals.shape)
+            idx = np.random.choice(np.arange(len(q_vals)))
             policy_index, action = np.unravel_index(
-                np.argmax(q_vals), q_vals.shape)
-
+                idx, q_vals.shape)
+            
             if return_policy_index:
                 return action, policy_index
             return action
