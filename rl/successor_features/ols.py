@@ -58,7 +58,7 @@ class OLS:
         if self.is_dominated(value):
             return [len(self.ccs)]
         for i, v in enumerate(self.ccs):
-            if np.allclose(v, value):
+            if np.allclose(v, value, atol=1e-2):
                 return [len(self.ccs)]  # delete new policy as it has same value as an old one
 
         W_del = self.remove_obsolete_weights(new_value=value)
