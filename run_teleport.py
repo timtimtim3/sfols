@@ -31,17 +31,17 @@ if __name__ == "__main__":
     base_values = {}
 
     def agent_constructor(): return SF(env,
-                                       alpha=0.01,
+                                       alpha=0.05,
                                        gamma=0.95,
                                        initial_epsilon=1,
-                                       final_epsilon=0.05,
-                                       epsilon_decay_steps=5000,
+                                       final_epsilon=0.1,
+                                       epsilon_decay_steps=10000,
                                        use_replay=True,
                                        per=True,
                                        use_gpi=True,
                                        envelope=False,
                                        batch_size=5,
-                                       buffer_size=50000,
+                                       buffer_size=25000,
                                        project_name=f'{directory}-SFOLS',
                                        log=False,
                                        base_values=base_values)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         w = ols.next_w()
         print('next w', w)
 
-        gpi_agent.learn(total_timesteps=500000,
+        gpi_agent.learn(total_timesteps=50000,
                         use_gpi=True,
                         w=w,
                         eval_env=eval_env,
@@ -74,7 +74,7 @@ if __name__ == "__main__":
                         reset_learning_starts=True,
                         reuse_value_ind=ols.get_set_max_policy_index(w))
 
-        value = policy_evaluation_mo(gpi_agent, eval_env, w, rep=5)
+        value = policy_evaluation_mo(gpi_agent, eval_env, w, rep=10000)
         remove_policies = ols.add_solution(
             value, w, gpi_agent=gpi_agent, env=eval_env)
 
