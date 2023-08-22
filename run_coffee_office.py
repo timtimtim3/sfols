@@ -2,69 +2,69 @@ import numpy as np
 import gym
 import wandb as wb
 from rl.successor_features.ols import OLS
-from rl.utils.utils import policy_evaluation_mo, random_weights, seed_everything
+from rl.utils.utils import eval_test_tasks, hypervolume, policy_evaluation_mo, random_weights
 from rl.successor_features.tabular_sf import SF
 from rl.successor_features.gpi import GPI
 import envs
 import matplotlib.pyplot as plt
+import seaborn as sns
 import argparse
 import pickle as pkl
 import os
-import shutil
+from envs.rm import * 
 
 if __name__ == "__main__":
 
-    env = gym.make("Office-v0")
-    eval_env = gym.make("Office-v0")
+    # The idea is, I train in a non-composed environment: this
+    # evironment is non-markovian, when the agent attains one of 
+    # the objects then the env resets.
 
-    directory = env.unwrapped.spec.id
+    env = gym.make("CoffeeOffice-v2")
+    eval_env = gym.make("CoffeeOffice-v2")
 
-    shutil.rmtree(f"policies/{directory}", ignore_errors=True)
-
-    os.makedirs(f"policies/{directory}", exist_ok=True)
-
-    # These base values are needed to represent the SF at the `terminal` states
-    # base_values = {(2, 0, 1, 0): np.asarray([2*[[1, 0]]][0]),
-    #                (2, 4, 0, 1): np.asarray([2*[[0, 1]]][0]),
-    # }
+    envid = env.unwrapped.spec.id
+    os.makedirs(f"policies/{envid}", exist_ok=True)
 
     base_values = {}
 
     def agent_constructor(): return SF(env,
-                                       alpha=0.3,
+                                       alpha=0.25,
                                        gamma=0.95,
                                        initial_epsilon=1,
-                                       final_epsilon=0.1,
-                                       epsilon_decay_steps=20000,
-                                       use_replay=True,
+                                       final_epsilon=0.3,
+                                       epsilon_decay_steps=5000,
+                                       use_replay=False,
                                        per=True,
                                        use_gpi=True,
                                        envelope=False,
                                        batch_size=5,
-                                       buffer_size=200000,
-                                       project_name=f'{directory}-SFOLS',
+                                       buffer_size=100000,
+                                       project_name=f'{envid}-SFOLS',
                                        log=False,
                                        base_values=base_values)
+    
 
     gpi_agent = GPI(env,
                     agent_constructor,
                     log=False,
-                    project_name=f'{directory}-SFOLS',
+                    project_name=f'{envid}-SFOLS',
                     experiment_name="SFOLS_")
+    
 
-    seed_everything(42)
+    M = 4
 
-    # Number of shapes
-    M = 2
+    ols = OLS(m=M, epsilon=0.01, reverse_extremum=False)
 
-    ols = OLS(m=M, epsilon=0.01, reverse_extremum=True)
-    test_tasks = random_weights(dim=M, seed=42, n=30) + ols.extrema_weights()
+    abs_weights = [np.asarray([1., 1, 0, 0]), np.asarray([0, 0, 1., 1])]
+
+    test_tasks = random_weights(dim=M, seed=42, n=30) + ols.extrema_weights() + abs_weights
+
     max_iter = 30
 
     for iter in range(max_iter):
         w = ols.next_w()
         print('next w', w)
-
+        
         gpi_agent.learn(total_timesteps=500000,
                         use_gpi=True,
                         w=w,
@@ -73,14 +73,12 @@ if __name__ == "__main__":
                         reset_num_timesteps=False,
                         reset_learning_starts=True,
                         reuse_value_ind=ols.get_set_max_policy_index(w))
-
+        
         value = policy_evaluation_mo(gpi_agent, eval_env, w, rep=5)
         remove_policies = ols.add_solution(
             value, w, gpi_agent=gpi_agent, env=eval_env)
 
         gpi_agent.delete_policies(remove_policies)
-
-        # print("CCS", ols.ccs)
 
         returns = [policy_evaluation_mo(
             gpi_agent, eval_env, w, rep=5, return_scalarized_value=False) for w in test_tasks]
@@ -90,14 +88,16 @@ if __name__ == "__main__":
                             for (psi, w) in zip(returns, test_tasks)], axis=0)
         mean_test_smp = np.mean([ols.max_scalarized_value(w_test)
                                 for w_test in test_tasks], dtype=np.float64)
+        
 
         if ols.ended():
             print("ended at iteration", iter)
-            # print(len(ols.ccs), gpi_agent.super().epsilon)
+            print("Policies in the CCS", len(ols.ccs))
             for i in range(ols.iteration + 1, max_iter + 1):
                 pass
 
             break
+
 
     for i, pi in enumerate(gpi_agent.policies):
 
@@ -106,8 +106,6 @@ if __name__ == "__main__":
         d.pop("env")
         d.pop("gpi")
 
-        with open(f"policies/{env.unwrapped.spec.id}/discovered_policy_{i+1}.pkl", "wb") as fp:
+        with open(f"policies/{envid}/discovered_policy_{i+1}.pkl", "wb") as fp:
 
             pkl.dump(d, fp)
-
-    # gpi_agent.close_wandb()

@@ -16,9 +16,9 @@ class RewardMachine(object):
             state_dim: int,
             prop_sym_dim: int,
             initial_state: int,
-            terminal_states: StateIDs,  # Tuple of state ids
-            transitions: RMTransitions,  # Dict with keys: Sx2^P and value: state,rew
-            rewards: RMRewards,  # Dict with keys: Sx2^P and value: state,rew
+            terminal_states: StateIDs,          # Tuple of state ids
+            transitions: RMTransitions,         # Dict with keys: Sx2^P and value: state,rew
+            rewards: RMRewards,                 # Dict with keys: Sx2^P and value: state,rew
     ):
         self.state_dim = state_dim
         self.prop_sym_dim = prop_sym_dim
@@ -62,10 +62,7 @@ class SimpleRewardMachine(object):
 
         self.current_state = self.initial_state
 
-    def step(
-            self,
-            prop_sym: Tuple[bool, ...]
-    ) -> Tuple[int, int]:
+    def step(self, prop_sym: Tuple[bool, ...]) -> Tuple[int, int]:
         key = (self.current_state, prop_sym)
         if key not in self.transitions:
             return self.current_state, 0  # as a default self loop with 0
@@ -123,19 +120,22 @@ class HierarchicalEnv(gym.Env):
             env: gym.Env,
             rm: SimpleRewardMachine
     ):
+
         self.env = env
         self.rm = rm
 
         self.screen_width = 600
         self.screen_height = 400
         self.viewer = None
+        
+        # Needed for SFOLS
+        # self.observation_space = env.observation_space
+        # self.action_space = env.action_space
+        self.w = env.w
 
-    def step(
-            self,
-            action
-    ) -> None:
-        env_next_s, env_r, env_done, env_info = self.env.step(action)
-        phi = env_info["phi"]
+    def step(self, action) -> None:
+        next_obs, _, _, info = self.env.step(action)
+        phi = info["phi"]
         predicates = self.phi_to_predicates(phi)
 
         rm_s, rm_r = self.rm.step(predicates)
@@ -146,6 +146,12 @@ class HierarchicalEnv(gym.Env):
         # lab = env.get_lab(s, a, s') - get labeling function for now I am using phi since it should be the same
         # rm_s, rm_r = rm.step(lab) - step reward machine?
         # return whatever we should return?
+
+        done = rm_s in self.rm.terminal_states
+
+        return next_obs, rm_r, done, info
+ 
+    
     @staticmethod
     def phi_to_predicates(phi: np.ndarray):
         return tuple(phi.astype(np.int32))
@@ -153,65 +159,49 @@ class HierarchicalEnv(gym.Env):
     def reset(self):
         env_s = self.env.reset()
         rm_s = self.rm.reset()
-        return env_s, rm_s
+
+        # TODO: Following line modified to make it consistent with SFOLs
+        # return env_s, rm_s
+        return env_s
 
     def render(self, mode="human"):
-        screen_width = 600
-        screen_height = 400
-        r = screen_height / 20
-        if self.viewer is None:
+
+        if mode == "human":
+            screen_width = 600
+            screen_height = 400
+            r = screen_height / 20
+            if self.viewer is None:
 
 
-            self.viewer = rendering.Viewer(screen_width, screen_height)
+                self.viewer = rendering.Viewer(screen_width, screen_height)
 
-        shapes = self.rm.get_render_shapes(self.screen_width, self.screen_height)
+            shapes = self.rm.get_render_shapes(self.screen_width, self.screen_height)
 
-        # Edges TODO: add arrows?
-        for line in shapes["lines"]:
-            self.viewer.draw_line(*line, color=(0,0,0))
-        # Vertices
-        for circle in shapes["circles"]:
+            # Edges TODO: add arrows?
+            for line in shapes["lines"]:
+                self.viewer.draw_line(*line, color=(0,0,0))
+            # Vertices
+            for circle in shapes["circles"]:
 
-            fp = rendering.FilledPolygon([(circle[0]-r, circle[1]-r), (circle[0]-r, circle[1]+r), (circle[0]+r, circle[1]+r), (circle[0]+r, circle[1]-r)])
-            fp.set_color(255, (1 - circle[3]) * 255, (1 - circle[3]) * 255)
-            self.viewer.add_onetime(fp)
-            self.viewer.add_onetime(rendering.PolyLine(
-                [(circle[0] - r, circle[1] - r), (circle[0] - r, circle[1] + r), (circle[0] + r, circle[1] + r),
-                 (circle[0] + r, circle[1] - r)], True))
+                fp = rendering.FilledPolygon([(circle[0]-r, circle[1]-r), (circle[0]-r, circle[1]+r), (circle[0]+r, circle[1]+r), (circle[0]+r, circle[1]-r)])
+                fp.set_color(255, (1 - circle[3]) * 255, (1 - circle[3]) * 255)
+                self.viewer.add_onetime(fp)
+                self.viewer.add_onetime(rendering.PolyLine(
+                    [(circle[0] - r, circle[1] - r), (circle[0] - r, circle[1] + r), (circle[0] + r, circle[1] + r),
+                    (circle[0] + r, circle[1] - r)], True))
 
-        # for text in shapes["texts"]:  TODO couldn't get text to work
-        #     pass
-
-
-        return self.viewer.render(return_rgb_array=mode == "rgb_array")
+            # for text in shapes["texts"]:  TODO couldn't get text to work
+            #     pass
 
 
-if __name__ == '__main__':
-    from office_gridworld import Coffee
-    env = Coffee()
-    env.reset()
-    prop_sym_dim = 4  # coffee1, coffee2, office1, office2
-    state_dim = 3  # no coffee, have coffee, in office
-    initial_state = 0
-    terminal_states = (2,)
-    transitions = {
-        (0, (1, 0, 0, 0)): (1, 0),  # no coffee, coffee1 -> have coffee, 0
-        (0, (0, 1, 0, 0)): (1, 0),  # no coffee, coffee2 -> have coffee, 0
-        (1, (0, 0, 1, 0)): (2, 1),  # have coffee, office1 -> in office, 1
-        (1, (0, 0, 0, 1)): (2, 1),  # have coffee, office1 -> in office, 1
-    }
-    rm = SimpleRewardMachine(
-        state_dim=state_dim,
-        terminal_states=terminal_states,
-        initial_state=0,
-        prop_sym_dim=prop_sym_dim,
-        transitions=transitions
-    )
-    henv = HierarchicalEnv(
-        env=env,
-        rm=rm
-    )
-
-    for i in range(1000):
-        henv.step(env.action_space.sample())
-        henv.render()
+            return self.viewer.render(return_rgb_array=mode == "rgb_array")
+        
+        elif mode=="text":
+            print(f"RM state: {self.rm.current_state} - env state: {self.env.state}")
+    
+    @property
+    def observation_space(self):
+        return self.env.observation_space
+    @property 
+    def action_space(self):
+        return self.env.action_space

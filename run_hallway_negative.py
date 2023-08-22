@@ -2,7 +2,7 @@ import numpy as np
 import gym
 import wandb as wb
 from rl.successor_features.ols import OLS
-from rl.utils.utils import policy_evaluation_mo, random_weights, seed_everything
+from rl.utils.utils import policy_evaluation_mo, random_weights
 from rl.successor_features.tabular_sf import SF
 from rl.successor_features.gpi import GPI
 import envs
@@ -14,8 +14,8 @@ import shutil
 
 if __name__ == "__main__":
 
-    env = gym.make("Coffee-v0")
-    eval_env = gym.make("Coffee-v0")
+    env = gym.make("HallwaySingle-v0")
+    eval_env = gym.make("HallwaySingle-v0")
 
     directory = env.unwrapped.spec.id
 
@@ -34,9 +34,9 @@ if __name__ == "__main__":
                                        alpha=0.3,
                                        gamma=0.95,
                                        initial_epsilon=1,
-                                       final_epsilon=0.1,
-                                       epsilon_decay_steps=5000,
-                                       use_replay=True,
+                                       final_epsilon=0.01,
+                                       epsilon_decay_steps=10000,
+                                       use_replay=False,
                                        per=True,
                                        use_gpi=True,
                                        envelope=False,
@@ -52,10 +52,8 @@ if __name__ == "__main__":
                     project_name=f'{directory}-SFOLS',
                     experiment_name="SFOLS_")
 
-    seed_everything(42)
-
     # Number of shapes
-    M = 2
+    M = 4
 
     ols = OLS(m=M, epsilon=0.01, reverse_extremum=True)
     test_tasks = random_weights(dim=M, seed=42, n=30) + ols.extrema_weights()
@@ -65,7 +63,7 @@ if __name__ == "__main__":
         w = ols.next_w()
         print('next w', w)
 
-        gpi_agent.learn(total_timesteps=500000,
+        gpi_agent.learn(total_timesteps=100000,
                         use_gpi=True,
                         w=w,
                         eval_env=eval_env,
@@ -93,7 +91,6 @@ if __name__ == "__main__":
 
         if ols.ended():
             print("ended at iteration", iter)
-            # print(len(ols.ccs), gpi_agent.super().epsilon)
             for i in range(ols.iteration + 1, max_iter + 1):
                 pass
 

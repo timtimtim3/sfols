@@ -4,7 +4,7 @@ import os
 import argparse
 
 
-action_dict = ["LEFT", "UP", "RIGHT", "DOWN"]
+action_dict = ["LEFT", "RIGHT"]
 # LEFT, UP, RIGHT, DOWN = 0, 1, 2, 3
 
 if __name__ == "__main__":

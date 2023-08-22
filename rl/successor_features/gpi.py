@@ -44,6 +44,7 @@ class GPI(RLAlgorithm):
             policy_index, action = np.unravel_index(
                 np.random.choice(np.flatnonzero(q_vals == q_vals.max())), q_vals.shape
             )
+
             if return_policy_index:
                 return action, policy_index
             return action

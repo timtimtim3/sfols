@@ -63,10 +63,10 @@ class Hallway(gym.Env):
                     self.shape_ids[(r, c)] = len(self.shape_ids)
 
         # NOTE: Modify this depending on the number of 'shapes' considered (2, 3,).
-        self.w = np.zeros(2)
+        self.w = np.zeros(4)
         self.action_space = Discrete(2)
         self.observation_space = Box(low=np.zeros(
-            2 + len(self.shape_ids)), high=np.ones(2 + len(self.shape_ids)))
+            2 + 2 * len(self.shape_ids)), high=np.ones(2 + 2 * len(self.shape_ids)))
 
         self.noise = noise
 
@@ -103,19 +103,19 @@ class Hallway(gym.Env):
 
         # out of bounds, cannot move
         if col < 0 or col >= self.width or row < 0 or row >= self.height:
-            return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
+            return self.state_to_array(self.state), 0., False, {'phi': np.zeros(2 * len(self.all_shapes), dtype=np.float32)}
 
         # into a blocked cell, cannot move
         s1 = (row, col)
         if s1 in self.occupied:
-            return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
+            return self.state_to_array(self.state), 0., False, {'phi': np.zeros(2* len(self.all_shapes), dtype=np.float32)}
 
         # can now move
         self.state = (s1, collected)
 
         # into a goal cell
         if s1 == self.goal:
-            phi = np.ones(len(self.all_shapes), dtype=np.float32)
+            phi = np.ones(2* len(self.all_shapes), dtype=np.float32)
             return self.state_to_array(self.state), 1., True, {'phi': phi}
 
         # into a shape cell
@@ -138,7 +138,7 @@ class Hallway(gym.Env):
             return self.state_to_array(self.state), reward, True, {'phi': phi}
 
         # into an empty cell
-        return self.state_to_array(self.state), 0., False, {'phi': np.zeros(len(self.all_shapes), dtype=np.float32)}
+        return self.state_to_array(self.state), 0., False, {'phi': np.zeros(2 * len(self.all_shapes), dtype=np.float32)}
 
     # ===========================================================================
     # STATE ENCODING FOR DEEP LEARNING
@@ -162,13 +162,14 @@ class Hallway(gym.Env):
     def features(self, state, action, next_state):
         s1, _ = next_state
         _, collected = state
-        nc = len(self.all_shapes)
+        nc = 2 * len(self.all_shapes)
         phi = np.zeros(nc, dtype=np.float32)
         if s1 in self.shape_ids:
             if collected[self.shape_ids[s1]] != 1:
                 y, x = s1
                 shape_index = self.all_shapes[self.maze[y, x]]
                 phi[shape_index] = 1.
+                phi[shape_index + 2] = -1.
         elif s1 == self.goal:
             phi[nc] = np.ones(nc, dtype=np.float32)
         return phi
