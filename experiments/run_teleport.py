@@ -98,13 +98,16 @@ if __name__ == "__main__":
                 pass
 
             break
-
+    # TODO tomorrow:
+    # Write down difference in Formulation for LOF
+    # Do a code check (needs spitting)
     for i, pi in enumerate(gpi_agent.policies):
 
         d = vars(pi)
         d.pop("replay_buffer")
         d.pop("env")
         d.pop("gpi")
+
 
         with open(f"policies/{env.unwrapped.spec.id}/discovered_policy_{i+1}.pkl", "wb") as fp:
 

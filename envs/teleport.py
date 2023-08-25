@@ -123,12 +123,6 @@ class Teleport(gym.Env):
         # NOTE: The collected part of the state plays a ~similar~ role to a reward machine.
         self.state = s1
 
-        # into a goal cell
-        if s1 == self.goal:
-            # NOTE: Goal state giving a reward of 1? Does it get back-propagated?
-            phi = np.ones(len(self.all_objects), dtype=np.float32)
-            return self.state_to_array(self.state), 1., True, {'phi': phi}
-
         # into a shape cell
         if s1 in self.object_ids:
 
