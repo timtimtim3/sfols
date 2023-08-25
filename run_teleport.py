@@ -107,6 +107,7 @@ if __name__ == "__main__":
         d.pop("replay_buffer")
         d.pop("env")
         d.pop("gpi")
+        d["w"] = ols.ccs[i]
 
 
         with open(f"policies/{env.unwrapped.spec.id}/discovered_policy_{i+1}.pkl", "wb") as fp:
