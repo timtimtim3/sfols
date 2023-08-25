@@ -3,17 +3,15 @@ import random
 import gym
 from gym.spaces import Discrete, Box
 
-MAZE = np.array([['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
+
+class Teleport(gym.Env):
+    MAP = np.array([['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
                  ['X', ' ', ' ', ' ', ' ', 'TS', ' ', ' ', ' ', ' ', 'X'],
                  ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
                  ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
                  ['X', ' ', ' ', ' ', ' ', '_', ' ', ' ', ' ', ' ', 'X'],
                  ['X', 'O1', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'O2', 'X'],
                  ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']])
-
-
-class Teleport(gym.Env):
-
     metadata = {'render.modes': ['human'],
         'video.frames_per_second': 20}
     """
@@ -27,29 +25,14 @@ class Teleport(gym.Env):
 
     LEFT, UP, RIGHT, DOWN = 0, 1, 2, 3
 
-    def __init__(self, maze=MAZE):
+    def __init__(self):
         """
         Creates a new instance of the coffee environment.
 
-        Parameters
-        ----------
-        maze : np.ndarray
-            an array of string values representing the type of each cell in the environment:
-                G indicates a goal state (terminal state)
-                _ indicates an initial state (there can be multiple, and one is selected at random
-                    at the start of each episode)
-                X indicates a barrier
-                Ci, Oi indicates the type of cell (either coffee machine or office location)
-                entries containing other characters are treated as regular empty cells
-        object_rewards : dict
-            a dictionary mapping the type of object (C1, O1, ... ) to a corresponding reward to provide
-            to the agent for collecting an object of that type
-            # TODO: What exactly is this line above?
         """
         self.viewer = None
 
-        self.height, self.width = maze.shape
-        self.maze = maze
+        self.height, self.width = self.MAP.shape
         # self.shape_rewards = shape_rewards
         # sorted(list(shape_rewards.keys()))
         object_types = ['O1', 'O2']
@@ -63,13 +46,13 @@ class Teleport(gym.Env):
         self.teleport_ends = list()
         for c in range(self.width):
             for r in range(self.height):
-                if maze[r, c] == '_':
+                if self.MAP[r, c] == '_':
                     self.initial.append((r, c))
-                elif maze[r, c] == 'TS':
+                elif self.MAP[r, c] == 'TS':
                     self.teleport_start.append((r, c))
-                elif maze[r, c] == 'X':
+                elif self.MAP[r, c] == 'X':
                     self.occupied.add((r, c))
-                elif maze[r, c] in {'O1', 'O2'}:
+                elif self.MAP[r, c] in {'O1', 'O2'}:
                     self.teleport_ends.append((r, c))
                     self.object_ids[(r, c)] = len(self.object_ids)
 
@@ -159,7 +142,7 @@ class Teleport(gym.Env):
         phi = np.zeros(nc, dtype=np.float32)
         if s1 in self.object_ids:
             y, x = s1
-            object_index = self.all_objects[self.maze[y, x]]
+            object_index = self.all_objects[self.MAP[y, x]]
             phi[object_index] = 1.
         elif s1 == self.goal:
             phi[nc] = np.ones(nc, dtype=np.float32)
@@ -172,7 +155,7 @@ class Teleport(gym.Env):
     def render(self, mode='human'):
         if self.viewer is None:
             from gym.envs.classic_control import rendering
-            max_x, max_y = MAZE.shape
+            max_x, max_y = self.MAP.shape
             square_size = 75
 
             screen_height = square_size * max_x
