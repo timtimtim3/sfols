@@ -130,3 +130,18 @@ gym.envs.register(
     entry_point='envs.teleport:Teleport',
     max_episode_steps=100,
 )
+
+
+
+gym.envs.register(
+    id='Avoid-v0',
+    entry_point='envs.avoid:Avoid',
+    max_episode_steps=200,
+)
+
+gym.envs.register(
+    id='Avoid-v1',
+    entry_point='envs.avoid:Avoid',
+    max_episode_steps=200,
+    kwargs={'noise': 0.4}
+    )
