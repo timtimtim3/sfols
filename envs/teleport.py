@@ -147,7 +147,7 @@ class Teleport(gym.Env):
         # Determine features and rewards
         phi = self.features(old_state, action, new_state)
         reward = np.dot(phi, self.w)
-        done = new_state in self.object_ids
+        done = self.is_done(old_state, action, new_state)
         return self.state_to_array(self.state), reward, done, {'phi': phi}
 
     # ===========================================================================
@@ -169,6 +169,9 @@ class Teleport(gym.Env):
     # ===========================================================================
     # SUCCESSOR FEATURES
     # ===========================================================================
+    def is_done(self, state, action, next_state):
+        return next_state in self.object_ids
+
     def features(self, state, action, next_state):
         s1 = next_state
         nc = len(self.all_objects)
