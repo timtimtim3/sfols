@@ -131,6 +131,33 @@ class Teleport(gym.Env):
             return (row, col)
 
 
+    def get_q_sf(self, w: np.array, gamma: float):
+        s_dim = len(self.state_to_coords)
+        a_dim = self.action_space.n
+        phi_dim = 2
+        Q_sf = np.zeros(shape=(s_dim, a_dim, phi_dim), dtype=np.float32)
+        while True:
+            Q_new = np.zeros_like(Q_sf)
+            for s_old in range(s_dim):
+                for a in range(a_dim):
+                    q = 0
+                    for s_new in range(s_dim):
+                        prob = self.P[s_old, a, s_new]
+                        if not prob:
+                            continue
+                        features = self.features(self.state_to_coords[s_old], a, self.state_to_coords[s_new])
+                        done = self.is_done(self.state_to_coords[s_old], a, self.state_to_coords[s_new])
+                        a_new = np.argmax(Q_sf[s_new] @ w)
+                        q += prob * (features + gamma * (1-done) * Q_sf[s_new, a_new])
+                    Q_new[s_old, a] = q
+
+            if np.allclose(Q_sf, Q_new):
+                break
+            else:
+                Q_sf = Q_new
+        # Probably need to refactor this at some point?
+        return Q_sf
+
     def step(self, action):
         old_state = self.state
 
@@ -235,6 +262,9 @@ class Teleport(gym.Env):
 
 if __name__ == '__main__':
     env = Teleport()
+    gamma = 0.99
+    w = np.array([1.0, 0.0])
+    q_sf = env.get_q_sf(w=w, gamma=gamma)
 
     for i in range(20):
         env.reset()
