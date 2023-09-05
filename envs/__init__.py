@@ -1,5 +1,4 @@
 import gym
-import numpy as np
 
 gym.envs.register(
     id='DeepSeaTreasure-v0',
@@ -15,86 +14,72 @@ gym.envs.register(
 
 gym.envs.register(
     id='FourRoom-v0',
-    entry_point='envs.four_room:Shapes',
+    entry_point='envs.grid_envs:FourRooms',
     max_episode_steps=200
 )
 
 
 gym.envs.register(
     id='SimpleRoom-v0',
-    entry_point='envs.room:Shapes',
-    max_episode_steps=100
-)
-
-gym.envs.register(
-    id='SimpleRoomNoisy-v0',
-    entry_point='envs.room-noisy:Shapes',
+    entry_point='envs.grid_envs:Room',
     max_episode_steps=100
 )
 
 # Hallway
 gym.envs.register(
     id='HallwaySingle-v0',
-    entry_point='envs.hallway-single:Hallway',
+    entry_point='envs.grid_envs:HallwaySingle',
     max_episode_steps=100,
-    kwargs={'noise': 0}
+    kwargs={'random_act_prob': 0}
 )
 
 gym.envs.register(
     id='HallwayNoisy-v1',
-    entry_point='envs.hallway-single:Hallway',
+    entry_point='envs.grid_envs:HallwaySingle',
     max_episode_steps=100,
-    kwargs={'noise': 0.15}
+    kwargs={'random_act_prob': 0.15}
 )
 
 gym.envs.register(
     id='HallwayNoisy-v2',
-    entry_point='envs.hallway-single:Hallway',
+    entry_point='envs.grid_envs:HallwaySingle',
     max_episode_steps=100,
-    kwargs={'noise': 0.5}
+    kwargs={'random_act_prob': 0.5}
 )
 
 gym.envs.register(
     id='HallwayMultiple-v0',
-    entry_point='envs.hallway-multiple:Hallway',
+    entry_point='envs.grid_envs:HallwayMultiple',
     max_episode_steps=100,
-    kwargs={'noise': 0}
+    kwargs={'random_act_prob': 0}
 )
 
 gym.envs.register(
     id='HallwayNoisyMultiple-v1',
-    entry_point='envs.hallway-multiple:Hallway',
+    entry_point='envs.grid_envs:HallwayMultiple',
     max_episode_steps=100,
-    kwargs={'noise': 0.15}
+    kwargs={'random_act_prob': 0.15}
 )
 
 gym.envs.register(
     id='HallwayNoisyMultiple-v2',
-    entry_point='envs.hallway-multiple:Hallway',
+    entry_point='envs.grid_envs:HallwayMultiple',
     max_episode_steps=100,
-    kwargs={'noise': 0.5}
+    kwargs={'random_act_prob': 0.5}
 )
 
 gym.envs.register(
     id='CoffeeOffice-v0',
-    entry_point='envs.coffee_office:CoffeeOffice',
+    entry_point='envs.grid_envs:CoffeeOffice',
     max_episode_steps=100,
 )
 
 gym.envs.register(
     id='CoffeeOffice-v1',
-    entry_point='envs.coffee_office:CoffeeOffice',
+    entry_point='envs.grid_envs:CoffeeOffice',
     max_episode_steps=100,
-    kwargs={'noise': 0.3}
+    kwargs={'random_act_prob': 0.3}
 )
-
-
-gym.envs.register(
-    id='CoffeeOffice-v2',
-    entry_point='envs.coffee_office_learner:CoffeeOffice',
-    max_episode_steps=200,
-)
-
 
 
 # HierarchicalOffice-v1
@@ -127,21 +112,6 @@ gym.envs.register(
 
 gym.envs.register(
     id='Teleport-v0',
-    entry_point='envs.teleport:Teleport',
+    entry_point='envs.grid_envs:Teleport',
     max_episode_steps=100,
 )
-
-
-
-gym.envs.register(
-    id='Avoid-v0',
-    entry_point='envs.avoid:Avoid',
-    max_episode_steps=200,
-)
-
-gym.envs.register(
-    id='Avoid-v1',
-    entry_point='envs.avoid:Avoid',
-    max_episode_steps=200,
-    kwargs={'noise': 0.4}
-    )
