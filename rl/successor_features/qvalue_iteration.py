@@ -1,10 +1,10 @@
 
+
 from typing import Union
 import torch as th
 from rl.rl_algorithm import RLAlgorithm
 from rl.successor_features.gpi import GPI
 import numpy as np
-
 
 
 class QValueIteration(RLAlgorithm):
@@ -15,7 +15,8 @@ class QValueIteration(RLAlgorithm):
                 gamma: float = 0.95,
                 delta: float = 1e-3, 
                 gpi: GPI = None,
-                use_gpi: bool = False):
+                use_gpi: bool = False,
+                log: bool = False):
         
         super().__init__(env, device=None)
 
@@ -25,6 +26,9 @@ class QValueIteration(RLAlgorithm):
         self.delta = delta
         self.gpi = gpi 
         self.use_gpi = use_gpi
+        self.log = log
+
+        self.replay_buffer = None
 
         self.q_table = dict()
 
@@ -49,7 +53,11 @@ class QValueIteration(RLAlgorithm):
             obs = tuple(obs)
             if obs not in self.q_table:
                 return int(self.env.action_space.sample())
-            return np.argmax(np.dot(self.q_table[obs], w))
+            
+            q_values = np.dot(self.q_table[obs], w)
+            idxs = np.argwhere(q_values == np.max(q_values)).flatten()
+
+            return np.random.choice(idxs)
         
 
     def q_values(self, obs: np.array, w: np.array) -> np.array:
@@ -65,28 +73,59 @@ class QValueIteration(RLAlgorithm):
         a_dim = self.env.action_space.n
         phi_dim = self.phi_dim
         Psi_sf = np.zeros(shape=(s_dim, a_dim, phi_dim), dtype=np.float32)
-        for _ in range(20):
+
+        total_sweeps = 0
+
+        while True:
+            
+            total_sweeps += 1
             Psi_new = np.zeros_like(Psi_sf)
-            for s_old in range(s_dim):
+            
+            for s in range(s_dim):
+                coords = self.env.state_to_coords[s]
+                if s not in self.q_table:
+                    self.q_table[s] = np.zeros((a_dim, phi_dim))
                 for a in range(a_dim):
                     q = 0
-                    for s_new in range(s_dim):
-                        prob = self.env.P[s_old, a, s_new]
+                    for ns in range(s_dim):
+                        prob = self.env.P[s, a, ns]
                         if not prob:
                             continue
-                        features = self.env.features(self.env.state_to_coords[s_old], a, self.env.state_to_coords[s_new])
-                        # done = self.is_done(self.state_to_coords[s_old], a, self.state_to_coords[s_new])
-                        b = np.argmax(Psi_sf[s_new] @ w)
+                        features = self.env.features(self.env.state_to_coords[s], a, self.env.state_to_coords[ns])
+                        done = self.env.is_done(self.env.state_to_coords[s], a, self.env.state_to_coords[ns])
+                        b = np.argmax(np.dot(Psi_sf[ns], w))
                         # Change this 
-                        q += prob * (features + self.gamma * Psi_sf[s_new, b])
-                    Psi_new[s_old, a] = q
-
-            Psi_sf = Psi_new
+                        q += prob * (features + self.gamma * (1-done) * Psi_sf[ns, b])                            
+                    Psi_new[s, a] = q
+                self.q_table[coords] = Psi_new[s, :]
+            if np.allclose(Psi_sf, Psi_new):
+                break
+            else:
+                Psi_sf = Psi_new
+            # print(self.q_table[7])
+            idx = 0
         # Probably need to refactor this at some point?
-        return Psi_sf
+        return Psi_sf, total_sweeps
     
     def get_config(self) -> dict:
         return {
                 'gamma': self.gamma,
                 'delta': self.delta,
                 }
+    
+
+    def learn(self, total_timesteps, total_episodes=None, reset_num_timesteps=True, eval_env=None, eval_freq=1000, w=np.array([1.0,0.0])):
+
+        episode_reward = 0.0
+        episode_vec_reward = np.zeros(w.shape[0])
+        num_episodes = 0
+        
+        self.obs, done = self.env.reset(), False
+        self.env.unwrapped.w = w
+
+        _, total_sweeps = self.train(w)
+        # TODO: Add information about the policy obtained?
+
+        init_state = self.env.unwrapped.initial[0]
+
+        print('Total sweeps VI', total_sweeps)
