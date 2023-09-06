@@ -98,7 +98,7 @@ class GridEnv(ABC, gym.Env):
 
     def reset(self, state=None):
         if state is not None:
-            self.state = np.asarray(state)
+            self.state = state
         else:
             self.state = random.choice(self.initial)
         return self.state_to_array(self.state)
