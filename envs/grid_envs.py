@@ -224,13 +224,13 @@ class GridEnv(ABC, gym.Env):
 
 
 class Teleport(GridEnv):
-    MAP = np.array([['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-                 ['X', ' ', ' ', ' ', ' ', 'TS', ' ', ' ', ' ', ' ', 'X'],
-                 ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
-                 ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
-                 ['X', ' ', ' ', ' ', ' ', '_', ' ', ' ', ' ', ' ', 'X'],
-                 ['X', 'O1', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'O2', 'X'],
-                 ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']])
+    MAP = np.array([
+                 [ ' ', ' ', ' ', ' ', 'TS', ' ', ' ', ' ', ' ', ],
+                 [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ],
+                 [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ],
+                 [ ' ', ' ', ' ', ' ', '_', ' ', ' ', ' ', ' ', ],
+                 [ 'O1', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'O2', ],
+                 ])
     PHI_OBJ_TYPES = ['O1', 'O2']
 
     def __init__(self, random_act_prob=0.0):
@@ -297,43 +297,6 @@ class CoffeeOffice(GridEnv):
 
     def __init__(self, add_obj_to_start=False, random_act_prob=0.0):
         super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
-        self._create_coord_mapping()
-        self._create_transition_function()
-
-    def _create_transition_function(self):
-        self._create_transition_function_base()
-
-
-class HallwaySingle(GridEnv):
-    MAP = np.array([['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-                    ['X', 'L', ' ', ' ', '_', ' ', ' ', 'R', 'X'],
-                    ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']])
-    PHI_OBJ_TYPES = ['L', 'R']
-    LEFT, RIGHT = 0, 1
-    UP = DOWN = -1  # Not available
-
-    def __init__(self, random_act_prob=0.0):
-        super().__init__(add_obj_to_start=False, random_act_prob=random_act_prob)
-        # NOTE: Modify this depending on the number of 'shapes' considered (2, 3,).
-        self.action_space = Discrete(2)
-        self._create_coord_mapping()
-        self._create_transition_function()
-
-    def _create_transition_function(self):
-        self._create_transition_function_base()
-
-
-class HallwayMultiple(GridEnv):
-    MAP = np.array([['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-                    ['X', 'L', '_', '_', '_', '_', '_', 'R', 'X'],
-                    ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']])
-    PHI_OBJ_TYPES = ['L', 'R']
-    LEFT, RIGHT = 0, 1
-    UP = DOWN = -1  # Not available
-
-    def __init__(self, random_act_prob=0.0):
-        super().__init__(add_obj_to_start=False, random_act_prob=random_act_prob)
-        self.action_space = Discrete(2)
         self._create_coord_mapping()
         self._create_transition_function()
 

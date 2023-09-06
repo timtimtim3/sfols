@@ -81,9 +81,19 @@ gym.envs.register(
     kwargs={'random_act_prob': 0.3}
 )
 
+gym.envs.register(
+    id='Avoid-v0',
+    entry_point='envs.grid_envs:Avoid',
+    max_episode_steps=100,
+)
+
+gym.envs.register(
+    id='Teleport-v0',
+    entry_point='envs.grid_envs:Teleport',
+    max_episode_steps=100,
+)
 
 # HierarchicalOffice-v1
-
 doorways = [((0, 0, 1, 2), (0, 1, 1, 0)), 
             ((0, 0, 2, 2), (1, 0, 3, 2))]
 
