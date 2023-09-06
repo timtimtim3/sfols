@@ -290,6 +290,7 @@ class CoffeeOffice(GridEnv):
     
     PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2']
     
+    
     """
     A simplified version of the office environment introduced in [1].
     This simplified version consists of 2 coffee machines and 2 office locations.
