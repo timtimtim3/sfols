@@ -4,6 +4,9 @@ import os
 import envs
 import gym
 # import argparse
+import matplotlib.pyplot as plt
+from plotting.plotting import create_grid_plot, plot_policy, get_plot_arrow_params
+
 
 
 actions = ["LEFT", "UP", "RIGHT", "DOWN"]
@@ -19,6 +22,38 @@ env = gym.make("CoffeeOffice-v0")
 print(env.unwrapped.object_ids)
 print(env.unwrapped.all_objects)
 print(env.unwrapped.initial)
+
+
+def _get_plot_arrow_params(q_table, w):
+    x_pos = []
+    y_pos = []
+    x_dir = []
+    y_dir = []
+    color = []
+
+    for coords,q_vals in q_table.items():
+        max_val = np.max(q_vals)
+        max_index = np.argmax(q_vals)
+
+        print(coords, q_vals, max_index)
+
+        x_d = y_d = 0
+        if max_index == 3:
+            y_d = 1
+        elif max_index == 1:
+            y_d = -1
+        elif max_index == 2:
+            x_d = 1
+        elif max_index == 0:
+            x_d = -1
+
+        x_pos.append(coords[1] + 0.5)
+        y_pos.append(coords[0] + 0.5)
+        x_dir.append(x_d)
+        y_dir.append(y_d)
+        color.append(max_val)
+    # down, up , right, left
+    return np.array(x_pos), np.array(y_pos), np.array(x_dir), np.array(y_dir), np.array(color)
 
 
 def _get_successor_features(dirpath):
@@ -102,7 +137,46 @@ def coffee_and_mail_then_office_deterministic():
 
     initial = (4, 2)
 
-    weights_office = np.asarray([0, 0, 1, 1])
+    weights = np.asarray([1, 0, 0, 1])
+
+    def get_value_state(state:tuple):
+
+        q  = np.round(np.asarray([np.dot(q[state], weights) for q in SFs]).max(axis=0), 4)
+        
+        value_state = np.round(np.max(q), 4)
+
+        print(f'Q({state}) = ', q)
+        print(f'V({state}) = ', value_state )
+        opt_actions = np.where(np.isclose(q, value_state, atol=1e-3))[0].tolist()
+        print(f'PI({state})', list(map(lambda x: actions[x], opt_actions)), "\n")
+
+        return q
+
+
+    q_table = {}
+
+    for (i, j) in env.unwrapped.coords_to_state:
+        state = (i, j)
+        q_table[state] = get_value_state(state)
+
+    plt.figure(1)
+
+    ax = plt.subplot((1+1)*100 + 11)
+    ax.set_title(f"w={weights}")
+
+    create_grid_plot(ax=ax, grid=env.MAP != 'X')
+
+    w =  np.ones(4)
+
+    quiv = plot_policy(
+                ax=ax, arrow_data= _get_plot_arrow_params(q_table, w), grid=env.MAP,
+                values=False, max_index=False
+            )
+    # finish test
+    plt.show()
+
+
+    exit()
 
     q_values_coffee = np.asarray(
         [np.dot(q[coffee], weights_office) for q in SFs])

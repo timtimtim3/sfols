@@ -166,6 +166,7 @@ def get_plot_arrow_params(q_table, w):
         max_val = np.max(q_vals @ w)
         max_index = np.argmax(q_vals @ w)
 
+        print(coords, q_vals, max_index)
 
         x_d = y_d = 0
         if max_index == 3:
@@ -176,6 +177,7 @@ def get_plot_arrow_params(q_table, w):
             x_d = 1
         elif max_index == 0:
             x_d = -1
+
         x_pos.append(coords[1] + 0.5)
         y_pos.append(coords[0] + 0.5)
         x_dir.append(x_d)
