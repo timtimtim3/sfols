@@ -98,12 +98,10 @@ class QValueIteration(RLAlgorithm):
                         q += prob * (features + self.gamma * (1-done) * Psi_sf[ns, b])                            
                     Psi_new[s, a] = q
                 self.q_table[coords] = Psi_new[s, :]
-            if np.allclose(Psi_sf, Psi_new):
+            if np.allclose(Psi_sf, Psi_new, atol=1e-3):
                 break
             else:
                 Psi_sf = Psi_new
-            # print(self.q_table[7])
-            idx = 0
         # Probably need to refactor this at some point?
         return Psi_sf, total_sweeps
     
