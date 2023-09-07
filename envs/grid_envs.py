@@ -57,6 +57,7 @@ class GridEnv(ABC, gym.Env):
         self.action_space = Discrete(4)
         self.observation_space = Box(low=np.zeros(
             2), high=np.ones(2))
+        self.seed()
 
     def _create_coord_mapping(self):
         """
@@ -95,6 +96,12 @@ class GridEnv(ABC, gym.Env):
     @staticmethod
     def state_to_array(state):
         return np.array(state, dtype=np.int32)
+
+    def seed(self, seed=None):
+        if seed is None:
+            seed = np.random.randint(2147483647)
+        self.action_space.seed(seed)
+        self.observation_space.seed(seed)
 
     def reset(self, state=None):
         if state is not None:

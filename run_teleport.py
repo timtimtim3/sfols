@@ -13,7 +13,7 @@ import os
 import shutil
 
 if __name__ == "__main__":
-
+    seed_everything(42)
     env = gym.make("Teleport-v0")
     eval_env = gym.make("Teleport-v0")
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
                     project_name=f'{directory}-SFOLS',
                     experiment_name="SFOLS_")
 
-    seed_everything(42)
+
 
     # Number of shapes
     M = 2
