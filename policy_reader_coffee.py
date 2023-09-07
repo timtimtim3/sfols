@@ -94,8 +94,8 @@ def coffee_then_office_deterministic():
 
     print(np.max(q_values_coffee1, axis=0))
 
-    value_coffee1 = np.max(0.95 * q_values_coffee1)
-    value_coffee2 = np.max(0.95 * q_values_coffee2)
+    value_coffee1 = np.max(q_values_coffee1)
+    value_coffee2 = np.max(q_values_coffee2)
     print(f'Value for coffee 1 at {coffee1}', value_coffee1)
     print(f'Value for coffee 2 at {coffee2}', value_coffee2)
 
@@ -137,7 +137,7 @@ def coffee_and_mail_then_office_deterministic():
 
     initial = (4, 2)
 
-    weights = np.asarray([1, 0, 0, 1])
+    weights = np.asarray([0, 0, 1, 1])
 
     def get_value_state(state:tuple):
 

@@ -19,8 +19,8 @@ if __name__ == "__main__":
     # evironment is non-markovian, when the agent attains one of 
     # the objects then the env resets.
 
-    env = gym.make("CoffeeOffice-v0")
-    eval_env = gym.make("CoffeeOffice-v0")
+    env = gym.make("CoffeeOffice-v1")
+    eval_env = gym.make("CoffeeOffice-v1")
 
     envid = env.unwrapped.spec.id
     os.makedirs(f"policies/{envid}", exist_ok=True)
