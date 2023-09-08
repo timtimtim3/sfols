@@ -81,11 +81,13 @@ gym.envs.register(
     kwargs={'random_act_prob': 0.3}
 )
 
+
 gym.envs.register(
-    id='Avoid-v0',
-    entry_point='envs.grid_envs:Avoid',
+    id='OfficeComplex-v0',
+    entry_point='envs.grid_envs:OfficeComplex',
     max_episode_steps=100,
 )
+
 
 gym.envs.register(
     id='Teleport-v0',

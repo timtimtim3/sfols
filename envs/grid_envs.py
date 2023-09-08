@@ -17,7 +17,7 @@ class GridEnv(ABC, gym.Env):
     @property
     def PHI_OBJ_TYPES(self):
         raise NotImplementedError
-
+    
     """
     A simplified version of the office environment introduced in [1].
     This simplified version consists of 2 coffee machines and 2 office locations.
@@ -306,6 +306,41 @@ class CoffeeOffice(GridEnv):
     def _create_transition_function(self):
         self._create_transition_function_base()
 
+
+class OfficeComplex(GridEnv):
+    MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'O2', ' ', ' '],
+                     [' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' '],
+                     [' ', ' ', ' ',  ' ', 'X', 'C2', ' ', ' '],
+                     [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
+                     [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
+                     [' ', ' ', ' ',  ' ',  ' ', ' ', 'M', ' '],
+                     [' ', ' ', '_',  ' ',  ' ', ' ', ' ', ' '],
+                     ['O1', ' ',' ',  ' ',  ' ', ' ', ' ', ' '], ])
+    
+    PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2', 'M']
+    
+    """
+    A simplified version of the office environment introduced in [1].
+    This simplified version consists of 2 coffee machines and 2 office locations.
+
+    [1] Icarte, RT, et al. "Reward Machines: Exploiting Reward Function Structure in Reinforcement Learning".
+    """
+
+    def __init__(self, add_obj_to_start=False, random_act_prob=0.0):
+        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
+        self._create_coord_mapping()
+        self._create_transition_function()
+
+        exit_states = {}
+        for s in self.object_ids:
+            symbol = self.MAP[s]
+            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
+
+        self.exit_states = exit_states
+
+
+    def _create_transition_function(self):
+        self._create_transition_function_base()
 
 class Room(GridEnv):
     MAP = np.array([['X', 'X', 'R', 'X', 'X'],

@@ -19,8 +19,8 @@ if __name__ == "__main__":
     # evironment is non-markovian, when the agent attains one of 
     # the objects then the env resets.
 
-    env = gym.make("CoffeeOffice-v1")
-    eval_env = gym.make("CoffeeOffice-v1")
+    env = gym.make("OfficeComplex-v0")
+    eval_env = gym.make("OfficeComplex-v0")
 
     envid = env.unwrapped.spec.id
     os.makedirs(f"policies/{envid}", exist_ok=True)
@@ -37,7 +37,7 @@ if __name__ == "__main__":
                     experiment_name="SFOLS_")
     
 
-    M = 4
+    M = 5
 
     ols = OLS(m=M, epsilon=0.01, reverse_extremum=False)
 

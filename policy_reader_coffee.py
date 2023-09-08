@@ -17,7 +17,7 @@ coffee2 = (2, 5)
 office2 = (0, 5)
 initial = (4, 2)
 
-env = gym.make("CoffeeOffice-v0") 
+env = gym.make("CoffeeOffice-v1") 
 
 print(env.unwrapped.object_ids)
 print(env.unwrapped.all_objects)
@@ -124,7 +124,7 @@ def coffee_and_mail_then_office_deterministic():
 
     # 1) Get the SF representstion for the policies in the CCS for the office task.
 
-    SFs = _get_successor_features(os.path.abspath("policies/CoffeeOffice-v0"))
+    SFs = _get_successor_features(os.path.abspath("policies/CoffeeOffice-v1"))
 
     # 2) We set the weights to 1 for each of the offices as any of the sastisfies the task,
     # we compute the q-function for each policy and for each 'coffee' location and
@@ -137,7 +137,7 @@ def coffee_and_mail_then_office_deterministic():
 
     initial = (4, 2)
 
-    weights = np.asarray([0, 0, 1, 1])
+    weights = np.asarray([1, 0, 0, 1])
 
     def get_value_state(state:tuple):
 
