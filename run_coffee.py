@@ -2,7 +2,7 @@ import numpy as np
 import gym
 import wandb as wb
 from rl.successor_features.ols import OLS
-from rl.utils.utils import eval_test_tasks, hypervolume, policy_evaluation_mo, random_weights
+from rl.utils.utils import eval_test_tasks, hypervolume, policy_evaluation_mo, random_weights, seed_everything
 from rl.successor_features.qvalue_iteration import QValueIteration
 from rl.successor_features.gpi import GPI
 import envs
@@ -14,7 +14,7 @@ import os
 from envs.rm import * 
 
 if __name__ == "__main__":
-
+    seed_everything(42)
     # The idea is, I train in a non-composed environment: this
     # evironment is non-markovian, when the agent attains one of 
     # the objects then the env resets.
