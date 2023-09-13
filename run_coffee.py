@@ -37,7 +37,7 @@ if __name__ == "__main__":
                     experiment_name="SFOLS_")
     
 
-    M = 5
+    M = 8
 
     ols = OLS(m=M, epsilon=0.01, reverse_extremum=False)
 

@@ -3,8 +3,9 @@ import networkx as nx
 
 class FiniteStateAutomaton:
 
-    def __init__(self) -> None:
+    def __init__(self, symbols_to_phi) -> None:
         self.graph =  nx.DiGraph()
+        self.symbols_to_phi = symbols_to_phi
 
     def add_state(self, node_name):
         self.graph.add_node(node_name) 
@@ -18,6 +19,7 @@ class FiniteStateAutomaton:
     def get_predicate(self, edge):
         predicates = nx.get_edge_attributes(self.graph, 'predicate')
         return predicates[edge]
+
 
 
 
