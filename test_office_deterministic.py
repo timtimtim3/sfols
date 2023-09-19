@@ -18,8 +18,6 @@ def _get_successor_features(dirpath):
     return SFs
 
 
-
-
 if __name__ == "__main__":
 
     # Read the successor features

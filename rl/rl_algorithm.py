@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Union
 import numpy as np
-# from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 import torch as th
 from gym.spaces import Discrete, Box
 
@@ -65,9 +65,9 @@ class RLAlgorithm(ABC):
                    name=self.experiment_name,
                    monitor_gym=True,
                    save_code=True)
-        # self.writer = SummaryWriter(f"/tmp/{self.experiment_name}")
+        self.writer = SummaryWriter(f"/tmp/{self.experiment_name}")
 
     def close_wandb(self):
         import wandb
-        # self.writer.close()
+        self.writer.close()
         wandb.finish()

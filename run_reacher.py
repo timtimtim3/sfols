@@ -32,7 +32,7 @@ def run(algo):
                                     gradient_updates=1,
                                     tau=1.0,
                                     target_net_update_freq=500,
-                                    log=False)
+                                    log=True)
     agent = GPI(env,
                 agent_constructor,
                 project_name='Reacher-SFOLS',
