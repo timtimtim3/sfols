@@ -3,7 +3,7 @@ import envs
 import gym
 import os
 import pickle as pkl
-from rl.planning import PlanningFSA
+from rl.planning import SFFSAValueIteration as ValueIteration
 from rl import rm
 
 def _get_successor_features(dirpath):
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     env = gym.make("OfficeComplex-v0")
     
 
-    planning = PlanningFSA(env, fsa, sfs)
+    planning = ValueIteration(env, fsa, sfs)
 
     W = planning.traverse("u0")
     print(W)

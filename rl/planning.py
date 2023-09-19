@@ -1,7 +1,7 @@
 from collections import deque, defaultdict 
 import numpy as np
 
-class PlanningFSA:
+class SFFSAValueIteration:
 
     def __init__(self, env, fsa, sfs) -> None:
         
@@ -27,8 +27,11 @@ class PlanningFSA:
                 
         W = np.zeros((len(Q), len(exit_states)))
 
+
         
-        for _ in range(5):
+        while True:
+
+            W_ = W.copy()
             
             for u in Q:
                 if self.fsa.is_terminal(u):
@@ -48,8 +51,9 @@ class PlanningFSA:
                             e = exit_states[idx]
                             W[uidx][idx] = np.asarray([np.dot(q[e], W[vidx]) for q in self.sfs]).max()
 
+            if np.allclose(W, W_):
+                break
 
-        
         W = {u: W[Q.index(u)] for u in Q}
 
         return W
