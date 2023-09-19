@@ -20,6 +20,11 @@ class FiniteStateAutomaton:
         predicates = nx.get_edge_attributes(self.graph, 'predicate')
         return predicates[edge]
 
+    def get_neighbors(self, node):
+        return list(self.graph.neighbors(node))
+    
+    def is_terminal(self, node):
+        return len(list(self.graph.neighbors(node))) < 1
 
 
 
