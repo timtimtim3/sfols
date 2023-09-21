@@ -192,7 +192,7 @@ class GridEnv(ABC, gym.Env):
         if self.viewer is None:
             from gym.envs.classic_control import rendering
             max_x, max_y = self.MAP.shape
-            square_size = 75
+            square_size = 55
 
             screen_height = square_size * max_x
             screen_width = square_size * max_y
@@ -276,27 +276,19 @@ class Teleport(GridEnv):
         # sanity check
         assert np.allclose(np.sum(self.P, axis=2), 1)
 
-    def custom_render(self, square_map: dict[tuple[int, int]]):
-        for square_coords in square_map:
-            square = square_map[square_coords]
-            # Teleport
-            if square_coords in self.teleport_start:
-                color = [0, 1, 1]
-            else:
-                continue
-            square.set_color(*color)
 
-
-class CoffeeOffice(GridEnv):
-    MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'O2', ' ', ' '],
-                     [' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' '],
-                     [' ', ' ', ' ', ' ', 'X', 'C2', ' ', ' '],
-                     [' ', ' ', ' ', ' ', 'X', ' ', ' ', ' '],
-                     [' ', ' ', '_', ' ', ' ', ' ', ' ', ' '],
-                     ['O1', ' ', ' ', ' ', ' ', ' ', ' ', ' '], ])
+class DeliveryMini(GridEnv):
     
-    PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2']
+    MAP = np.array([['O', 'O', ' ', 'O', 'O', ' ', 'O', 'O', ],
+                    ['O', 'O', 'B', 'O', 'O', ' ', 'O', 'O', ],
+                    [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ],
+                    ['O', 'O', ' ', 'O', 'O', ' ', 'O', 'O', ],
+                    ['O', 'O', ' ', 'O', 'O', ' ', 'O', 'O', ],
+                    [' ', 'A', ' ', ' ', ' ', ' ', ' ', ' ', ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', 'O', ],
+                    ['O', 'O', 'O', 'H', 'O', 'O', 'O', 'O', ],])
     
+    PHI_OBJ_TYPES = ['A', 'B', 'H']
     
     """
     A simplified version of the office environment introduced in [1].
@@ -305,13 +297,128 @@ class CoffeeOffice(GridEnv):
     [1] Icarte, RT, et al. "Reward Machines: Exploiting Reward Function Structure in Reinforcement Learning".
     """
 
-    def __init__(self, add_obj_to_start=False, random_act_prob=0.0):
+    def __init__(self, add_obj_to_start=True, random_act_prob=0.0):
         super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
         self._create_coord_mapping()
         self._create_transition_function()
 
+        exit_states = {}
+        for s in self.object_ids:
+            symbol = self.MAP[s]
+            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
+
+        self.exit_states = exit_states
+
+
     def _create_transition_function(self):
         self._create_transition_function_base()
+
+    def features(self, state, action, next_state):
+        s1 = next_state
+        nc = self.feat_dim
+        phi = np.zeros(nc, dtype=np.float32)
+        if s1 in self.object_ids:
+            y, x = s1
+            object_index = self.all_objects[self.MAP[y, x]]
+            phi[object_index] = 1.
+        elif self.MAP[s1] == "O":
+            phi[:] = -100
+        
+        return phi
+
+    
+    def custom_render(self, square_map: dict[tuple[int, int]]):
+        for square_coords in square_map:
+            square = square_map[square_coords]
+            # Teleport
+            if self.MAP[square_coords] == 'O' :
+                color = [0, 0, 0]
+            elif self.MAP[square_coords] == 'A' :
+                color = [1, 0, 0]
+            elif self.MAP[square_coords] == 'B' :
+                color = [0, 1, 0]
+            elif self.MAP[square_coords] == 'H' :
+                color = [0.7, 0.3, 0.7]
+            else:
+                continue
+            square.set_color(*color)
+
+
+class Delivery(GridEnv):
+    
+    MAP = np.array([['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'C', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    [' ', 'A', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ','  ', 'B', ' ', ' ', ' ' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', 'H', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],])
+    
+    PHI_OBJ_TYPES = ['A', 'B', 'C', 'H']
+    
+    """
+    A simplified version of the office environment introduced in [1].
+    This simplified version consists of 2 coffee machines and 2 office locations.
+
+    [1] Icarte, RT, et al. "Reward Machines: Exploiting Reward Function Structure in Reinforcement Learning".
+    """
+
+    def __init__(self, add_obj_to_start=True, random_act_prob=0.0):
+        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
+        self._create_coord_mapping()
+        self._create_transition_function()
+
+        exit_states = {}
+        for s in self.object_ids:
+            symbol = self.MAP[s]
+            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
+
+        self.exit_states = exit_states
+
+
+    def _create_transition_function(self):
+        self._create_transition_function_base()
+
+    def features(self, state, action, next_state):
+        s1 = next_state
+        nc = self.feat_dim
+        phi = np.zeros(nc, dtype=np.float32)
+        if s1 in self.object_ids:
+            y, x = s1
+            object_index = self.all_objects[self.MAP[y, x]]
+            phi[object_index] = 1.
+        elif self.MAP[s1] == "O":
+            phi[:] = -100
+        
+        return phi
+
+    
+    def custom_render(self, square_map: dict[tuple[int, int]]):
+        for square_coords in square_map:
+            square = square_map[square_coords]
+            # Teleport
+            if self.MAP[square_coords] == 'O' :
+                color = [0, 0, 0]
+            elif self.MAP[square_coords] == 'A' :
+                color = [1, 0, 0]
+            elif self.MAP[square_coords] == 'B' :
+                color = [0, 1, 0]
+            elif self.MAP[square_coords] == 'H' :
+                color = [0.7, 0.3, 0.7]
+            else:
+                continue
+            square.set_color(*color)
+
+
+
 
 
 class OfficeComplex(GridEnv):
@@ -348,6 +455,44 @@ class OfficeComplex(GridEnv):
 
     def _create_transition_function(self):
         self._create_transition_function_base()
+
+
+
+class ShapesColors(GridEnv):
+    MAP = np.array([ [' ', ' ','S2',  ' ',  ' ', ' ', 'C3', ' '],
+                     [' ', ' ',' ',  ' ',  ' ', ' ', ' ', ' '],
+                     ['C1', ' ',' ',  ' ',  ' ', ' ', ' ', ' '],
+                     [' ', ' ',' ',  ' ',  ' ', ' ', 'S1', ' '],
+                     [' ', ' ',' ',  ' ',  'C2', ' ', ' ', ' '],
+                     [' ', '_',' ',  ' ',  ' ', ' ', ' ', ' '],
+                     [' ', ' ',' ',  ' ',  ' ', ' ', ' ', ' '],
+                     ['S3', ' ',' ',  ' ',  ' ', ' ', ' ', ' '], ])
+    
+    PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2', 'M1', 'M2', 'D1', 'D2']
+    
+    """
+    A simplified version of the office environment introduced in [1].
+    This simplified version consists of 2 coffee machines and 2 office locations.
+
+    [1] Icarte, RT, et al. "Reward Machines: Exploiting Reward Function Structure in Reinforcement Learning".
+    """
+
+    def __init__(self, add_obj_to_start=False, random_act_prob=0.0):
+        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
+        self._create_coord_mapping()
+        self._create_transition_function()
+
+        exit_states = {}
+        for s in self.object_ids:
+            symbol = self.MAP[s]
+            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
+
+        self.exit_states = exit_states
+
+
+    def _create_transition_function(self):
+        self._create_transition_function_base()
+
 
 class Room(GridEnv):
     MAP = np.array([['X', 'X', 'R', 'X', 'X'],

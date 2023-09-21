@@ -13,27 +13,25 @@ class SFFSAValueIteration:
 
         frontier = deque()
         frontier.append(initial_node)
-        Q = list()
+        U = list()
 
         exit_states =self.env.unwrapped.exit_states
 
         while len(frontier):
             n = frontier.popleft()
-            Q.append(n)
+            U.append(n)
             next = [v for v in self.fsa.graph.neighbors(n)]
             for ns in next:
                 if ns not in frontier:
                     frontier.append(ns)
                 
-        W = np.zeros((len(Q), len(exit_states)))
-
-
+        W = np.zeros((len(U), len(exit_states)))
         
         while True:
 
             W_ = W.copy()
             
-            for u in Q:
+            for u in U:
                 if self.fsa.is_terminal(u):
                     continue
                 for v in self.fsa.get_neighbors(u):
@@ -41,7 +39,7 @@ class SFFSAValueIteration:
                     predicate = self.fsa.get_predicate((u, v)) 
                     idxs = self.fsa.symbols_to_phi[predicate]
 
-                    uidx, vidx = Q.index(u), Q.index(v)
+                    uidx, vidx = U.index(u), U.index(v)
                     
 
                     if self.fsa.is_terminal(v): 
@@ -54,6 +52,6 @@ class SFFSAValueIteration:
             if np.allclose(W, W_):
                 break
 
-        W = {u: W[Q.index(u)] for u in Q}
+        W = {u: W[U.index(u)] for u in U}
 
         return W

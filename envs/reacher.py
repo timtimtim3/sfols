@@ -9,7 +9,7 @@ target_positions = list(map(lambda l: np.array(l), [(0.14, 0.0), (-0.14, 0.0), (
 
 class ReacherBulletEnv(BaseBulletEnv):
 
-    def __init__(self, target=(0.14, 0.0), weight=np.array([1.0,0,0,0])):#np.array([1.0,0,0,0,0,0,0,0,0,0,0,0])):
+    def __init__(self, target=(0.14, 0.0), weight=np.array([1.0,0,0,0.0])):#np.array([1.0,0,0,0,0,0,0,0,0,0,0,0])):
         self.robot = ReacherRobot(target)
         BaseBulletEnv.__init__(self, self.robot)
         self._cam_dist = 0.75

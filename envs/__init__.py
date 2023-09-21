@@ -68,19 +68,6 @@ gym.envs.register(
     kwargs={'random_act_prob': 0.5}
 )
 
-gym.envs.register(
-    id='CoffeeOffice-v0',
-    entry_point='envs.grid_envs:CoffeeOffice',
-    max_episode_steps=100,
-)
-
-gym.envs.register(
-    id='CoffeeOffice-v1',
-    entry_point='envs.grid_envs:CoffeeOffice',
-    max_episode_steps=100,
-    kwargs={'random_act_prob': 0.3}
-)
-
 
 gym.envs.register(
     id='OfficeComplex-v0',
@@ -88,6 +75,24 @@ gym.envs.register(
     max_episode_steps=100,
 )
 
+gym.envs.register(
+    id='OfficeComplex-v1',
+    entry_point='envs.grid_envs:OfficeComplex',
+    max_episode_steps=100,
+    kwargs={'random_act_prob': 0.3}
+)
+
+gym.envs.register(
+    id='DeliveryMini-v0',
+    entry_point='envs.grid_envs:DeliveryMini',
+    max_episode_steps=200,
+)
+
+gym.envs.register(
+    id='Delivery-v0',
+    entry_point='envs.grid_envs:Delivery',
+    max_episode_steps=200,
+)
 
 gym.envs.register(
     id='Teleport-v0',
