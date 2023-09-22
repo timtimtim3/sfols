@@ -14,6 +14,9 @@ import os
 from envs.rm import * 
 
 if __name__ == "__main__":
+
+
+    
     seed_everything(42)
     # The idea is, I train in a non-composed environment: this
     # evironment is non-markovian, when the agent attains one of 

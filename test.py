@@ -8,6 +8,7 @@ if __name__ == '__main__':
     env.reset()
 
     print(env.unwrapped.initial)
+    print(env.unwrapped.exit_states)
 
     for _ in range(20):
         print(env.step(env.action_space.sample()))
