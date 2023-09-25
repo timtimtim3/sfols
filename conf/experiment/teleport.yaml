@@ -1,0 +1,6 @@
+# @package _global_
+defaults:
+  - override /algorithm: qvalue_iter
+  - override /env: teleport
+
+seed: 42

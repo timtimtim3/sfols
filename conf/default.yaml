@@ -1,0 +1,8 @@
+defaults:
+  - ols: default
+  - gpi: default
+  - env: ???
+  - algorithm: ???
+
+seed: ???
+max_iter: 30

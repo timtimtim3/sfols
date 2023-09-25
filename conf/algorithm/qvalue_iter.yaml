@@ -1,0 +1,7 @@
+_target_: rl.successor_features.qvalue_iteration.QValueIteration
+env: ???
+gamma: 0.95
+delta: 1e-3
+gpi: None
+use_gpi: True
+log: False
