@@ -49,6 +49,7 @@ class GPI(RLAlgorithm):
                 return action, policy_index
             return action
 
+    # Given obs returns
     def max_q(self, obs, w, tensor=False, exclude=None):
         if tensor:
             with th.no_grad():
@@ -76,25 +77,33 @@ class GPI(RLAlgorithm):
             self.tasks.pop(i)
 
     def learn(self, w, total_timesteps, total_episodes=None, reset_num_timesteps=False, eval_env=None, eval_freq=1000, use_gpi=True, reset_learning_starts=True, new_policy=True, reuse_value_ind=None):
+        # Creates new policy
         if new_policy:
             new_policy = self.algorithm_constructor()
             self.policies.append(new_policy)
+
+        # Adds new w
         self.tasks.append(w)
 
+        # Sets gpi reference of a new policy to self
         self.policies[-1].gpi = self if use_gpi else None
 
+        # Not important - logging
         if self.log:
             self.policies[-1].log = self.log
             self.policies[-1].writer = self.writer
             wandb.config.update(self.policies[-1].get_config())
 
+        # TLDR copies values metrics from previous learned_policies for good initialization
         if len(self.policies) > 1:
+            # Copy steps and episodes for further counting?
             self.policies[-1].num_timesteps = self.policies[-2].num_timesteps
             self.policies[-1].num_episodes = self.policies[-2].num_episodes
             if reset_learning_starts:
                 # to reset exploration schedule
                 self.policies[-1].learning_starts = self.policies[-2].num_timesteps
 
+            # If set to an index copies the q function from previous policy as initialization
             if reuse_value_ind is not None:
                 if hasattr(self.policies[-1], 'q_table'):
                     self.policies[-1].q_table = deepcopy(
@@ -105,8 +114,10 @@ class GPI(RLAlgorithm):
                     self.policies[-1].target_psi_net.load_state_dict(
                         self.policies[reuse_value_ind].psi_net.state_dict())
 
+            # Copy replay buffer
             self.policies[-1].replay_buffer = self.policies[-2].replay_buffer
 
+        # New policy learns using new w
         self.policies[-1].learn(w=w,
                                 total_timesteps=total_timesteps,
                                 total_episodes=total_episodes,

@@ -80,7 +80,7 @@ class SF(RLAlgorithm):
             return int(self.env.action_space.sample())
         else:
             if self.gpi is not None and self.use_gpi:
-                action, self.policy_index = self.gpi.eval(np_obs, w, return_policy_index=True)
+                action, self.policy_index = self.gpi.eval(np_obs, w, return_policy_index=True)  # GPI action
                 return action
             else:
                 return np.argmax(np.dot(self.q_table[obs], w))
@@ -111,13 +111,14 @@ class SF(RLAlgorithm):
             if self.envelope:
                 max_q = self.gpi.max_q(self.next_obs, w)
             else:
-                max_q = self.q_table[next_obs][self.gpi.eval(self.next_obs, w)]
+                max_q = self.q_table[next_obs][self.gpi.eval(self.next_obs, w)]  # GPI used to select next max action
         else:
             max_q = self.q_table[next_obs][np.argmax(np.dot(self.q_table[next_obs], w))]
-        td_error =  self.reward + (1-self.terminal)*self.gamma*max_q - self.q_table[obs][self.action]
+        td_error = self.reward + (1-self.terminal)*self.gamma*max_q - self.q_table[obs][self.action]
         self.q_table[obs][self.action] += self.alpha * td_error
 
-        # Update other policies
+        # Update other learned_policies
+        # D: This should update the policy that was selected in act part  using the same data
         if self.gpi is not None:
             if self.policy_index is not None and self.policy_index != len(self.gpi.policies) - 1:
                 i, pi = self.policy_index, self.gpi.policies[self.policy_index]
