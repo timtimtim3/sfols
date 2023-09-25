@@ -2,7 +2,7 @@ import numpy as np
 import gym
 import wandb as wb
 from rl.successor_features.ols import OLS
-from rl.utils.utils import eval_test_tasks, hypervolume, policy_evaluation_mo, random_weights, seed_everything
+from rl.utils.utils import eval_test_tasks, hypervolume, policy_evaluation_mo, random_weights, seed_everything, policy_eval_exact
 from rl.successor_features.qvalue_iteration import QValueIteration
 from rl.successor_features.gpi import GPI
 import envs
@@ -61,7 +61,9 @@ if __name__ == "__main__":
                         reset_learning_starts=True,
                         reuse_value_ind=ols.get_set_max_policy_index(w))
         
-        value = policy_evaluation_mo(gpi_agent, eval_env, w, rep=5)
+        value = policy_eval_exact(agent=gpi_agent, env=eval_env, w=w)
+
+        # value = policy_evaluation_mo(gpi_agent, eval_env, w, rep=5)  # Do the expectation analytically
         remove_policies = ols.add_solution(
             value, w, gpi_agent=gpi_agent, env=eval_env)
 

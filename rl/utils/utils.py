@@ -106,6 +106,12 @@ def eval_mo(agent, env, w, render=False):
     return np.dot(w, total_vec_reward), np.dot(w, vec_return), total_vec_reward, vec_return
 
 
+def policy_eval_exact(agent, env, w):
+    v = 0
+    for start_state in env.initial:
+        v += agent.max_q(obs=start_state, w=w) / len(env.initial)
+    return v
+
 def policy_evaluation_mo(agent, env, w, rep=5, return_scalarized_value=False):
     """Returns vectorized value of the policy (mean of the returns)"""
     if return_scalarized_value:
