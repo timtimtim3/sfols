@@ -28,9 +28,11 @@ if __name__ == "__main__":
             policy = pkl.load(fp)
 
         print(f"\nPolicy {i}")
-        print(policy["reward"])
+        # print(policy["reward"])
         q = policy["q_table"]
-
+        int_keys = [key for key in q.keys() if isinstance(key, int)]
+        for key in int_keys:
+            del q[key]
         ss = sorted(q.keys())
 
         for obs in ss:
@@ -41,8 +43,13 @@ if __name__ == "__main__":
             print(15 * '--')
         if PLOTS:
             plt.figure(i)
-            ax = plt.subplot((i+1)*100 + 11)
+            ax = plt.subplot(111)
             create_grid_plot(ax=ax, grid=map != 'X')
+            start_map = np.zeros_like(map, dtype=bool)
+            for char in env.PHI_OBJ_TYPES:
+                start_map = np.logical_or(start_map, map == char)
+
+            create_grid_plot(ax=ax, grid=start_map, color_map="YlGn")
             quiv = plot_policy(
                 ax=ax, arrow_data=get_plot_arrow_params(q, policy["w"]), grid=map,
                 values=False, max_index=False
