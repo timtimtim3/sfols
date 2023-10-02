@@ -25,9 +25,9 @@ def main(cfg: DictConfig) -> None:
 
     directory = env.unwrapped.spec.id
 
-    shutil.rmtree(f"learned_policies/{directory}", ignore_errors=True)
+    shutil.rmtree(f"policies/{directory}", ignore_errors=True)
 
-    os.makedirs(f"learned_policies/{directory}", exist_ok=True)
+    os.makedirs(f"policies/{directory}", exist_ok=True)
 
     # def agent_constructor(): return SF(env, **cfg.algorithm)
 
@@ -87,11 +87,11 @@ def main(cfg: DictConfig) -> None:
         d["w"] = ols.ccs[i]
 
 
-        with open(f"learned_policies/{env.unwrapped.spec.id}/discovered_policy_{i + 1}.pkl", "wb") as fp:
+        with open(f"policies/{env.unwrapped.spec.id}/discovered_policy_{i + 1}.pkl", "wb") as fp:
 
             pkl.dump(d, fp)
 
-    # gpi_agent.close_wandb()
+     # gpi_agent.close_wandb()
 
 if __name__ == "__main__":
     main()
