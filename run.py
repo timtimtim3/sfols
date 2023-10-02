@@ -18,8 +18,11 @@ import shutil
 @hydra.main(version_base=None, config_path="conf", config_name="default")
 def main(cfg: DictConfig) -> None:
     seed_everything(cfg.seed)
+    
     env_params = dict(cfg.env)
+
     gym_name = env_params.pop("gym_name")
+
     env = gym.make(gym_name, **env_params)
     eval_env = gym.make(gym_name, **env_params)
 

@@ -25,50 +25,6 @@ gym.envs.register(
     max_episode_steps=100
 )
 
-# Hallway
-gym.envs.register(
-    id='HallwaySingle-v0',
-    entry_point='envs.grid_envs:HallwaySingle',
-    max_episode_steps=100,
-    kwargs={'random_act_prob': 0}
-)
-
-gym.envs.register(
-    id='HallwayNoisy-v1',
-    entry_point='envs.grid_envs:HallwaySingle',
-    max_episode_steps=100,
-    kwargs={'random_act_prob': 0.15}
-)
-
-gym.envs.register(
-    id='HallwayNoisy-v2',
-    entry_point='envs.grid_envs:HallwaySingle',
-    max_episode_steps=100,
-    kwargs={'random_act_prob': 0.5}
-)
-
-gym.envs.register(
-    id='HallwayMultiple-v0',
-    entry_point='envs.grid_envs:HallwayMultiple',
-    max_episode_steps=100,
-    kwargs={'random_act_prob': 0}
-)
-
-gym.envs.register(
-    id='HallwayNoisyMultiple-v1',
-    entry_point='envs.grid_envs:HallwayMultiple',
-    max_episode_steps=100,
-    kwargs={'random_act_prob': 0.15}
-)
-
-gym.envs.register(
-    id='HallwayNoisyMultiple-v2',
-    entry_point='envs.grid_envs:HallwayMultiple',
-    max_episode_steps=100,
-    kwargs={'random_act_prob': 0.5}
-)
-
-
 gym.envs.register(
     id='OfficeComplex-v0',
     entry_point='envs.grid_envs:OfficeComplex',
@@ -82,6 +38,8 @@ gym.envs.register(
     kwargs={'random_act_prob': 0.3}
 )
 
+
+# Delivery
 gym.envs.register(
     id='DeliveryMini-v0',
     entry_point='envs.grid_envs:DeliveryMini',
@@ -94,35 +52,10 @@ gym.envs.register(
     max_episode_steps=200,
 )
 
+# Teleport
 gym.envs.register(
     id='Teleport-v0',
     entry_point='envs.grid_envs:Teleport',
     max_episode_steps=100,
 )
 
-# HierarchicalOffice-v1
-doorways = [((0, 0, 1, 2), (0, 1, 1, 0)), 
-            ((0, 0, 2, 2), (1, 0, 3, 2))]
-
-objects = {(0,0,0,0): "coffee1"}
-
-initial_states = [(0, 0, 1, 1)]
-
-
-
-gym.envs.register(
-    id='HierarchicalOffice-v1',
-    entry_point="envs.hierarchical_office_gridworld:HierarchicalOfficeGridworld",
-    max_episode_steps=100,
-    kwargs={
-
-        "grid_size" : (2,2),
-        "room_size": 5,
-        "doorways": doorways,
-        "initial_states": initial_states,
-        "objects": objects
-
-    }
-
-
-)
