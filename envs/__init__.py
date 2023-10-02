@@ -52,6 +52,14 @@ gym.envs.register(
     max_episode_steps=200,
 )
 
+gym.envs.register(
+    id='DeliveryEval-v0',
+    entry_point='envs.grid_envs:Delivery',
+    kwargs={'add_obj_to_start': False},
+    max_episode_steps=200,
+)
+
+
 # Teleport
 gym.envs.register(
     id='Teleport-v0',

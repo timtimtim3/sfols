@@ -56,7 +56,7 @@ class GridEnv(ABC, gym.Env):
         self.w = np.zeros(self.feat_dim)
         self.action_space = Discrete(4)
         self.observation_space = Box(low=np.zeros(
-            2), high=np.ones(2))
+            2), high=np.ones(2), dtype=np.float32)
         self.seed()
 
     def _create_coord_mapping(self):
@@ -141,7 +141,8 @@ class GridEnv(ABC, gym.Env):
         phi = self.features(old_state, action, new_state)
         reward = np.dot(phi, self.w)
         done = self.is_done(old_state, action, new_state)
-        return self.state_to_array(self.state), reward, done, {'phi': phi}
+        prop = self.MAP[new_state]
+        return self.state_to_array(self.state), reward, done, {'phi': phi, 'proposition':prop}
 
     # ===========================================================================
     # STATE ENCODING FOR DEEP LEARNING
@@ -380,6 +381,10 @@ class Delivery(GridEnv):
         for s in self.object_ids:
             symbol = self.MAP[s]
             exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
+        
+        if not add_obj_to_start:
+            home_state = self.PHI_OBJ_TYPES.index('H')
+            self.initial.append(exit_states[home_state])
 
         self.exit_states = exit_states
 
@@ -541,7 +546,7 @@ class FourRooms(GridEnv):
 
 
 if __name__ == '__main__':
-    env = CoffeeOffice(random_act_prob=0.25)
+    env = OfficeComplex(random_act_prob=0.25)
     gamma = 0.99
     w = np.array([1.0, 0.0])
 

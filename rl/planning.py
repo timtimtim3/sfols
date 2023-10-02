@@ -9,13 +9,13 @@ class SFFSAValueIteration:
         self.fsa =fsa 
         self.sfs =sfs 
 
-    def traverse(self, initial_node):
+    def traverse(self, initial_node, weights, k=10000):
 
         frontier = deque()
         frontier.append(initial_node)
         U = list()
 
-        exit_states =self.env.unwrapped.exit_states
+        exit_states = self.env.unwrapped.exit_states
 
         while len(frontier):
             n = frontier.popleft()
@@ -24,10 +24,12 @@ class SFFSAValueIteration:
             for ns in next:
                 if ns not in frontier:
                     frontier.append(ns)
-                
-        W = np.zeros((len(U), len(exit_states)))
+        if weights is None:       
+            W = np.zeros((len(U), len(exit_states)))
+        else:
+            W = np.asarray(list(weights.values()))
         
-        while True:
+        for _ in range(k):
 
             W_ = W.copy()
             
@@ -41,7 +43,6 @@ class SFFSAValueIteration:
 
                     uidx, vidx = U.index(u), U.index(v)
                     
-
                     if self.fsa.is_terminal(v): 
                         W[uidx][idxs] = 1
                     else:

@@ -1,11 +1,12 @@
-from rl.rm import FiniteStateAutomaton
+from rl.fsa import FiniteStateAutomaton
 import envs 
 import gym
 import os
 import pickle as pkl
 from rl.planning import SFFSAValueIteration as ValueIteration
-from rl import rm
+from rl.task_specifications import *
 import numpy as np
+from envs.wrapper import GridEnvWrapper
 
 def _get_successor_features(dirpath):
 
@@ -22,51 +23,42 @@ def _get_successor_features(dirpath):
 if __name__ == "__main__":
 
     # Read the successor features
-    sfs = _get_successor_features("policies/DeliveryMini-v0")
-
-
+    sfs = _get_successor_features("policies/Delivery-v0")
+    
     # Instantiate the FSA
-    symbols_to_phi = {"A": [0], "B":[1], "H":[2]}
-    fsa = FiniteStateAutomaton(symbols_to_phi)
+    fsa = fsa_delivery1()
 
-    fsa.add_state("u0")
-    fsa.add_state("u1")
-    fsa.add_state("u2")
-    fsa.add_state("u3")
+    env = gym.make("DeliveryEval-v0")
 
-    fsa.add_transition("u0", "u1", "A")
-    fsa.add_transition("u1", "u2", "B")
-    fsa.add_transition("u2", "u3", "H")
+    env = GridEnvWrapper(env, fsa)
 
-    env = gym.make("DeliveryMini-v0")
+    planning = ValueIteration(env.env, fsa, sfs)
+   
+    acc_reward = 0
+    W = None
 
-    env.reset()
+    for _ in range(100):
+        W = planning.traverse("u0", W, k=1)
+        env.reset()
+        acc_reward = 0
 
-    s = env.unwrapped.reset((7,3))
+        for i in range(200):
 
+            (f, state) = env.get_state()
+            
+            w = W[f]
+            qvalues = np.asarray([np.dot(q[state], w) for q in sfs])
 
-    planning = ValueIteration(env, fsa, sfs)
+            action = np.unravel_index(qvalues.argmax(), qvalues.shape)
+            obs, reward, done, phi = env.step(action[1])
+            acc_reward+=reward
 
-    W = planning.traverse("u0")
+            # print(obs, phi["proposition"], acc_reward)
 
-    w = np.asarray([0, 1, 0])
-
-    print(w)
-
-    V = np.zeros((8, 8))
-
-    while True:
-
-        state = tuple(s)
-        qvalues = np.asarray([np.dot(q[state], w) for q in sfs])
-
-        action = np.unravel_index(qvalues.argmax(), qvalues.shape)
-        s, reward, done, phi = env.step(action[1])
-
-        print(state, action[1], qvalues[action])
-
-        if done:
-            break
+            if done:
+                break
+        
+        print(acc_reward)
 
       
 

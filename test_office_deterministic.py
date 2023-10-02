@@ -1,10 +1,10 @@
-from rl.rm import FiniteStateAutomaton
+from rl.fsa import FiniteStateAutomaton
 import envs 
 import gym
 import os
 import pickle as pkl
 from rl.planning import SFFSAValueIteration as ValueIteration
-from rl import rm
+from rl import fsa
 
 def _get_successor_features(dirpath):
 

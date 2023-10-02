@@ -4,7 +4,7 @@
 ## (Personal modifications)
 For our purpose let's consider a toy example to understand which policies constitute the set of policies.
 The hallway environment, depicted in the next figure, has two terminal at both extremes. The agent can only go either way.  
-<img src="hallway.png">
+<img src=".readme_resources/hallway.png">
 
 For the deterministic case in which the next state upon execution of an action corresponds to the expected outcome, we will distinguish two cases:
 - When the initial state is right in the mid-point between the two terminal states.
