@@ -26,7 +26,7 @@ if __name__ == "__main__":
     sfs = _get_successor_features("policies/Delivery-v0")
     
     # Instantiate the FSA
-    fsa = fsa_delivery1()
+    fsa = fsa_delivery3()
 
     env = gym.make("DeliveryEval-v0")
 
