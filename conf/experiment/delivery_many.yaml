@@ -1,0 +1,12 @@
+# @package _global_
+defaults:
+  - override /algorithm: qvalue_iter
+  - override /env: delivery_many
+
+seed: 42
+algorithm:
+  gamma: 0.99
+
+ols:
+  max_value: 1.0
+  min_value: 0.0

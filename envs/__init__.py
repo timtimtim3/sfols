@@ -53,6 +53,12 @@ gym.envs.register(
 )
 
 gym.envs.register(
+    id='DeliveryMany-v0',
+    entry_point='envs.grid_envs:DeliveryMany',
+    max_episode_steps=200,
+)
+
+gym.envs.register(
     id='DeliveryEval-v0',
     entry_point='envs.grid_envs:Delivery',
     kwargs={'add_obj_to_start': False},
