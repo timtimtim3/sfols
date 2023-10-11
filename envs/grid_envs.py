@@ -241,12 +241,12 @@ class Teleport(GridEnv):
                  ])
     PHI_OBJ_TYPES = ['O1', 'O2']
 
-    def __init__(self, random_act_prob=0.0):
+    def __init__(self, random_act_prob=0.0, add_obj_to_start=False):
         """
         Creates a new instance of the coffee environment.
 
         """
-        super().__init__(add_obj_to_start=False, random_act_prob=random_act_prob)
+        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
         self.teleport_start = list()
         self.teleport_ends = list()
 

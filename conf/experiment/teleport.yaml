@@ -4,3 +4,8 @@ defaults:
   - override /env: teleport
 
 seed: 42
+algorithm:
+  gamma: 0.95
+
+env:
+  add_obj_to_start: False

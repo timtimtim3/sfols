@@ -1,5 +1,5 @@
 alpha: 0.05
-gamma: 0.95
+gamma: ???
 initial_epsilon: 1
 final_epsilon: 0.1
 epsilon_decay_steps: 10000

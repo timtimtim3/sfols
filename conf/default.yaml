@@ -1,9 +1,8 @@
 defaults:
-  - _self_
   - ols: default
   - gpi: default
   - env: ???
   - algorithm: ???
 
 seed: ???
-max_iter: 30
+max_iter: 400
