@@ -20,6 +20,7 @@ class GPI(RLAlgorithm):
         self.algorithm_constructor = algorithm_constructor
         self.policies = []
         self.tasks = []
+        self.learned_policies = 0
 
         self.log = log
         if self.log:
@@ -79,7 +80,7 @@ class GPI(RLAlgorithm):
     def learn(self, w, total_timesteps, total_episodes=None, reset_num_timesteps=False, eval_env=None, eval_freq=1000, use_gpi=True, reset_learning_starts=True, new_policy=True, reuse_value_ind=None):
         # Creates new policy
         if new_policy:
-            new_policy = self.algorithm_constructor()
+            new_policy = self.algorithm_constructor(log_prefix=f"policy{self.learned_policies}/")
             self.policies.append(new_policy)
 
         # Adds new w
@@ -91,17 +92,15 @@ class GPI(RLAlgorithm):
         # Not important - logging
         if self.log:
             self.policies[-1].log = self.log
-            self.policies[-1].writer = self.writer
-            wandb.config.update(self.policies[-1].get_config())
 
-        # TLDR copies values metrics from previous learned_policies for good initialization
-        if len(self.policies) > 1:
+        # TLDR copies values metrics from previous policies for good initialization
+        # if len(self.policies) > 1:
             # Copy steps and episodes for further counting?
-            self.policies[-1].num_timesteps = self.policies[-2].num_timesteps
-            self.policies[-1].num_episodes = self.policies[-2].num_episodes
-            if reset_learning_starts:
+            # self.policies[-1].num_timesteps = self.policies[-2].num_timesteps
+            # self.policies[-1].num_episodes = self.policies[-2].num_episodes
+            # if reset_learning_starts:
                 # to reset exploration schedule
-                self.policies[-1].learning_starts = self.policies[-2].num_timesteps
+                # self.policies[-1].learning_starts = self.policies[-2].num_timesteps
 
             # If set to an index copies the q function from previous policy as initialization
             if reuse_value_ind is not None:
@@ -123,7 +122,9 @@ class GPI(RLAlgorithm):
                                 total_episodes=total_episodes,
                                 reset_num_timesteps=reset_num_timesteps,
                                 eval_env=eval_env,
-                                eval_freq=eval_freq)
+                                eval_freq=eval_freq
+                                )
+        self.learned_policies += 1
 
     @property
     def gamma(self):

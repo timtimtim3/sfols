@@ -3,6 +3,7 @@ defaults:
   - gpi: default
   - env: ???
   - algorithm: ???
+  - wandb: default
 
 seed: ???
 max_iter: 400

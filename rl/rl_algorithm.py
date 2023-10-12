@@ -8,7 +8,7 @@ from gym.spaces import Discrete, Box
 
 class RLAlgorithm(ABC):
 
-    def __init__(self, env, device: Union[th.device, str] = 'auto') -> None:
+    def __init__(self, env, device: Union[th.device, str] = 'auto', log_prefix: str = "") -> None:
         self.env = env
         self.observation_dim = self.env.observation_space.shape[0]
         if isinstance(self.env.action_space, Discrete):
@@ -20,6 +20,7 @@ class RLAlgorithm(ABC):
 
         self.num_timesteps = 0
         self.num_episodes = 0
+        self.log_prefix = log_prefix
 
     @abstractmethod
     def eval(self, obs: np.array) -> Union[int, np.array]:
@@ -55,19 +56,3 @@ class RLAlgorithm(ABC):
             np.array: [q(s,a_1),...,q(s,a_n)]
         """
         raise NotImplementedError
-
-    def setup_wandb(self, project_name, experiment_name):
-        self.experiment_name = experiment_name
-        import wandb
-        wandb.init(project=project_name,
-                   sync_tensorboard=True,
-                   config=self.get_config(),
-                   name=self.experiment_name,
-                   monitor_gym=True,
-                   save_code=True)
-        self.writer = SummaryWriter(f"/tmp/{self.experiment_name}")
-
-    def close_wandb(self):
-        import wandb
-        self.writer.close()
-        wandb.finish()
