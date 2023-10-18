@@ -1,5 +1,6 @@
 from collections import deque, defaultdict 
 import numpy as np
+import time as time
 
 class SFFSAValueIteration:
 
@@ -17,19 +18,20 @@ class SFFSAValueIteration:
 
         exit_states = self.env.unwrapped.exit_states
 
-        while len(frontier):
-            n = frontier.popleft()
-            U.append(n)
-            next = [v for v in self.fsa.graph.neighbors(n)]
-            for ns in next:
-                if ns not in frontier:
-                    frontier.append(ns)
+        U = self.fsa.states
+        
         if weights is None:       
             W = np.zeros((len(U), len(exit_states)))
         else:
             W = np.asarray(list(weights.values()))
+
+        
+        times = [0]
+
         
         for _ in range(k):
+
+            start_iter = time.time()
 
             W_ = W.copy()
             
@@ -49,10 +51,16 @@ class SFFSAValueIteration:
                         for idx in idxs:
                             e = exit_states[idx]
                             W[uidx][idx] = np.asarray([np.dot(q[e], W[vidx]) for q in self.sfs]).max()
+            
+            elapsed_time = time.time() - start_iter
+            times.append(elapsed_time)
 
             if np.allclose(W, W_):
                 break
 
         W = {u: W[U.index(u)] for u in U}
 
-        return W
+
+        times = np.cumsum(times)
+
+        return W, times

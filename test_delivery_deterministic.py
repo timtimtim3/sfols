@@ -36,9 +36,11 @@ if __name__ == "__main__":
    
     acc_reward = 0
     W = None
-
+    times = [0]
     for _ in range(100):
-        W = planning.traverse("u0", W, k=1)
+        W, times_ = planning.traverse("u0", W, k=1)
+        times.append(times_[-1])
+        
         env.reset()
         acc_reward = 0
 
@@ -59,8 +61,9 @@ if __name__ == "__main__":
                 break
         
         print(acc_reward)
+    
+    print(np.cumsum(times).tolist())
 
-      
 
 
     # print(np.round(V, 3))
