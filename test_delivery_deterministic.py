@@ -6,7 +6,7 @@ import pickle as pkl
 from rl.planning import SFFSAValueIteration as ValueIteration
 from rl.task_specifications import *
 import numpy as np
-from envs.wrapper import GridEnvWrapper
+from envs.wrappers import GridEnvWrapper
 
 def _get_successor_features(dirpath):
 

@@ -6,3 +6,5 @@ defaults:
 seed: 42
 algorithm:
   gamma: 0.99
+
+eval_env: DeliveryEval-v0

@@ -1,5 +1,12 @@
 from .fsa import FiniteStateAutomaton
 
+def load_fsa(name:str):
+
+    if name == "DeliveryEval-v0-task1":
+        return fsa_delivery1()
+    elif name == "DeliveryEval-v0-task2":
+        return fsa_delivery2()
+
 
 def fsa_office1():
     

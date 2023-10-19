@@ -16,7 +16,7 @@ def main(cfg: DictConfig) -> None:
     # Init Wandb
     run = wandb.init(
         config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),
-        entity=cfg.wandb.entity, project=cfg.wandb.project
+        entity=cfg.wandb.entity, project=cfg.wandb.project, tags=["sfols"]
     )
 
     # Set seeds
@@ -46,9 +46,11 @@ def main(cfg: DictConfig) -> None:
 
 
     for ols_iter in range(cfg.max_iter):
+        
         if ols.ended():
             print("ended at iteration", ols_iter)
             break
+       
         w = ols.next_w()
 
         gpi_agent.learn(w=w,

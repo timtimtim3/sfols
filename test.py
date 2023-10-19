@@ -2,7 +2,7 @@ import gym
 import envs
 from time import sleep
 from rl.task_specifications import * 
-from envs.wrapper import GridEnvWrapper
+from envs.wrappers import GridEnvWrapper
 import random
 from time import sleep
 import numpy as np
