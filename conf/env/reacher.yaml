@@ -1,0 +1,4 @@
+defaults:
+  - grid_env
+
+gym_name: ReacherMultiTask-v0
