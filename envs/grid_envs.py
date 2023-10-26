@@ -496,19 +496,17 @@ class DeliveryMany(GridEnv):
 
 
 
-
-
 class OfficeComplex(GridEnv):
-    MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'O2', ' ', ' '],
-                     [' ', ' ', 'C1', 'X', 'X', 'D2', ' ', ' '],
-                     ['M2', ' ', ' ',  ' ', 'X', 'C2', ' ', ' '],
+    MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'C2', ' ', ' '],
+                     [' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' '],
+                     ['M2', ' ', ' ',  ' ', 'X', 'O2', ' ', ' '],
                      [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
-                     [' ', ' ', 'D1',  ' ',  'X', ' ', ' ', ' '],
-                     [' ', ' ', ' ',  ' ',  ' ', ' ', 'M1', ' '],
+                     [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
+                     [' ', ' ', ' ',  ' ',  ' ', ' ', ' ', ' '],
                      [' ', ' ', '_',  ' ',  ' ', ' ', ' ', ' '],
-                     ['O1', ' ',' ',  ' ',  ' ', ' ', ' ', ' '], ])
+                     ['O1', ' ',' ',  ' ',  ' ', ' ', ' ', 'M1'], ])
     
-    PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2', 'M1', 'M2', 'D1', 'D2']
+    PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2', 'M1', 'M2']
     
     """
     A simplified version of the office environment introduced in [1].
@@ -532,8 +530,6 @@ class OfficeComplex(GridEnv):
 
     def _create_transition_function(self):
         self._create_transition_function_base()
-
-
 
 class ShapesColors(GridEnv):
     MAP = np.array([ [' ', ' ','S2',  ' ',  ' ', ' ', 'C3', ' '],

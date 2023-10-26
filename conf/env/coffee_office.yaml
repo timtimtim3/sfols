@@ -1,4 +1,0 @@
-defaults:
-  - grid_env
-
-gym_name: coffee_office

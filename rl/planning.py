@@ -10,11 +10,7 @@ class SFFSAValueIteration:
         self.fsa =fsa 
         self.sfs =sfs 
 
-    def traverse(self, initial_node, weights, k=10000):
-
-        frontier = deque()
-        frontier.append(initial_node)
-        U = list()
+    def traverse(self, weights, k=10000):
 
         exit_states = self.env.unwrapped.exit_states
 
@@ -36,12 +32,14 @@ class SFFSAValueIteration:
             W_ = W.copy()
             
             for u in U:
+                
                 if self.fsa.is_terminal(u):
                     continue
                 for v in self.fsa.get_neighbors(u):
+                    
                     # Get the predicates satisfied by the transition
-                    predicate = self.fsa.get_predicate((u, v)) 
-                    idxs = self.fsa.symbols_to_phi[predicate]
+                    propositions = self.fsa.get_predicate((u, v)) 
+                    idxs = [self.fsa.symbols_to_phi[prop] for prop in propositions]
 
                     uidx, vidx = U.index(u), U.index(v)
                     

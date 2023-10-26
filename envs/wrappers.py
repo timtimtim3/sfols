@@ -31,7 +31,7 @@ class GridEnvWrapper(gym.Env):
         f_state = self.fsa_state
 
         neighbors = self.fsa.get_neighbors(self.fsa_state)
-        satisfied = [self.fsa.get_predicate((f_state, n)) == prop for n in neighbors]
+        satisfied = [prop in self.fsa.get_predicate((f_state, n)) for n in neighbors]
 
         next_fsa_state = None
 

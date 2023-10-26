@@ -6,15 +6,19 @@ def load_fsa(name:str):
         return fsa_delivery1()
     elif name == "DeliveryEval-v0-task2":
         return fsa_delivery2()
+    elif name == "OfficeComplexEval-v0-task1":
+        return fsa_office1()
 
 
 def fsa_office1():
     
-    symbols_to_phi = {"COFFEE": [0, 1], 
-                      "OFFICE":[2, 3], 
-                      "MAIL": [4, 5],
-                      "DECORATION":[6, 7]}
-    
+    symbols_to_phi =  {"C1": 0, 
+                       "C2": 1, 
+                       "O1": 2, 
+                       "O2": 3, 
+                       "M1": 4, 
+                       "M2": 5, }
+
     fsa = FiniteStateAutomaton(symbols_to_phi)
 
     fsa.add_state("u0")
@@ -23,11 +27,11 @@ def fsa_office1():
     fsa.add_state("u3")
     fsa.add_state("u4")
 
-    fsa.add_transition("u0", "u1", "COFFEE")
-    fsa.add_transition("u0", "u2", "MAIL")
-    fsa.add_transition("u1", "u3", "MAIL")
-    fsa.add_transition("u2", "u3", "COFFEE")
-    fsa.add_transition("u3", "u4", "OFFICE")
+    fsa.add_transition("u0", "u1", ["C1", "C2"])
+    fsa.add_transition("u0", "u2", ["M1", "M2"])
+    fsa.add_transition("u1", "u3", ["M1", "M2"])
+    fsa.add_transition("u2", "u3", ["C1", "C2"])
+    fsa.add_transition("u3", "u4", ["O1", "O2"])
 
     return fsa
 

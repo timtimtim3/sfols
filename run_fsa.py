@@ -9,6 +9,7 @@ import argparse
 from envs.wrappers import GridEnvWrapper
 from rl.task_specifications import load_fsa
 from rl.planning import SFFSAValueIteration as ValueIteration
+from datetime import datetime
 
 def get_successor_features(dirpath):
 
@@ -33,8 +34,8 @@ def evaluate(env, sfs, W, num_steps = 100):
         w = W[f]
         qvalues = np.asarray([np.dot(q[state], w) for q in sfs])
 
-        action = np.unravel_index(qvalues.argmax(), qvalues.shape)
-        obs, reward, done, phi = env.step(action[1])
+        action = np.unravel_index(qvalues.argmax(), qvalues.shape)[1]
+        obs, reward, done, phi = env.step(action)
         acc_reward+=reward
 
         if done:
@@ -44,8 +45,6 @@ def evaluate(env, sfs, W, num_steps = 100):
 
 
 def main() -> None:
-
-    tmpdir = ".tmp"
 
 
     parser = argparse.ArgumentParser()
@@ -58,6 +57,8 @@ def main() -> None:
     num_iters = args.num_iters
     task = args.task
     run_name = args.run_name
+
+    tmpdir = ".tmp" + str(datetime.now())
 
     api = wandb.Api()
 
@@ -89,7 +90,6 @@ def main() -> None:
 
 
     # 
-
     newconfig = {
         "num_iters": num_iters,
         "policies_run_name": run_name,
@@ -110,14 +110,17 @@ def main() -> None:
     times = [0]
     for i in range(num_iters):
 
-        W, times_ = planning.traverse("u0", W, k=1)
+        W, times_ = planning.traverse(W, k=1)
+
         time = times_[-1]
         times.append(time)
+        
         acc_reward = evaluate(env, sfs, W, num_steps=200)
 
-        run.log({'eval/time': np.sum(times),
-                'eval/acc_reward': acc_reward,
-                'iteration': i})
+
+        run.log({'metrics/evaluation/time': np.sum(times),
+                'metrics/evaluation/acc_reward': acc_reward,
+                'metrics/evaluation/iter': i})
 
     shutil.rmtree(tmpdir)
     wandb.finish()
