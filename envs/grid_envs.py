@@ -495,6 +495,84 @@ class DeliveryMany(GridEnv):
             square.set_color(*color)
 
 
+class OfficeRS(GridEnv):
+    MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'C2', ' ', ' '],
+                     [' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' '],
+                     ['M2', ' ', ' ',  ' ', 'X', 'O2', ' ', ' '],
+                     [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
+                     [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
+                     [' ', ' ', ' ',  ' ',  ' ', ' ', ' ', ' '],
+                     [' ', ' ', '_',  ' ',  ' ', ' ', ' ', ' '],
+                     ['O1', ' ',' ',  ' ',  ' ', ' ', ' ', 'M1'], ])
+    
+    PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2', 'M1', 'M2']
+    
+    """
+    A simplified version of the office environment introduced in [1].
+    This simplified version consists of 2 coffee machines and 2 office locations.
+
+    [1] Icarte, RT, et al. "Reward Machines: Exploiting Reward Function Structure in Reinforcement Learning".
+    """
+
+    def __init__(self, add_obj_to_start=False, random_act_prob=0.0):
+        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
+        self._create_coord_mapping()
+        self._create_transition_function()
+
+        exit_states = {}
+        for s in self.object_ids:
+            symbol = self.MAP[s]
+            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
+
+        self.exit_states = exit_states
+
+
+    def _create_transition_function(self):
+        self._create_transition_function_base()
+
+    def features(self, state, action, next_state):
+        s1 = next_state
+        nc = self.feat_dim
+        phi = np.zeros(nc, dtype=np.float32)
+        # for e in self.object_ids:
+        #     (y, x) = e
+        #     object_index = self.all_objects[self.MAP[y, x]]
+        phi = self._compute_distance_vector(next_state)
+        
+        if self.MAP[s1] == "X":
+            phi[:] = -100
+
+        return phi
+    
+    def _compute_distance_vector(self, state): 
+
+        s = np.asarray(state)
+        feat = np.zeros(len(self.exit_states), dtype=np.float32)
+
+        for e in self.exit_states:
+            e = self.exit_states[e]
+            idx = self.PHI_OBJ_TYPES.index(self.MAP[e])
+            e = np.asarray(e)
+            # Build the unit vector 
+
+            feat[idx] = 1 - (np.linalg.norm(s - e) / 49)
+    
+        return feat
+    
+    def custom_render(self, square_map: dict[tuple[int, int]]):
+        for square_coords in square_map:
+            square = square_map[square_coords]
+            # Teleport
+            if self.MAP[square_coords].startswith('C') :
+                color = [0, 0, 1]
+            elif self.MAP[square_coords].startswith('O') :
+                color = [1, 0, 0]
+            elif self.MAP[square_coords].startswith('M'):
+                color = [0, 1, 0]
+            else:
+                continue
+            square.set_color(*color)
+
 
 class OfficeComplex(GridEnv):
     MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'C2', ' ', ' '],
@@ -573,6 +651,7 @@ class Room(GridEnv):
                  ['P', '_', '_', '_', 'B'],
                  ['X', '_', '_', '_', 'X'],
                  ['X', 'X', 'Y', 'X', 'X']])
+    
     PHI_OBJ_TYPES = ['P', 'R', 'B', 'Y']
 
     def __init__(self, random_act_prob=0.0):

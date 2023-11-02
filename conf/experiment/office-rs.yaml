@@ -1,0 +1,10 @@
+# @package _global_
+defaults:
+  - override /algorithm: qvalue_iter
+  - override /env: office-rs
+
+seed: 42
+algorithm:
+  gamma: 0.99
+
+eval_env: OfficeRSEval-v0

@@ -43,19 +43,18 @@ def evaluate(env, sfs, W, num_steps = 100):
 
     return acc_reward
 
-
 def main() -> None:
 
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--num_iters", type=int, default=50)
-    parser.add_argument("--task", type=str, default="task1")
+    # parser.add_argument("--task", type=str, default="task1")
     parser.add_argument("--run_name", type=str)
 
 
     args = parser.parse_args()
     num_iters = args.num_iters
-    task = args.task
+    # task = args.task
     run_name = args.run_name
 
     tmpdir = ".tmp" + str(datetime.now())
@@ -78,48 +77,57 @@ def main() -> None:
             file.download(root=tmpdir, replace=True)
 
     sfs = get_successor_features(os.path.join(tmpdir, f"policies/{gym_name}"))
-    
+
+
     # Load environment & fsa
     eval_env_name = config.pop("eval_env")
-    task_name = '-'.join([eval_env_name, task])
-    fsa = load_fsa(task_name)
-
-    env = gym.make(eval_env_name)
-    env = GridEnvWrapper(env, fsa)
-
 
     # 
     newconfig = {
         "num_iters": num_iters,
         "policies_run_name": run_name,
+        "task": "continuous-learning",
     }
 
     run = wandb.init(
         config=newconfig,
         entity="davidguillermo", 
         project="sfcomp",
-        tags=["sf-vi-multiple"]
+        tags=["sf-vi-cl"]
     )
 
+    fsa_names = ["DeliveryEval-v0-task1", 
+                 "DeliveryEval-v0-task2", 
+                 "DeliveryEval-v0-task3",
+                 "DeliveryEval-v0-task4"]
 
-    # Get environment and FSA
-    planning = ValueIteration(env.env, fsa, sfs)
-    W = None
+    offset = 0
     times = [0]
-    for i in range(num_iters):
-
-        W, times_ = planning.traverse(W, k=1)
-
-        time = times_[-1]
-        times.append(time)
+    # Get environment and FSA
+    for fsa_name in fsa_names:
         
-        acc_reward = evaluate(env, sfs, W, num_steps=200)
+        fsa = load_fsa(fsa_name)
+        env = gym.make(eval_env_name)
+        env = GridEnvWrapper(env, fsa)
 
+        planning = ValueIteration(env.env, fsa, sfs)
+        W = None
+       
+        for i in range(num_iters):
 
-        run.log({'metrics/evaluation/time': np.sum(times),
-                'metrics/evaluation/acc_reward': acc_reward,
-                'metrics/evaluation/iter': i})
+            W, times_ = planning.traverse(W, k=1)
 
+            time = times_[-1]
+            times.append(time)
+              
+            acc_reward = evaluate(env, sfs, W, num_steps=200)
+
+            run.log({'metrics/evaluation/time': np.sum(times),
+                    'metrics/evaluation/acc_reward': acc_reward,
+                    'metrics/evaluation/iter': offset+i})
+            
+        offset += i+1
+        
     shutil.rmtree(tmpdir)
     wandb.finish()
 
