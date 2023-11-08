@@ -193,7 +193,7 @@ class GridEnv(ABC, gym.Env):
         if self.viewer is None:
             from gym.envs.classic_control import rendering
             max_x, max_y = self.MAP.shape
-            square_size = 55
+            square_size = 30
 
             screen_height = square_size * max_x
             screen_width = square_size * max_y

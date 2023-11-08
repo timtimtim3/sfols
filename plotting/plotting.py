@@ -155,7 +155,7 @@ def plot_policy_alternative(ax, arrow_data, grid, title_suffix="", values=True, 
 
 
 
-def get_plot_arrow_params(q_table, w):
+def get_plot_arrow_params(q_table, w, grid_env):
     x_pos = []
     y_pos = []
     x_dir = []
@@ -169,13 +169,13 @@ def get_plot_arrow_params(q_table, w):
         print(coords, q_vals, max_index)
 
         x_d = y_d = 0
-        if max_index == 3:
+        if max_index == grid_env.UP:
             y_d = 1
-        elif max_index == 1:
+        elif max_index == grid_env.DOWN:
             y_d = -1
-        elif max_index == 2:
+        elif max_index == grid_env.RIGHT:
             x_d = 1
-        elif max_index == 0:
+        elif max_index == grid_env.LEFT:
             x_d = -1
 
         x_pos.append(coords[1] + 0.5)
