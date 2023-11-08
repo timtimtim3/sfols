@@ -51,7 +51,7 @@ class OLS:
             return weights
 
     def ended(self) -> bool:
-        return len(self.queue) == 0 or self.worst_case_weight_repeated
+        return len(self.queue) == 0 #or self.worst_case_weight_repeated
 
     def add_solution(self, value, w, gpi_agent=None, env=None) -> int:
         self.iteration += 1
@@ -110,6 +110,81 @@ class OLS:
 
         })
         return removed_indx
+
+
+    def check_solution(self, gpi_agent=None, env=None) -> int:
+        W_corner = self.new_corner_weights_new(None)
+
+        print("W_corner", W_corner)
+        for wc in W_corner:
+            priority = self.get_priority(wc, gpi_agent, env)
+            print("improv.", priority)
+            if priority > self.epsilon:
+                self.queue.append((priority, wc))
+        self.queue.sort(key=lambda t: t[0], reverse=True)  # Sort in descending order of priority
+
+        print("ccs:", self.ccs)
+        print("ccs size:", len(self.ccs))
+
+        return len(self.queue)
+
+
+    def new_corner_weights_new(self, v_new: np.ndarray) -> List[np.ndarray]:
+        if len(self.ccs) == 0:
+            return []
+
+        W_new = self.corner_weights_new()
+
+        filter_fn = lambda wc: (wc is not None) and (
+            not any([np.allclose(wc, w_old) for w_old in self.W] + [np.allclose(wc, w_old) for p, w_old in self.queue]))
+        # (np.isclose(np.dot(wc, v_new), self.max_scalarized_value(wc))) and \
+        W_new = list(filter(filter_fn, W_new))
+        W_new = np.unique(W_new, axis=0)
+        return W_new
+
+
+    def corner_weights_new(self):
+        # Based on https://stackoverflow.com/questions/65343771/solve-linear-inequalities
+        A = np.vstack(self.ccs)
+        A = np.round_(A, decimals=4)
+        A = np.concatenate((A, -np.ones(A.shape[0]).reshape(-1, 1)), axis=1)
+
+        bla = np.ones(A.shape[1]).reshape(1, -1)
+        bla[0, -1] = 0
+        A = np.concatenate((A, bla), axis=0)
+        bla = -np.ones(A.shape[1]).reshape(1, -1)
+        bla[0, -1] = 0
+        A = np.concatenate((A, bla), axis=0)
+
+        for i in range(self.m):
+            bla = np.zeros(A.shape[1]).reshape(1, -1)
+            bla[0, i] = -1
+            A = np.concatenate((A, bla), axis=0)
+
+        b = np.zeros(len(self.ccs) + 2 + self.m)
+        b[len(self.ccs)] = 1
+        b[len(self.ccs) + 1] = -1
+
+        import cdd
+        def compute_poly_vertices(A, b):
+            b = b.reshape((b.shape[0], 1))
+            mat = cdd.Matrix(np.hstack([b, -A]), number_type='float')
+            mat.rep_type = cdd.RepType.INEQUALITY
+            P = cdd.Polyhedron(mat)
+            g = P.get_generators()
+            V = np.array(g)
+            vertices = []
+            for i in range(V.shape[0]):
+                if V[i, 0] != 1: continue
+                if i not in g.lin_set:
+                    vertices.append(V[i, 1:])
+            return vertices
+
+        vertices1 = compute_poly_vertices(A, b)
+        corner = []
+        for v in vertices1:
+            corner.append(v[:-1])
+        return corner
 
     def get_priority(self, w, gpi_agent=None, env=None) -> float:
         max_optimistic_value = self.max_value_lp(w)
