@@ -533,6 +533,14 @@ class DoubleSlit(GridEnv):
         self._max_wind = max_wind
         self._create_coord_mapping()
         self._create_transition_function()
+        
+        exit_states = {}
+        for s in self.object_ids:
+            symbol = self.MAP[s]
+            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
+
+        self.exit_states = exit_states
+
 
     def coords_act_transition_distr(self, coords, action):
         row, col = coords

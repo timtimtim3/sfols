@@ -10,6 +10,7 @@ from envs.wrappers import GridEnvWrapper
 from rl.task_specifications import load_fsa
 from rl.planning import SFFSAValueIteration as ValueIteration
 from datetime import datetime
+from rl.utils.utils import seed_everything
 
 def get_successor_features(dirpath):
 
@@ -51,12 +52,16 @@ def main() -> None:
     parser.add_argument("--num_iters", type=int, default=50)
     parser.add_argument("--task", type=str, default="task1")
     parser.add_argument("--run_name", type=str)
+    parser.add_argument("--seed", type=int, default=42)
 
 
     args = parser.parse_args()
     num_iters = args.num_iters
     task = args.task
     run_name = args.run_name
+    seed = args.seed
+
+    seed_everything(seed)
 
     tmpdir = ".tmp" + str(datetime.now())
 
