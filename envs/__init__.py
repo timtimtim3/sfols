@@ -105,3 +105,9 @@ gym.envs.register(
     max_episode_steps=100,
 )
 
+gym.envs.register(
+    id='IceCorridor-v0',
+    entry_point='envs.grid_envs:IceCorridor',
+    max_episode_steps=100,
+)
+
