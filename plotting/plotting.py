@@ -169,9 +169,9 @@ def get_plot_arrow_params(q_table, w, grid_env):
         print(coords, q_vals, max_index)
 
         x_d = y_d = 0
-        if max_index == grid_env.UP:
+        if max_index == grid_env.DOWN:
             y_d = 1
-        elif max_index == grid_env.DOWN:
+        elif max_index == grid_env.UP:
             y_d = -1
         elif max_index == grid_env.RIGHT:
             x_d = 1
