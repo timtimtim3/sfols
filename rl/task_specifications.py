@@ -14,6 +14,24 @@ def load_fsa(name:str):
         return fsa_office1()
     elif name == "OfficeRSEval-v0-task1":
         return fsa_office1()
+    elif name == "DoubleSlitEval-v0-task1":
+        return fsa_double_slit1()
+    
+def fsa_double_slit1():
+    
+    symbols_to_phi =  {"O1": 0, 
+                       "O2": 1}
+
+    fsa = FiniteStateAutomaton(symbols_to_phi)
+
+    fsa.add_state("u0")
+    fsa.add_state("u1")
+    fsa.add_state("u2")
+
+    fsa.add_transition("u0", "u1", ["O1"])
+    fsa.add_transition("u0", "u2", ["O2"])
+
+    return fsa
     
 def fsa_office1():
     

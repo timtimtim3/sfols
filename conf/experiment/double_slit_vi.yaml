@@ -9,3 +9,5 @@ algorithm:
 
 env:
   max_wind: 1
+
+eval_env: DoubleSlitEval-v0
