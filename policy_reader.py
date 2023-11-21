@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
             create_grid_plot(ax=ax, grid=start_map, color_map="YlGn")
             quiv = plot_policy(
-                ax=ax, arrow_data=get_plot_arrow_params(q, policy["w"]), grid=map,
+                ax=ax, arrow_data=get_plot_arrow_params(q, policy["w"], grid_env=env), grid=map,
                 values=False, max_index=False
             )
             # plt.show()
