@@ -97,6 +97,11 @@ gym.envs.register(
    max_episode_steps=300,
 )
 
+gym.envs.register(
+   id='DoubleSlitRS-v0',
+   entry_point='envs.grid_envs:DoubleSlitRS',
+   max_episode_steps=300,
+)
 
 # Teleport
 gym.envs.register(

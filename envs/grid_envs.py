@@ -589,6 +589,44 @@ class DoubleSlit(GridEnv):
         assert np.allclose(np.sum(self.P, axis=2), 1)
 
 
+class DoubleSlitRS(DoubleSlit):
+    def __init__(self, discount: float, random_act_prob=0.0, add_obj_to_start=False, max_wind=1, ):
+        """
+        Creates a new instance of the coffee environment.
+
+        """
+        super().__init__(random_act_prob=0.0, add_obj_to_start=False, max_wind=1)
+        self.discount = discount
+        self._create_potentials()
+
+    def _create_potentials(self):
+        self.potentials = np.zeros((self.s_dim, self.feat_dim))
+        for obj_id in range(self.feat_dim):
+            obj_coords = list(self.object_ids.keys())[obj_id]
+            for s in range(self.s_dim):
+                cell_coords = self.state_to_coords[s]
+                if cell_coords in self.object_ids or cell_coords[1] == 0:
+                    continue
+                diff_y = np.abs(cell_coords[0] - obj_coords[0])
+                diff_x = np.abs(cell_coords[1] - obj_coords[1])
+                dist = diff_y
+
+                remainder = diff_x - diff_y
+                dist += remainder // 2 + remainder % 2
+                self.potentials[s, obj_id] = -dist
+
+    def features(self, state_coords, action, next_state_coords):
+        s = self.coords_to_state[state_coords]
+        s_next = self.coords_to_state[next_state_coords]
+        nc = self.feat_dim
+        phi = np.zeros(nc, dtype=np.float32)
+        if next_state_coords in self.object_ids:
+            y, x = next_state_coords
+            object_index = self.all_objects[self.MAP[y, x]]
+            phi[object_index] = 1.
+        phi = phi + self.discount * self.potentials[s_next] - self.potentials[s]
+        return phi
+
 class OfficeRS(GridEnv):
     MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'C2', ' ', ' '],
                      [' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' '],
