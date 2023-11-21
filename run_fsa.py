@@ -103,7 +103,7 @@ def main() -> None:
         config=newconfig,
         entity="davidguillermo", 
         project="sfcomp",
-        tags=["sf-vi-multiple"]
+        tags=["sf-vi"]
     )
 
 
