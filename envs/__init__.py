@@ -1,5 +1,6 @@
 import gym
 
+# ANCHOR: Base SFOLS papers
 gym.envs.register(
     id='DeepSeaTreasure-v0',
     entry_point='envs.dst:DeepSeaTreasure',
@@ -25,6 +26,8 @@ gym.envs.register(
     max_episode_steps=100
 )
 
+
+# ANCHOR: Office environments
 gym.envs.register(
     id='OfficeComplex-v0',
     entry_point='envs.grid_envs:OfficeComplex',
@@ -58,8 +61,7 @@ gym.envs.register(
     kwargs={'random_act_prob': 0.3}
 )
 
-
-# Delivery
+# ANCHOR: Delivery environments
 gym.envs.register(
     id='DeliveryMini-v0',
     entry_point='envs.grid_envs:DeliveryMini',
@@ -85,18 +87,35 @@ gym.envs.register(
     max_episode_steps=200,
 )
 
+# ANCHOR: DoubleSlit environments
 gym.envs.register(
-   id='DoubleSlit-v0',
-   entry_point='envs.grid_envs:DoubleSlit',
-   max_episode_steps=300,
+    id='DoubleSlit-v0',
+    entry_point='envs.grid_envs:DoubleSlit',
+    max_episode_steps=1000,
 )
 
 gym.envs.register(
-   id='DoubleSlitEval-v0',
-   entry_point='envs.grid_envs:DoubleSlit',
-   max_episode_steps=300,
+    id='DoubleSlit-v1',
+    entry_point='envs.grid_envs:DoubleSlit',
+    max_episode_steps=1000,
+    kwargs={'max_wind': 3},
 )
 
+gym.envs.register(
+    id='DoubleSlitEval-v0',
+    entry_point='envs.grid_envs:DoubleSlit',
+    max_episode_steps=1000,
+    kwargs={
+             'max_wind': 1},
+)
+
+gym.envs.register(
+    id='DoubleSlitEval-v1',
+    entry_point='envs.grid_envs:DoubleSlit',
+    max_episode_steps=1000,
+    kwargs={
+             'max_wind': 3},
+)
 
 # Teleport
 gym.envs.register(
