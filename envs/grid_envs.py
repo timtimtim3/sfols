@@ -589,6 +589,44 @@ class DoubleSlit(GridEnv):
         assert np.allclose(np.sum(self.P, axis=2), 1)
 
 
+class DoubleSlitRS(DoubleSlit):
+    def __init__(self, discount: float, random_act_prob=0.0, add_obj_to_start=False, max_wind=1, ):
+        """
+        Creates a new instance of the coffee environment.
+
+        """
+        super().__init__(random_act_prob=0.0, add_obj_to_start=False, max_wind=1)
+        self.discount = discount
+        self._create_potentials()
+
+    def _create_potentials(self):
+        self.potentials = np.zeros((self.s_dim, self.feat_dim))
+        for obj_id in range(self.feat_dim):
+            obj_coords = list(self.object_ids.keys())[obj_id]
+            for s in range(self.s_dim):
+                cell_coords = self.state_to_coords[s]
+                if cell_coords in self.object_ids or cell_coords[1] == 0:
+                    continue
+                diff_y = np.abs(cell_coords[0] - obj_coords[0])
+                diff_x = np.abs(cell_coords[1] - obj_coords[1])
+                dist = diff_y
+
+                remainder = diff_x - diff_y
+                dist += remainder // 2 + remainder % 2
+                self.potentials[s, obj_id] = -dist
+
+    def features(self, state_coords, action, next_state_coords):
+        s = self.coords_to_state[state_coords]
+        s_next = self.coords_to_state[next_state_coords]
+        nc = self.feat_dim
+        phi = np.zeros(nc, dtype=np.float32)
+        if next_state_coords in self.object_ids:
+            y, x = next_state_coords
+            object_index = self.all_objects[self.MAP[y, x]]
+            phi[object_index] = 1.
+        phi = phi + self.discount * self.potentials[s_next] - self.potentials[s]
+        return phi
+
 class OfficeRS(GridEnv):
     MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'C2', ' ', ' '],
                      [' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' '],
@@ -783,11 +821,80 @@ class FourRooms(GridEnv):
     def _create_transition_function(self):
         self._create_transition_function_base()
 
+def make_ice_corridor_map():
+    SHORT_PATH_LENGTH = 4
+    DETOUR_EXTRA_STEPS = 54
+    assert (DETOUR_EXTRA_STEPS % 2) == 0 # Should be even
+    map = [['X','X','X','X','X','X','X']]
+    map.append(['X',' ','O1','TS','O2',' ','X'])
+    for _ in range(SHORT_PATH_LENGTH - 1):
+        map.append(['X', ' ', 'X', ' ', 'X', ' ', 'X'])
+    map.append(['X', ' ', 'X', '_', 'X', ' ', 'X'])
+    for _ in range((DETOUR_EXTRA_STEPS - 4) // 2):
+        map.append(['X', ' ', 'X', ' ', 'X', ' ', 'X'])
+    map.append(['X', ' ', ' ', ' ', ' ', ' ', 'X'])
+    map.append(['X', 'X', 'X', 'X', 'X', 'X', 'X'])
+    return np.array(map)
+
+
+class IceCorridor(GridEnv):
+    MAP = make_ice_corridor_map()
+    PHI_OBJ_TYPES = ['O1', 'O2']
+
+    def __init__(self, random_act_prob=0.0, add_obj_to_start=False):
+        """
+        Creates a new instance of the coffee environment.
+
+        """
+        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
+        self.ice_start = list()
+        self.ice_end = list()
+
+        # Add teleport
+        for c in range(self.width):
+            for r in range(self.height):
+                if self.MAP[r, c] == 'TS':
+                    self.ice_start.append((r, c))
+                elif self.MAP[r, c] in {'O1', 'O2'}:
+                    self.ice_end.append((r, c))
+
+        self._create_coord_mapping()
+        self._create_transition_function()
+
+    def custom_render(self, square_map: dict[tuple[int, int]]):
+        for square_coords in square_map:
+            square = square_map[square_coords]
+            # Teleport
+            if self.MAP[square_coords] == 'TS':
+                color = [1, 0, 0]
+            if self.MAP[square_coords] == '_':
+                color = [0, 1, 0]
+            else:
+                continue
+            square.set_color(*color)
+
+    def _create_transition_function(self):
+        # Basic grid env transitions
+        self. _create_transition_function_base()
+
+        # Specific teleport addition
+        teleport_state = self.coords_to_state[self.ice_start[0]]
+        for start_s in range(self.s_dim):
+            for a in range(self.a_dim):
+                if self.P[start_s, a, teleport_state] >= 0:
+                    for i in self.ice_end:
+                        self.P[start_s, a, self.coords_to_state[i]] += 1.0/len(self.object_ids) * self.P[start_s, a, teleport_state]
+                    self.P[start_s, a, teleport_state] = 0
+
+        # sanity check
+        assert np.allclose(np.sum(self.P, axis=2), 1)
+
+
 
 
 
 if __name__ == '__main__':
-    env = OfficeComplex(random_act_prob=0.25)
+    env = IceCorridor(random_act_prob=0)
     gamma = 0.99
     w = np.array([1.0, 0.0])
 

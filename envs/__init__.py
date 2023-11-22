@@ -115,12 +115,21 @@ gym.envs.register(
     max_episode_steps=1000,
     kwargs={
              'max_wind': 3},
+   id='DoubleSlitRS-v0',
+   entry_point='envs.grid_envs:DoubleSlitRS',
+   max_episode_steps=300,
 )
 
 # Teleport
 gym.envs.register(
     id='Teleport-v0',
     entry_point='envs.grid_envs:Teleport',
+    max_episode_steps=100,
+)
+
+gym.envs.register(
+    id='IceCorridor-v0',
+    entry_point='envs.grid_envs:IceCorridor',
     max_episode_steps=100,
 )
 
