@@ -125,6 +125,7 @@ def main() -> None:
                 'metrics/evaluation/acc_reward': acc_reward,
                 'metrics/evaluation/iter': i})
 
+    print(W)
     shutil.rmtree(tmpdir)
     wandb.finish()
 

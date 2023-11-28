@@ -21,44 +21,51 @@ class SFFSAValueIteration:
         else:
             W = np.asarray(list(weights.values()))
 
-        
-        times = [0]
-
+        timemarks = [0]
         
         for _ in range(k):
 
-            start_iter = time.time()
+            start_time = time.time()
 
-            W_ = W.copy()
+            W_old = W.copy()
             
-            for u in U:
+            for (uidx, u) in enumerate(U):
                 
                 if self.fsa.is_terminal(u):
                     continue
-                for v in self.fsa.get_neighbors(u):
-                    
+                
+                weights = []
+
+                for (vidx, v) in enumerate(U):
+
+                    if not self.fsa.graph.has_edge(u, v):
+                        continue
+
+                    w = np.zeros((len(exit_states)))
+
                     # Get the predicates satisfied by the transition
                     propositions = self.fsa.get_predicate((u, v)) 
                     idxs = [self.fsa.symbols_to_phi[prop] for prop in propositions]
 
-                    uidx, vidx = U.index(u), U.index(v)
-                    
                     if self.fsa.is_terminal(v): 
-                        W[uidx][idxs] = 1
+                        w[idxs] = 1
                     else:
                         for idx in idxs:
                             e = exit_states[idx]
-                            W[uidx][idx] = np.asarray([np.dot(q[e], W[vidx]) for q in self.sfs]).max()
-            
-            elapsed_time = time.time() - start_iter
-            times.append(elapsed_time)
+                            w[idx] = np.asarray([np.dot(q[e], W[vidx]) for q in self.sfs]).max()
 
-            if np.allclose(W, W_):
+                    weights.append(w)                   
+                
+                weights = np.asarray(weights)
+
+                W[uidx] = np.sum(weights, axis=0)
+            
+            elapsed_time = time.time() - start_time
+            timemarks.append(elapsed_time)
+
+            if np.allclose(W, W_old):
                 break
 
         W = {u: W[U.index(u)] for u in U}
 
-
-        times = np.cumsum(times)
-
-        return W, times
+        return W, np.cumsum(timemarks)
