@@ -31,7 +31,7 @@ gym.envs.register(
 gym.envs.register(
     id='OfficeComplex-v0',
     entry_point='envs.grid_envs:OfficeComplex',
-    max_episode_steps=100,
+    max_episode_steps=200,
 )
 
 gym.envs.register(
@@ -44,7 +44,7 @@ gym.envs.register(
 gym.envs.register(
     id='OfficeRS-v0',
     entry_point='envs.grid_envs:OfficeRS',
-    max_episode_steps=100,
+    max_episode_steps=200,
 )
 
 gym.envs.register(
@@ -57,7 +57,7 @@ gym.envs.register(
 gym.envs.register(
     id='OfficeComplex-v1',
     entry_point='envs.grid_envs:OfficeComplex',
-    max_episode_steps=100,
+    max_episode_steps=200,
     kwargs={'random_act_prob': 0.3}
 )
 

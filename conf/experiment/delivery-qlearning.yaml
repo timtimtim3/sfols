@@ -1,0 +1,11 @@
+# @package _global_
+defaults:
+  - override /algorithm: sf
+  - override /env: delivery
+
+seed: 42
+algorithm:
+  gamma: 0.99
+
+eval_env: DeliveryEval-v0
+task: task1

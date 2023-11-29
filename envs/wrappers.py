@@ -42,7 +42,7 @@ class GridEnvWrapper(gym.Env):
             next_fsa_state = f_state
 
         if self.env.MAP[state] == "O":
-            return (self.fsa_state, state), -100, True, {"proposition" : prop}
+            return (self.fsa_state, state), -100, False, {"proposition" : prop}
 
         self.fsa_state = next_fsa_state
 

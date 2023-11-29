@@ -1,0 +1,13 @@
+# @package _global_
+defaults:
+  - override /algorithm: qvalue_iter
+  - override /env: double_slit1
+
+seed: 42
+algorithm:
+  gamma: 0.95
+
+env:
+  max_wind: 1
+
+eval_env: DoubleSlitEval-v1

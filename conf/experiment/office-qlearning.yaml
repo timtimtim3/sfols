@@ -1,0 +1,11 @@
+# @package _global_
+defaults:
+  - override /algorithm: sf
+  - override /env: office
+
+seed: 42
+algorithm:
+  gamma: 0.99
+
+eval_env: OfficeComplexEval-v0
+task: task1
