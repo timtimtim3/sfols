@@ -37,6 +37,10 @@ def main(cfg: DictConfig) -> None:
     eval_env = gym.make(cfg.eval_env)
     task = cfg.task
 
+    task_name = '-'.join([eval_env.unwrapped.spec.id, task])
+    fsa = load_fsa(task_name) # Load FSA
+    eval_env = GridEnvWrapper(eval_env, fsa)
+
     # For saving
     directory = env.unwrapped.spec.id
     shutil.rmtree(f"policies/{directory}", ignore_errors=True)
@@ -64,6 +68,7 @@ def main(cfg: DictConfig) -> None:
         gpi_agent.learn(w=w,
                         eval_env=test_env,
                         reuse_value_ind=ols.get_set_max_policy_index(w),
+                        fsa_env = eval_env,
                         **cfg.gpi.learn
                         )
 
@@ -75,9 +80,9 @@ def main(cfg: DictConfig) -> None:
 
         gpi_agent.delete_policies(remove_policies)
 
-        eval_reward = eval_on_fsa(eval_env, task, gpi_agent.policies)
+        # eval_reward = eval_on_fsa(eval_env, task, gpi_agent.policies)
         
-        wandb.log({"fsa_reward": eval_reward,})
+        # wandb.log({"fsa_reward": eval_reward,})
         
     for i, pi in enumerate(gpi_agent.policies):
         d = vars(pi)
@@ -90,41 +95,41 @@ def main(cfg: DictConfig) -> None:
 
 
 
-def evaluate(env, sfs, W, num_steps = 100):
+# def evaluate(env, sfs, W, num_steps = 100):
     
-    env.reset()
-    acc_reward = 0
+#     env.reset()
+#     acc_reward = 0
 
-    for _ in range(num_steps):
+#     for _ in range(num_steps):
 
-        (f, state) = env.get_state()
-        w = W[f]
-        qvalues = np.asarray([np.dot(q[state], w) for q in sfs])
+#         (f, state) = env.get_state()
+#         w = W[f]
+#         qvalues = np.asarray([np.dot(q[state], w) for q in sfs])
 
-        action = np.unravel_index(qvalues.argmax(), qvalues.shape)[1]
-        obs, reward, done, phi = env.step(action)
-        acc_reward+=reward
+#         action = np.unravel_index(qvalues.argmax(), qvalues.shape)[1]
+#         obs, reward, done, phi = env.step(action)
+#         acc_reward+=reward
 
-        if done:
-            break
+#         if done:
+#             break
 
-    return acc_reward
+#     return acc_reward
 
-def eval_on_fsa(env, task, policies):
+# def eval_on_fsa(env, task, policies):
 
-    task_name = task_name = '-'.join([env.unwrapped.spec.id, task])
+#     task_name = '-'.join([env.unwrapped.spec.id, task])
 
-    sfs = [policy.q_table for policy in policies]
+#     sfs = [policy.q_table for policy in policies]
 
-    fsa = load_fsa(task_name) # Load FSA
+#     fsa = load_fsa(task_name) # Load FSA
 
-    env = GridEnvWrapper(env, fsa)
+#     env = GridEnvWrapper(env, fsa)
 
-    planning = ValueIteration(env.env, fsa, sfs)
-    W, times_ = planning.traverse(None, k=15)
-    acc_reward = evaluate(env, sfs, W, num_steps=200)
+#     planning = ValueIteration(env, sfs)
+#     W, _ = planning.traverse(None, k=15)
+#     acc_reward = evaluate(env, sfs, W, num_steps=200)
 
-    return acc_reward
+#     return acc_reward
 
 if __name__ == "__main__":
     main()

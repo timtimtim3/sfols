@@ -8,7 +8,7 @@ from rl.utils.prioritized_buffer import PrioritizedReplayBuffer
 import wandb
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import sys
 
 class SF(RLAlgorithm):
 
@@ -209,7 +209,16 @@ class SF(RLAlgorithm):
                 'per' : self.per,
                 }
     
-    def learn(self, total_timesteps, total_episodes=None, reset_num_timesteps=True, eval_env=None, eval_freq=1000, w=np.array([1.0,0.0])):
+    def learn(self, total_timesteps,
+               total_episodes=None,
+                 reset_num_timesteps=True,
+                   eval_env=None,
+                     eval_freq=50,
+                       w=np.array([1.0,0.0]),
+                        fsa_env = None,
+                         policies = []
+                         ):
+        
         episode_reward = 0.0
         episode_length = 0
         episode_vec_reward = np.zeros(w.shape[0])
@@ -244,10 +253,15 @@ class SF(RLAlgorithm):
             episode_reward += (self.gamma ** episode_length) * reward
             episode_vec_reward += (self.gamma ** episode_length) * info['phi']
             episode_length += 1
+            
             if done:
                 self.obs, done = self.env.reset(), False
                 num_episodes += 1
                 self.num_episodes += 1
+
+                if num_episodes % eval_freq == 0:
+                    fsa_reward = self.evaluate_fsa(fsa_env, policies)
+                    wandb.log({"fsa_reward": fsa_reward})
 
                 if num_episodes % 1000 == 0:
                     print(f"Episode: {self.num_episodes} Step: {self.num_timesteps}, Ep. Total Reward: {episode_reward}, {episode_vec_reward}")
@@ -263,6 +277,45 @@ class SF(RLAlgorithm):
                 episode_reward = 0.0
                 episode_vec_reward = np.zeros(w.shape[0])
                 episode_length = 0
+            
             else:
                 self.obs = self.next_obs
         self.w = w
+
+
+    def evaluate_fsa(self, fsa_env, policies):
+
+        # Custom function to evaluate the so-far computed CCS,
+        # on a given FSA.
+        
+        sys.path.append("..")
+
+        from ..planning import SFFSAValueIteration as VI
+       
+        def evaluate(env, sfs, W, num_steps = 100):
+    
+            env.reset()
+            acc_reward = 0
+
+            for _ in range(num_steps):
+
+                (f, state) = env.get_state()
+                w = W[f]
+                qvalues = np.asarray([np.dot(q[state], w) for q in sfs])
+                action = np.random.choice(np.argwhere(qvalues == np.amax(qvalues))[:, 1])
+
+                _, reward, done, _ = env.step(action)
+                acc_reward+=reward
+
+                if done:
+                    break
+
+            return acc_reward
+        
+        sfs = [self.q_table] + policies
+    
+        planning = VI(fsa_env, sfs)
+        W, _ = planning.traverse(None, k=15)
+        acc_reward = evaluate(fsa_env, sfs, W, num_steps=200)
+
+        return acc_reward

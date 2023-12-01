@@ -77,7 +77,17 @@ class GPI(RLAlgorithm):
             self.policies.pop(i)
             self.tasks.pop(i)
 
-    def learn(self, w, total_timesteps, total_episodes=None, reset_num_timesteps=False, eval_env=None, eval_freq=1000, use_gpi=True, reset_learning_starts=True, new_policy=True, reuse_value_ind=None):
+    def learn(self, 
+              w, 
+              total_timesteps,
+                total_episodes=None,
+                  reset_num_timesteps=False,
+                    eval_env=None, eval_freq=1000,
+                      use_gpi=True,
+                        reset_learning_starts=True,
+                          new_policy=True,
+                            reuse_value_ind=None,
+                                fsa_env = None):
         # Creates new policy
         if new_policy:
             new_policy = self.algorithm_constructor(log_prefix=f"policy{self.learned_policies}/")
@@ -116,14 +126,18 @@ class GPI(RLAlgorithm):
             # Copy replay buffer
             self.policies[-1].replay_buffer = self.policies[-2].replay_buffer
 
+        ccs_policies = [p.q_table for p in self.policies[:-1]]
         # New policy learns using new w
         self.policies[-1].learn(w=w,
                                 total_timesteps=total_timesteps,
                                 total_episodes=total_episodes,
                                 reset_num_timesteps=reset_num_timesteps,
                                 eval_env=eval_env,
-                                eval_freq=eval_freq
+                                eval_freq=eval_freq,
+                                fsa_env = fsa_env,
+                                policies = ccs_policies
                                 )
+        
         self.learned_policies += 1
 
     @property

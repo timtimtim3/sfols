@@ -1,18 +1,18 @@
-from collections import deque, defaultdict 
 import numpy as np
 import time as time
 
 class SFFSAValueIteration:
 
-    def __init__(self, env, fsa, sfs) -> None:
+    def __init__(self, env, sfs) -> None:
         
-        self.env =env 
-        self.fsa =fsa 
-        self.sfs =sfs 
+        self.env = env 
+        self.fsa = self.env.fsa 
+        self.sfs = sfs 
+        self.exit_states = self.env.exit_states
 
     def traverse(self, weights, k=10000):
 
-        exit_states = self.env.unwrapped.exit_states
+        exit_states = self.exit_states
 
         U = self.fsa.states
         

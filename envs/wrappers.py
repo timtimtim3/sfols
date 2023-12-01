@@ -9,6 +9,7 @@ class GridEnvWrapper(gym.Env):
         self.env = env 
         self.fsa = fsa
         self.fsa_init_state = fsa_init_state
+        self.exit_states = self.env.unwrapped.exit_states
 
     def get_state(self):
 
@@ -42,7 +43,7 @@ class GridEnvWrapper(gym.Env):
             next_fsa_state = f_state
 
         if self.env.MAP[state] == "O":
-            return (self.fsa_state, state), -100, False, {"proposition" : prop}
+            return (self.fsa_state, state), -1000, True, {"proposition" : prop}
 
         self.fsa_state = next_fsa_state
 
