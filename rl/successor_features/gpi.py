@@ -21,12 +21,20 @@ class GPI(RLAlgorithm):
         self.policies = []
         self.tasks = []
         self.learned_policies = 0
+        self.num_timesteps = 0
 
         self.log = log
         if self.log:
             self.setup_wandb(project_name, experiment_name)
 
     def eval(self, obs, w, return_policy_index=False, exclude=None) -> int:
+        """
+        
+            This takes in an observation and a weight vector and returns an action.
+            What this actually returns in the GPI policy given the current CCS.
+        
+        """
+        
         if not hasattr(self.policies[0], 'q_table'):
             if isinstance(obs, np.ndarray):
                 obs = th.tensor(obs).float().to(self.device)
@@ -90,7 +98,7 @@ class GPI(RLAlgorithm):
                                 fsa_env = None):
         # Creates new policy
         if new_policy:
-            new_policy = self.algorithm_constructor(log_prefix=f"policy{self.learned_policies}/")
+            new_policy = self.algorithm_constructor(log_prefix=f"policies/policy{self.learned_policies}/")
             self.policies.append(new_policy)
 
         # Adds new w
@@ -113,30 +121,26 @@ class GPI(RLAlgorithm):
                 # self.policies[-1].learning_starts = self.policies[-2].num_timesteps
 
             # If set to an index copies the q function from previous policy as initialization
-            if reuse_value_ind is not None:
-                if hasattr(self.policies[-1], 'q_table'):
-                    self.policies[-1].q_table = deepcopy(
-                        self.policies[reuse_value_ind].q_table)
-                else:
-                    self.policies[-1].psi_net.load_state_dict(
-                        self.policies[reuse_value_ind].psi_net.state_dict())
-                    self.policies[-1].target_psi_net.load_state_dict(
-                        self.policies[reuse_value_ind].psi_net.state_dict())
+        if reuse_value_ind is not None:
+            if hasattr(self.policies[-1], 'q_table'):
+                self.policies[-1].q_table = deepcopy(
+                    self.policies[reuse_value_ind].q_table)
+            else:
+                self.policies[-1].psi_net.load_state_dict(
+                    self.policies[reuse_value_ind].psi_net.state_dict())
+                self.policies[-1].target_psi_net.load_state_dict(
+                    self.policies[reuse_value_ind].psi_net.state_dict())
 
             # Copy replay buffer
             self.policies[-1].replay_buffer = self.policies[-2].replay_buffer
 
-        ccs_policies = [p.q_table for p in self.policies[:-1]]
         # New policy learns using new w
         self.policies[-1].learn(w=w,
                                 total_timesteps=total_timesteps,
                                 total_episodes=total_episodes,
                                 reset_num_timesteps=reset_num_timesteps,
-                                eval_env=eval_env,
                                 eval_freq=eval_freq,
-                                fsa_env = fsa_env,
-                                policies = ccs_policies
-                                )
+                                fsa_env = fsa_env,)
         
         self.learned_policies += 1
 

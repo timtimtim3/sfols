@@ -4,7 +4,7 @@ init:
   experiment_name: SFOLS
 
 learn:
-  total_timesteps: 150000
+  total_timesteps: 15000
   use_gpi: True
   eval_freq: 500
   reset_num_timesteps: False

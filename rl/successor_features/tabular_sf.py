@@ -212,11 +212,9 @@ class SF(RLAlgorithm):
     def learn(self, total_timesteps,
                total_episodes=None,
                  reset_num_timesteps=True,
-                   eval_env=None,
                      eval_freq=50,
                        w=np.array([1.0,0.0]),
                         fsa_env = None,
-                         policies = []
                          ):
         
         episode_reward = 0.0
@@ -229,7 +227,9 @@ class SF(RLAlgorithm):
 
         self.num_timesteps = 0 if reset_num_timesteps else self.num_timesteps
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
-        for _ in range(1, total_timesteps+1):
+        
+        for timestep in range(1, total_timesteps+1):
+            
             if total_episodes is not None and num_episodes == total_episodes:
                 break
 
@@ -253,18 +253,18 @@ class SF(RLAlgorithm):
             episode_reward += (self.gamma ** episode_length) * reward
             episode_vec_reward += (self.gamma ** episode_length) * info['phi']
             episode_length += 1
+
+            if self.num_timesteps % eval_freq == 0:
+                fsa_reward = self.evaluate_fsa(fsa_env)
+                wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps}, step=self.num_timesteps)
             
             if done:
                 self.obs, done = self.env.reset(), False
                 num_episodes += 1
                 self.num_episodes += 1
 
-                if num_episodes % eval_freq == 0:
-                    fsa_reward = self.evaluate_fsa(fsa_env, policies)
-                    wandb.log({"fsa_reward": fsa_reward})
-
-                if num_episodes % 1000 == 0:
-                    print(f"Episode: {self.num_episodes} Step: {self.num_timesteps}, Ep. Total Reward: {episode_reward}, {episode_vec_reward}")
+                # if num_episodes % 1000 == 0:
+                #     print(f"Episode: {self.num_episodes} Step: {self.num_timesteps}, Ep. Total Reward: {episode_reward}, {episode_vec_reward}")
                 if self.log:
                     log_dict = {
                         f"{self.log_prefix}episode": self.num_episodes,
@@ -283,7 +283,7 @@ class SF(RLAlgorithm):
         self.w = w
 
 
-    def evaluate_fsa(self, fsa_env, policies):
+    def evaluate_fsa(self, fsa_env):
 
         # Custom function to evaluate the so-far computed CCS,
         # on a given FSA.
@@ -292,7 +292,7 @@ class SF(RLAlgorithm):
 
         from ..planning import SFFSAValueIteration as VI
        
-        def evaluate(env, sfs, W, num_steps = 100):
+        def evaluate(env, W, num_steps = 100):
     
             env.reset()
             acc_reward = 0
@@ -301,8 +301,8 @@ class SF(RLAlgorithm):
 
                 (f, state) = env.get_state()
                 w = W[f]
-                qvalues = np.asarray([np.dot(q[state], w) for q in sfs])
-                action = np.random.choice(np.argwhere(qvalues == np.amax(qvalues))[:, 1])
+               
+                action = self.gpi.eval(state, w)
 
                 _, reward, done, _ = env.step(action)
                 acc_reward+=reward
@@ -312,10 +312,10 @@ class SF(RLAlgorithm):
 
             return acc_reward
         
-        sfs = [self.q_table] + policies
+        sfs = [policy.q_table for policy in self.gpi.policies]
     
         planning = VI(fsa_env, sfs)
         W, _ = planning.traverse(None, k=15)
-        acc_reward = evaluate(fsa_env, sfs, W, num_steps=200)
+        acc_reward = evaluate(fsa_env, W, num_steps=200)
 
         return acc_reward
