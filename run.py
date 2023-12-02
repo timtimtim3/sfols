@@ -21,7 +21,9 @@ def main(cfg: DictConfig) -> None:
     # Init Wandb
     run = wandb.init(
         config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),
-        entity=cfg.wandb.entity, project=cfg.wandb.project, tags=["sfols"]
+        entity=cfg.wandb.entity, project=cfg.wandb.project, tags=["sfols"],
+        group="sfols"
+
     )
 
     # Set seeds
