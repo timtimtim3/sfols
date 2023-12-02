@@ -67,6 +67,8 @@ def main(cfg: DictConfig) -> None:
        
         w = ols.next_w()
 
+        print(f"Training {w}")
+
         gpi_agent.learn(w=w,
                         eval_env=test_env,
                         reuse_value_ind=ols.get_set_max_policy_index(w),

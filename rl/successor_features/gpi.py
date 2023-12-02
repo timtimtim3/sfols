@@ -112,15 +112,15 @@ class GPI(RLAlgorithm):
             self.policies[-1].log = self.log
 
         # TLDR copies values metrics from previous policies for good initialization
-        # if len(self.policies) > 1:
+        if len(self.policies) > 1:
             # Copy steps and episodes for further counting?
-            # self.policies[-1].num_timesteps = self.policies[-2].num_timesteps
-            # self.policies[-1].num_episodes = self.policies[-2].num_episodes
-            # if reset_learning_starts:
+            self.policies[-1].num_timesteps = self.policies[-2].num_timesteps
+            self.policies[-1].num_episodes = self.policies[-2].num_episodes
+            if reset_learning_starts:
                 # to reset exploration schedule
-                # self.policies[-1].learning_starts = self.policies[-2].num_timesteps
+                self.policies[-1].learning_starts = self.policies[-2].num_timesteps
 
-            # If set to an index copies the q function from previous policy as initialization
+        # If set to an index copies the q function from previous policy as initialization
         if reuse_value_ind is not None:
             if hasattr(self.policies[-1], 'q_table'):
                 self.policies[-1].q_table = deepcopy(

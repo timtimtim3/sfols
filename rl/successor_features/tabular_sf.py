@@ -106,6 +106,7 @@ class SF(RLAlgorithm):
     def train(self, w: np.array):
         obs = tuple(self.obs)
         next_obs = tuple(self.next_obs)
+        
         if next_obs not in self.q_table:
             self.q_table[next_obs] = np.zeros((self.action_dim, self.phi_dim))
 
@@ -116,6 +117,7 @@ class SF(RLAlgorithm):
                 max_q = self.q_table[next_obs][self.gpi.eval(self.next_obs, w)]  # GPI used to select next max action
         else:
             max_q = self.q_table[next_obs][np.argmax(np.dot(self.q_table[next_obs], w))]
+        
         td_error = self.reward + (1-self.terminal)*self.gamma*max_q - self.q_table[obs][self.action]
         self.q_table[obs][self.action] += self.alpha * td_error
 
@@ -227,7 +229,7 @@ class SF(RLAlgorithm):
 
         self.num_timesteps = 0 if reset_num_timesteps else self.num_timesteps
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
-        
+
         for timestep in range(1, total_timesteps+1):
             
             if total_episodes is not None and num_episodes == total_episodes:
@@ -256,6 +258,7 @@ class SF(RLAlgorithm):
 
             if self.num_timesteps % eval_freq == 0:
                 fsa_reward = self.evaluate_fsa(fsa_env)
+                # print(self, total_timesteps)
                 wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps}, step=self.num_timesteps)
             
             if done:
