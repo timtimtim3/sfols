@@ -7,5 +7,5 @@ seed: 42
 algorithm:
   gamma: 0.99
 
-eval_env: OfficeComplexEval-v0
+eval_env: OfficeEval-v0
 task: task1

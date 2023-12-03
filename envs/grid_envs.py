@@ -230,121 +230,6 @@ class GridEnv(ABC, gym.Env):
     def custom_render(self, square_map: dict[tuple[int, int]]):
         pass
 
-
-class Teleport(GridEnv):
-    MAP = np.array([
-                 [ ' ', ' ', ' ', ' ', 'TS', ' ', ' ', ' ', ' ', ],
-                 [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ],
-                 [ ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ],
-                 [ ' ', ' ', ' ', ' ', '_', ' ', ' ', ' ', ' ', ],
-                 [ 'O1', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'O2', ],
-                 ])
-    PHI_OBJ_TYPES = ['O1', 'O2']
-
-    def __init__(self, random_act_prob=0.0, add_obj_to_start=False):
-        """
-        Creates a new instance of the coffee environment.
-
-        """
-        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
-        self.teleport_start = list()
-        self.teleport_ends = list()
-
-        # Add teleport
-        for c in range(self.width):
-            for r in range(self.height):
-                if self.MAP[r, c] == 'TS':
-                    self.teleport_start.append((r, c))
-                elif self.MAP[r, c] in {'O1', 'O2'}:
-                    self.teleport_ends.append((r, c))
-
-        self._create_coord_mapping()
-        self._create_transition_function()
-
-    def _create_transition_function(self):
-        # Basic grid env transitions
-        self. _create_transition_function_base()
-
-        # Specific teleport addition
-        teleport_state = self.coords_to_state[self.teleport_start[0]]
-        for start_s in range(self.s_dim):
-            for a in range(self.a_dim):
-                if self.P[start_s, a, teleport_state] >= 0:
-                    for i in self.teleport_ends:
-                        self.P[start_s, a, self.coords_to_state[i]] += 1.0/len(self.object_ids) * self.P[start_s, a, teleport_state]
-                    self.P[start_s, a, teleport_state] = 0
-
-        # sanity check
-        assert np.allclose(np.sum(self.P, axis=2), 1)
-
-
-class DeliveryMini(GridEnv):
-    
-    MAP = np.array([['O', 'O', ' ', 'O', 'O', ' ', 'O', 'O', ],
-                    ['O', 'O', 'B', 'O', 'O', ' ', 'O', 'O', ],
-                    [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ],
-                    ['O', 'O', ' ', 'O', 'O', ' ', 'O', 'O', ],
-                    ['O', 'O', ' ', 'O', 'O', ' ', 'O', 'O', ],
-                    [' ', 'A', ' ', ' ', ' ', ' ', ' ', ' ', ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', 'O', ],
-                    ['O', 'O', 'O', 'H', 'O', 'O', 'O', 'O', ],])
-    
-    PHI_OBJ_TYPES = ['A', 'B', 'H']
-    
-    """
-    A simplified version of the office environment introduced in [1].
-    This simplified version consists of 2 coffee machines and 2 office locations.
-
-    [1] Icarte, RT, et al. "Reward Machines: Exploiting Reward Function Structure in Reinforcement Learning".
-    """
-
-    def __init__(self, add_obj_to_start=True, random_act_prob=0.0):
-        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
-        self._create_coord_mapping()
-        self._create_transition_function()
-
-        exit_states = {}
-        for s in self.object_ids:
-            symbol = self.MAP[s]
-            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
-
-        self.exit_states = exit_states
-
-
-    def _create_transition_function(self):
-        self._create_transition_function_base()
-
-    def features(self, state, action, next_state):
-        s1 = next_state
-        nc = self.feat_dim
-        phi = np.zeros(nc, dtype=np.float32)
-        if s1 in self.object_ids:
-            y, x = s1
-            object_index = self.all_objects[self.MAP[y, x]]
-            phi[object_index] = 1.
-        elif self.MAP[s1] == "O":
-            phi[:] = -100
-        
-        return phi
-
-    
-    def custom_render(self, square_map: dict[tuple[int, int]]):
-        for square_coords in square_map:
-            square = square_map[square_coords]
-            # Teleport
-            if self.MAP[square_coords] == 'O' :
-                color = [0, 0, 0]
-            elif self.MAP[square_coords] == 'A' :
-                color = [1, 0, 0]
-            elif self.MAP[square_coords] == 'B' :
-                color = [0, 1, 0]
-            elif self.MAP[square_coords] == 'H' :
-                color = [0.7, 0.3, 0.7]
-            else:
-                continue
-            square.set_color(*color)
-
-
 class Delivery(GridEnv):
     
     MAP = np.array([['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
@@ -421,79 +306,6 @@ class Delivery(GridEnv):
             else:
                 continue
             square.set_color(*color)
-
-
-class DeliveryMany(GridEnv):
-    MAP = np.array([['O', 'O', 'O', ' ', 'O', 'O', 'O', 'H', 'O', 'O', 'O', 'I', 'O', 'O', 'O'],
-                    ['O', 'O', 'O', 'C', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O'],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O'],
-                    [' ', 'D', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'J'],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O'],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O'],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O'],
-                    [' ', 'A', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O'],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O'],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O'],
-                    [' ', 'E', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '  ', ' ', ' ', ' ', ' '],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O'],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'B', 'O', 'O', 'O'],
-                    ['O', 'O', 'O', 'F', 'O', 'O', 'O', 'G', 'O', 'O', 'O', ' ', 'O', 'O', 'O'], ])
-
-    PHI_OBJ_TYPES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-
-    """
-    A simplified version of the office environment introduced in [1].
-    This simplified version consists of 2 coffee machines and 2 office locations.
-
-    [1] Icarte, RT, et al. "Reward Machines: Exploiting Reward Function Structure in Reinforcement Learning".
-    """
-
-    def __init__(self, add_obj_to_start=True, random_act_prob=0.0):
-        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
-        self._create_coord_mapping()
-        self._create_transition_function()
-
-        exit_states = {}
-        for s in self.object_ids:
-            symbol = self.MAP[s]
-            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
-
-        self.exit_states = exit_states
-
-    def _create_transition_function(self):
-        self._create_transition_function_base()
-
-    def features(self, state, action, next_state):
-        s1 = next_state
-        nc = self.feat_dim
-        phi = np.zeros(nc, dtype=np.float32)
-        if s1 in self.object_ids:
-            y, x = s1
-            object_index = self.all_objects[self.MAP[y, x]]
-            phi[object_index] = 1.
-        elif self.MAP[s1] == "O":
-            phi[:] = -100
-
-        return phi
-
-
-    def custom_render(self, square_map: dict[tuple[int, int]]):
-        for square_coords in square_map:
-            square = square_map[square_coords]
-            # Teleport
-            if self.MAP[square_coords] == 'O' :
-                color = [0, 0, 0]
-            elif self.MAP[square_coords] == 'A' :
-                color = [1, 0, 0]
-            elif self.MAP[square_coords] == 'B' :
-                color = [0, 1, 0]
-            elif self.MAP[square_coords] == 'H' :
-                color = [0.7, 0.3, 0.7]
-            else:
-                continue
-            square.set_color(*color)
-
 
 class DoubleSlit(GridEnv):
     MAP = np.array([
@@ -627,111 +439,41 @@ class DoubleSlitRS(DoubleSlit):
         phi = phi + self.discount * self.potentials[s_next] - self.potentials[s]
         return phi
 
-class OfficeRS(GridEnv):
 
-    # MAP = np.array([ ['C1', ' ', ' ', ' ', ' ', 'X', 'C2', ' ', ' ', ' ', ' '],
-                    #  [' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' '],
-                    #  [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-                    #  [' ', ' ', ' ', ' ', ' ',  'X', ' ', ' ', ' ', ' ', ' '],
-                    #  [' ', ' ', ' ', ' ', 'M1', 'X', ' ', ' ', ' ', ' ', 'O1'],
-                    #  ['X', 'X', ' ', 'X', 'X', 'X', 'X', 'X', ' ', 'X', 'X'],
-                    #  ['O2', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' '],
-                    #  [' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' '],
-                    #  [' ', ' ', '_', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-                    #  [' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' '],
-                    #  [' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', 'M2', ' ', ' '],])
-
-    MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'C2', ' ', ' '],
-                     [' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' '],
-                     ['M2', ' ', ' ',  ' ', 'X', 'O2', ' ', ' '],
-                     [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
-                     [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
-                     [' ', ' ', ' ',  ' ',  ' ', ' ', ' ', ' '],
-                     [' ', ' ', '_',  ' ',  ' ', ' ', ' ', ' '],
-                     ['O1', ' ',' ',  ' ',  ' ', ' ', ' ', 'M1'], ])
+class Office(GridEnv):
+    # MAP = np.array([ ['O1',' ', ' ', ' ', ' ', 'X', 'C2', ' ', ' ',   ' ',  ' '],
+    #                  [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
+    #                  [' ', ' ', ' ', ' ', ' ', ' ', ' ',  ' ',  ' ',  ' ',  ' '],
+    #                  [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
+    #                  [' ', ' ', ' ', ' ', 'M2','X', ' ',  ' ',  ' ',  ' ',  'O2'],
+    #                  ['X', 'X', ' ', 'X', 'X', 'X', ' ',  'X',  'X',  ' ',  'X'],
+    #                  [' ', ' ', ' ', ' ', ' ','X', ' ',  ' ',  ' ',  ' ',  'M1'],
+    #                  [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
+    #                  [' ', ' ', ' ', ' ', ' ', ' ', ' ',  'C1', ' ',  ' ',  ' '],
+    #                  [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
+    #                  [' ', ' ', '_', ' ', ' ', 'X', ' ',  ' ',  ' ', ' ', ' '],])
     
-    
-    PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2', 'M1', 'M2']
-    
-    """
-    A simplified version of the office environment introduced in [1].
-    This simplified version consists of 2 coffee machines and 2 office locations.
 
-    [1] Icarte, RT, et al. "Reward Machines: Exploiting Reward Function Structure in Reinforcement Learning".
-    """
+    # MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'C2', ' ', ' '],
+    #                  [' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' '],
+    #                  ['M2', ' ', ' ',  ' ', 'X', 'O2', ' ', ' '],
+    #                  [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
+    #                  [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
+    #                  [' ', ' ', ' ',  ' ',  ' ', ' ', ' ', ' '],
+    #                  [' ', ' ', '_',  ' ',  ' ', ' ', ' ', ' '],
+    #                  ['O1', ' ',' ',  ' ',  ' ', ' ', ' ', 'M1'], ])
 
-    def __init__(self, add_obj_to_start=False, random_act_prob=0.0):
-        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
-        self._create_coord_mapping()
-        self._create_transition_function()
-
-        exit_states = {}
-        for s in self.object_ids:
-            symbol = self.MAP[s]
-            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
-
-        self.exit_states = exit_states
-
-
-    def _create_transition_function(self):
-        self._create_transition_function_base()
-
-    def features(self, state, action, next_state):
-        s1 = next_state
-        nc = self.feat_dim
-        phi = np.zeros(nc, dtype=np.float32)
-        # for e in self.object_ids:
-        #     (y, x) = e
-        #     object_index = self.all_objects[self.MAP[y, x]]
-        phi = self._compute_distance_vector(next_state)
-        
-        if self.MAP[s1] == "X":
-            phi[:] = -100
-
-        return phi
-    
-    def _compute_distance_vector(self, state): 
-
-        s = np.asarray(state)
-        feat = np.zeros(len(self.exit_states), dtype=np.float32)
-
-        for e in self.exit_states:
-            e = self.exit_states[e]
-            idx = self.PHI_OBJ_TYPES.index(self.MAP[e])
-            e = np.asarray(e)
-            # Build the unit vector 
-
-            feat[idx] = 1 - (np.linalg.norm(s - e) / 49)
-    
-        return feat
-    
-    def custom_render(self, square_map: dict[tuple[int, int]]):
-        for square_coords in square_map:
-            square = square_map[square_coords]
-            # Teleport
-            if self.MAP[square_coords].startswith('C') :
-                color = [0, 0, 1]
-            elif self.MAP[square_coords].startswith('O') :
-                color = [1, 0, 0]
-            elif self.MAP[square_coords].startswith('M'):
-                color = [0, 1, 0]
-            else:
-                continue
-            square.set_color(*color)
-
-
-class OfficeComplex(GridEnv):
-    MAP = np.array([ ['O1',' ', ' ', ' ', ' ', 'X', 'C2', ' ', ' ',   ' ',  ' '],
-                     [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
-                     [' ', ' ', ' ', ' ', ' ', ' ', ' ',  ' ',  ' ',  ' ',  ' '],
-                     [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
-                     [' ', ' ', ' ', ' ', 'M2','X', ' ',  ' ',  ' ',  ' ',  'O2'],
-                     ['X', 'X', ' ', 'X', 'X', 'X', 'X',  'X',  'X',  'X',  'X'],
-                     [' ', ' ', ' ', ' ', ' ','X', ' ',  ' ',  ' ',  ' ',  'M1'],
-                     [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
-                     [' ', ' ', ' ', ' ', ' ', ' ', ' ',  'C1', ' ',  ' ',  ' '],
-                     [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
-                     [' ', ' ', '_', ' ', ' ', 'X', ' ',  ' ',  ' ', ' ', ' '],])
+    MAP = np.array([ [' ', ' ', 'C1',' ', ' ',  'X', 'C2', ' ', ' ',  ' ',  ' '],
+                     [' ', ' ', ' ', ' ', ' ',  'X', ' ',  ' ', ' ',  ' ',  ' '],
+                     ['M2',' ', ' ', ' ', ' ',  'X', ' ',  ' ', ' ',  ' ',  ' '],
+                     [' ', ' ', ' ', ' ', ' ',  'X', 'O2', ' ', ' ',  ' ',  ' '],
+                     [' ', ' ', ' ', ' ', ' ',  'X', ' ',  ' ', ' ',  ' ',  ' '],
+                     [' ', 'X', 'X', ' ', ' ',  'X', ' ',  ' ', 'X',  'X',  ' '],
+                     [' ', ' ', ' ', ' ', ' ',  'X', ' ',  ' ', ' ',  ' ',  ' '],
+                     [' ', ' ', ' ', ' ', ' ',  'X', ' ',  ' ', ' ',  ' ',  ' '],
+                     [' ', ' ', ' ', ' ', ' ',  ' ', ' ',  ' ', ' ',  ' ',  ' '],
+                     [' ', ' ', ' ', '_', ' ',  ' ', ' ',  ' ', ' ',  ' ',  ' '],
+                     ['O1', ' ',' ', ' ', ' ',  ' ', ' ',  ' ', ' ',  ' ',  'M1'],])
     
     PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2', 'M1', 'M2']
     
@@ -793,50 +535,6 @@ class ShapesColors(GridEnv):
     def _create_transition_function(self):
         self._create_transition_function_base()
 
-
-class Room(GridEnv):
-    MAP = np.array([['X', 'X', 'R', 'X', 'X'],
-                 ['X', '_', '_', '_', 'X'],
-                 ['P', '_', '_', '_', 'B'],
-                 ['X', '_', '_', '_', 'X'],
-                 ['X', 'X', 'Y', 'X', 'X']])
-    
-    PHI_OBJ_TYPES = ['P', 'R', 'B', 'Y']
-
-    def __init__(self, random_act_prob=0.0):
-        super().__init__(add_obj_to_start=False, random_act_prob=random_act_prob)
-        self._create_coord_mapping()
-        self._create_transition_function()
-
-    def _create_transition_function(self):
-        self._create_transition_function_base()
-
-
-class FourRooms(GridEnv):
-    MAP = np.array([
-    ['1', ' ', ' ', ' ', ' ', '2', 'X', ' ', ' ', ' ', ' ', ' ', 'G'],
-    [' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' '],
-    [' ', ' ', ' ', ' ', ' ', ' ', '1', ' ', ' ', ' ', ' ', ' ', ' '],
-    [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-    [' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' '],
-    ['2', ' ', ' ', ' ', ' ', '3', 'X', ' ', ' ', ' ', ' ', ' ', ' '],
-    ['X', 'X', '3', ' ', 'X', 'X', 'X', 'X', 'X', ' ', '1', 'X', 'X'],
-    [' ', ' ', ' ', ' ', ' ', ' ', 'X', '2', ' ', ' ', ' ', ' ', '3'],
-    [' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' '],
-    [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-    [' ', ' ', ' ', ' ', ' ', ' ', '2', ' ', ' ', ' ', ' ', ' ', ' '],
-    [' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' '],
-    ['_', ' ', ' ', ' ', ' ', ' ', 'X', '3', ' ', ' ', ' ', ' ', '1']])
-    PHI_OBJ_TYPES = ['1', '2', '3']
-
-    def __init__(self, random_act_prob=0.0):
-        super().__init__(add_obj_to_start=False, random_act_prob=random_act_prob)
-        # NOTE: Modify this depending on the number of 'shapes' considered (2, 3,).
-        self._create_coord_mapping()
-        self._create_transition_function()
-
-    def _create_transition_function(self):
-        self._create_transition_function_base()
 
 def make_ice_corridor_map():
     SHORT_PATH_LENGTH = 4
@@ -905,7 +603,6 @@ class IceCorridor(GridEnv):
 
         # sanity check
         assert np.allclose(np.sum(self.P, axis=2), 1)
-
 
 
 

@@ -10,6 +10,4 @@ use_gpi: True
 envelope: False
 batch_size: 5
 buffer_size: 1000
-project_name: '{directory}-SFOLS'
 log: True
-base_values: {}

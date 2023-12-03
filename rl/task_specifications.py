@@ -10,9 +10,9 @@ def load_fsa(name:str):
         return fsa_delivery3()
     elif name == "DeliveryEval-v0-task4":
         return fsa_delivery4()
-    elif name == "OfficeComplexEval-v0-task1":
+    elif name == "OfficeEval-v0-task1":
         return fsa_office1()
-    elif name == "OfficeComplexEval-v0-task2":
+    elif name == "OfficeEval-v0-task2":
         return fsa_office2()
     elif name == "OfficeRSEval-v0-task1":
         return fsa_office1()

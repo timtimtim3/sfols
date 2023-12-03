@@ -28,10 +28,7 @@ class SF(RLAlgorithm):
                 gpi: GPI = None,
                 use_gpi: bool = False,
                 envelope: bool = False,
-                project_name: str = 'sf',
-                experiment_name: str = 'sf',
                 log: bool = False,
-                base_values: dict = {},
                 log_prefix: str = ""
                 ):
 
@@ -56,10 +53,7 @@ class SF(RLAlgorithm):
 
         self.q_table = dict()
         # NOTE: Modified this to include the "SF values" actually in the terminal states
-        if len(base_values):
-            for k in base_values:
-                self.q_table[k] = base_values[k]
-        
+    
         if self.use_replay:
             if self.per:
                 self.replay_buffer = PrioritizedReplayBuffer(self.observation_dim, 1, rew_dim=self.phi_dim, max_size=buffer_size, obs_dtype=np.int32, action_dtype=np.int32)
@@ -217,7 +211,7 @@ class SF(RLAlgorithm):
                      eval_freq=50,
                        w=np.array([1.0,0.0]),
                         fsa_env = None,
-                         ):
+                         tol=1e3):
         
         episode_reward = 0.0
         episode_length = 0
@@ -230,6 +224,7 @@ class SF(RLAlgorithm):
         self.num_timesteps = 0 if reset_num_timesteps else self.num_timesteps
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
 
+        # TODO: Get the old q_function
         for timestep in range(1, total_timesteps+1):
             
             if total_episodes is not None and num_episodes == total_episodes:
@@ -280,9 +275,12 @@ class SF(RLAlgorithm):
                 episode_reward = 0.0
                 episode_vec_reward = np.zeros(w.shape[0])
                 episode_length = 0
+
+                # TODO: Break the learning loop if Q-function is close enough
             
             else:
                 self.obs = self.next_obs
+        
         self.w = w
 
 
@@ -315,9 +313,7 @@ class SF(RLAlgorithm):
 
             return acc_reward
         
-        sfs = [policy.q_table for policy in self.gpi.policies]
-    
-        planning = VI(fsa_env, sfs)
+        planning = VI(fsa_env, self.gpi)
         W, _ = planning.traverse(None, k=15)
         acc_reward = evaluate(fsa_env, W, num_steps=200)
 

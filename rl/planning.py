@@ -3,11 +3,11 @@ import time as time
 
 class SFFSAValueIteration:
 
-    def __init__(self, env, sfs) -> None:
+    def __init__(self, env, gpi) -> None:
         
         self.env = env 
         self.fsa = self.env.fsa 
-        self.sfs = sfs 
+        self.gpi = gpi 
         self.exit_states = self.env.exit_states
 
     def traverse(self, weights, k=10000):
@@ -52,7 +52,7 @@ class SFFSAValueIteration:
                     else:
                         for idx in idxs:
                             e = exit_states[idx]
-                            w[idx] = np.asarray([np.dot(q[e], W[vidx]) for q in self.sfs]).max()
+                            w[idx] = np.dot(self.gpi.max_q(e, W[vidx]), W[vidx]) # np.asarray([np.dot(q[e], W[vidx]) for q in self.sfs]).max()
 
                     weights.append(w)                   
                 
