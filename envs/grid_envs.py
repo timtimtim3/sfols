@@ -165,7 +165,7 @@ class GridEnv(ABC, gym.Env):
     # SUCCESSOR FEATURES
     # ===========================================================================
     def is_done(self, state, action, next_state):
-        return next_state in self.object_ids
+        return next_state in self.object_ids or state in self.object_ids
 
     def features(self, state, action, next_state):
         s1 = next_state
