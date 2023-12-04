@@ -25,7 +25,7 @@ def main(cfg: DictConfig) -> None:
         group="sfols"
 
     )
-
+    run.tags = run.tags + (cfg.wandb.tag,)
     # Set seeds
     seed_everything(cfg.seed)
 
