@@ -102,8 +102,8 @@ class QValueIteration(RLAlgorithm):
                         features = self.env.features(self.env.state_to_coords[s], a, self.env.state_to_coords[ns])
                         done = self.env.is_done(self.env.state_to_coords[s], a, self.env.state_to_coords[ns])
                         b = np.argmax(np.dot(Psi_sf[ns], w))
-                        # Change this 
-                        q += prob * (features + self.gamma * (1-done) * Psi_sf[ns, b]) 
+                        # Change this
+                        q += prob * (features + self.gamma * (1-done) * Psi_sf[ns, b])
                         
                         if is_option and ns == tsidx:
                                 To[s, ns] = self.gamma ** 0            
