@@ -166,7 +166,7 @@ def get_plot_arrow_params(q_table, w, grid_env):
         max_val = np.max(q_vals @ w)
         max_index = np.argmax(q_vals @ w)
 
-        print(coords, q_vals, max_index)
+        # print(coords, q_vals, max_index)
 
         x_d = y_d = 0
         if max_index == grid_env.DOWN:
