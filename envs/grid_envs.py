@@ -361,7 +361,7 @@ class DoubleSlit(GridEnv):
             new_row = row
             new_col = col
 
-            vert_move = wind + (action == self.UP) - (action == self.DOWN)
+            vert_move = wind - (action == self.UP) + (action == self.DOWN)
             horiz_move = 1 + (action == self.RIGHT)
 
             # Check vert move
