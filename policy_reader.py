@@ -37,10 +37,10 @@ if __name__ == "__main__":
 
         for obs in ss:
             for j in range(q[obs].shape[0]):
+                pass
+                # print(obs, action_dict[j], np.round(q[obs][j], 16))
 
-                print(obs, action_dict[j], np.round(q[obs][j], 16))
-
-            print(15 * '--')
+            # print(15 * '--')
         if PLOTS:
             plt.figure(i)
             ax = plt.subplot(111)
