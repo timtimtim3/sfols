@@ -100,7 +100,7 @@ class SF(RLAlgorithm):
     def train(self, w: np.array):
         obs = tuple(self.obs)
         next_obs = tuple(self.next_obs)
-        
+
         if next_obs not in self.q_table:
             self.q_table[next_obs] = np.zeros((self.action_dim, self.phi_dim))
 
@@ -114,6 +114,7 @@ class SF(RLAlgorithm):
         
         td_error = self.reward + (1-self.terminal)*self.gamma*max_q - self.q_table[obs][self.action]
         self.q_table[obs][self.action] += self.alpha * td_error
+        max_td_error = abs(td_error @ w)
 
         # Update other learned_policies
         # D: This should update the policy that was selected in act part  using the same data
@@ -160,7 +161,8 @@ class SF(RLAlgorithm):
                         max_q = self.q_table[next_s][self.gpi.eval(np.array(next_s), w)]
                 else:
                     max_q = self.q_table[next_s][np.argmax(np.dot(self.q_table[next_s], w))]
-                td_err =  r + (1-terminal)*self.gamma*max_q - self.q_table[s][a]
+                td_err = r + (1-terminal)*self.gamma*max_q - self.q_table[s][a]
+                max_td_error = max(max_td_error, abs(td_err @ w))
                 self.q_table[s][a] += self.alpha * td_err
                 
                 if self.per:
@@ -176,13 +178,14 @@ class SF(RLAlgorithm):
         
         if self.log and self.num_timesteps % 1000 == 0:
             log_dict = {
-                f"{self.log_prefix}td_error": np.dot(td_error, w),
+                f"{self.log_prefix}max_td_error": max_td_error,
                 f"{self.log_prefix}epsilon": self.epsilon,
                 f"{self.log_prefix}num timesteps": self.num_timesteps-self.learning_starts,
             }
             if self.per:
                 log_dict[f"{self.log_prefix}mean_priority"] = new_priorities.mean()
             wandb.log(log_dict)
+        return max_td_error
 
     def define_wandb_metrics(self):
         wandb.define_metric(f"{self.log_prefix}episode")
@@ -205,13 +208,16 @@ class SF(RLAlgorithm):
                 'per' : self.per,
                 }
     
-    def learn(self, total_timesteps,
-               total_episodes=None,
-                 reset_num_timesteps=True,
-                     eval_freq=50,
-                       w=np.array([1.0,0.0]),
-                        fsa_env = None,
-                         tol=1e3):
+    def learn(self,
+              total_timesteps,
+              total_episodes=None,
+              reset_num_timesteps=True,
+              eval_freq=50,
+              w=np.array([1.0,0.0]),
+              fsa_env=None,
+              avg_td_step=-1,
+              avg_td_threshold=-1,
+              ):
         
         episode_reward = 0.0
         episode_length = 0
@@ -227,7 +233,7 @@ class SF(RLAlgorithm):
         # TODO: Get the old q_function
 
         # env. self
-
+        run_avg_td_err = 0
         for timestep in range(1, total_timesteps+1):
             
             if total_episodes is not None and num_episodes == total_episodes:
@@ -240,7 +246,8 @@ class SF(RLAlgorithm):
             self.reward = info['phi'] # vectorized reward
             self.terminal = done if 'TimeLimit.truncated' not in info else not info['TimeLimit.truncated']
 
-            self.train(w)
+            max_td_error = self.train(w)
+            run_avg_td_err += avg_td_step * (max_td_error - run_avg_td_err)
 
             # if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
             #     total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
@@ -279,8 +286,9 @@ class SF(RLAlgorithm):
                 episode_vec_reward = np.zeros(w.shape[0])
                 episode_length = 0
 
-                # TODO: Break the learning loop if Q-function is close enough
-            
+                # Should not be active if avg_td_threshold is not set
+                if run_avg_td_err < avg_td_threshold and timestep > total_timesteps / 2:
+                    break
             else:
                 self.obs = self.next_obs
         

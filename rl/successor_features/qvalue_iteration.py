@@ -128,12 +128,7 @@ class QValueIteration(RLAlgorithm):
                 'delta': self.delta,
                 }
 
-    def learn(self, total_timesteps, total_episodes=None, reset_num_timesteps=True, eval_env=None, eval_freq=1000, w=np.array([1.0,0.0])):
-
-        episode_reward = 0.0
-        episode_vec_reward = np.zeros(w.shape[0])
-        num_episodes = 0
-        
+    def learn(self, w=np.array([1.0,0.0]), **kwargs):
         self.obs, done = self.env.reset(), False
         self.env.unwrapped.w = w
         self.w = w
