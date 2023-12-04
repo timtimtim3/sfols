@@ -37,7 +37,7 @@ def main(cfg: DictConfig) -> None:
 
     # Get task
     eval_env = gym.make(cfg.eval_env)
-    task = cfg.task
+    task = cfg.fsa_name
 
     task_name = '-'.join([eval_env.unwrapped.spec.id, task])
     fsa = load_fsa(task_name) # Load FSA

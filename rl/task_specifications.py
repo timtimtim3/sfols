@@ -61,7 +61,8 @@ def fsa_office1():
     return fsa
 
 def fsa_office2():
-    
+
+    # Sequential
     symbols_to_phi =  {"C1": 0, 
                        "C2": 1, 
                        "O1": 2, 
@@ -78,12 +79,13 @@ def fsa_office2():
 
     fsa.add_transition("u0", "u1", ["C1", "C2"])
     fsa.add_transition("u1", "u2", ["M1", "M2"])
-    fsa.add_transition("u2", "u1", ["C1", "C2"])
     fsa.add_transition("u2", "u3", ["O1", "O2"])
 
     return fsa
 
 def fsa_delivery1():
+
+    # Sequential 
 
     symbols_to_phi = {"A": 0, 
                       "B": 1, 
@@ -107,6 +109,7 @@ def fsa_delivery1():
 
 def fsa_delivery2():
 
+    # Compositional
     symbols_to_phi = {"A": 0, 
                       "B": 1, 
                       "C": 2, 
