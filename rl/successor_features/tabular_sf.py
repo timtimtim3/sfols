@@ -225,6 +225,9 @@ class SF(RLAlgorithm):
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
 
         # TODO: Get the old q_function
+
+        # env. self
+
         for timestep in range(1, total_timesteps+1):
             
             if total_episodes is not None and num_episodes == total_episodes:
