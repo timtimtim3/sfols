@@ -88,11 +88,9 @@ class QValueIteration(RLAlgorithm):
             
             total_sweeps += 1
             Psi_new = np.zeros_like(Psi_sf)
-            
+
             for s in range(s_dim):
                 coords = self.env.state_to_coords[s]
-                if s not in self.q_table:
-                    self.q_table[s] = np.zeros((a_dim, phi_dim))
                 all_ns = []
                 for a in range(a_dim):
                     q = 0
