@@ -112,8 +112,7 @@ class QValueIteration(RLAlgorithm):
                
                 if is_option:
                     To[s, tsidx] = self.gamma * np.max(To[all_ns, tsidx])
-
-            if np.allclose(Psi_sf, Psi_new, atol=1e-6):
+            if np.allclose(Psi_sf @ w, Psi_new @ w, atol=1e-7):
                 break
             else:
                 Psi_sf = Psi_new
