@@ -332,6 +332,20 @@ class DoubleSlit(GridEnv):
         ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'O2', 'X']
 
     ])
+
+    # MAP = np.array([
+    #     ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'O1', 'X'],
+    #     ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
+    #     ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
+    #     ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
+    #     ['_', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
+    #     ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
+    #     ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
+    #     ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
+    #     ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'O2', 'X']
+    #
+    # ])
+
     PHI_OBJ_TYPES = ['O1', 'O2']
     UP, RIGHT, DOWN = 0, 1, 2
 
@@ -402,7 +416,7 @@ class DoubleSlit(GridEnv):
 
 
 class DoubleSlitRS(DoubleSlit):
-    def __init__(self, discount: float, random_act_prob=0.0, add_obj_to_start=False, max_wind=1, ):
+    def __init__(self, discount: float=0.95, random_act_prob=0.0, add_obj_to_start=False, max_wind=1, ):
         """
         Creates a new instance of the coffee environment.
 
@@ -582,7 +596,7 @@ class IceCorridor(GridEnv):
             # Teleport
             if self.MAP[square_coords] == 'TS':
                 color = [1, 0, 0]
-            if self.MAP[square_coords] == '_':
+            elif self.MAP[square_coords] == '_':
                 color = [0, 1, 0]
             else:
                 continue
@@ -608,7 +622,7 @@ class IceCorridor(GridEnv):
 
 
 if __name__ == '__main__':
-    env = IceCorridor(random_act_prob=0)
+    env = DoubleSlit(random_act_prob=0)
     gamma = 0.99
     w = np.array([1.0, 0.0])
 
