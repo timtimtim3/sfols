@@ -25,7 +25,7 @@ def main(cfg: DictConfig) -> None:
         group="sfols", tags=["sfols"],
 
     )
-    run.tags = run.tags + (cfg.wandb.tag,)
+    run.tags = run.tags #+ (cfg.wandb.tag,)
     # Set seeds
     seed_everything(cfg.seed)
 
@@ -96,43 +96,7 @@ def main(cfg: DictConfig) -> None:
             pkl.dump(d, fp)
         wandb.save(f"policies/{env.unwrapped.spec.id}/discovered_policy_{i + 1}.pkl")
 
-
-
-# def evaluate(env, sfs, W, num_steps = 100):
-    
-#     env.reset()
-#     acc_reward = 0
-
-#     for _ in range(num_steps):
-
-#         (f, state) = env.get_state()
-#         w = W[f]
-#         qvalues = np.asarray([np.dot(q[state], w) for q in sfs])
-
-#         action = np.unravel_index(qvalues.argmax(), qvalues.shape)[1]
-#         obs, reward, done, phi = env.step(action)
-#         acc_reward+=reward
-
-#         if done:
-#             break
-
-#     return acc_reward
-
-# def eval_on_fsa(env, task, policies):
-
-#     task_name = '-'.join([env.unwrapped.spec.id, task])
-
-#     sfs = [policy.q_table for policy in policies]
-
-#     fsa = load_fsa(task_name) # Load FSA
-
-#     env = GridEnvWrapper(env, fsa)
-
-#     planning = ValueIteration(env, sfs)
-#     W, _ = planning.traverse(None, k=15)
-#     acc_reward = evaluate(env, sfs, W, num_steps=200)
-
-#     return acc_reward
+        run.summary["policies_obtained"] = len(gpi_agent.policies)
 
 if __name__ == "__main__":
     main()

@@ -287,7 +287,7 @@ class SF(RLAlgorithm):
                 episode_length = 0
 
                 # Should not be active if avg_td_threshold is not set
-                if avg_td_threshold > 0 and run_avg_td_err < avg_td_threshold and timestep > total_timesteps / 2:
+                if avg_td_threshold > 0 and (run_avg_td_err < avg_td_threshold) and (timestep > total_timesteps / 2):
                     break
             else:
                 self.obs = self.next_obs
