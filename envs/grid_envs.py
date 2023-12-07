@@ -551,18 +551,36 @@ class ShapesColors(GridEnv):
 
 
 def make_ice_corridor_map():
-    SHORT_PATH_LENGTH = 4
-    DETOUR_EXTRA_STEPS = 54
-    assert (DETOUR_EXTRA_STEPS % 2) == 0 # Should be even
-    map = [['X','X','X','X','X','X','X']]
-    map.append(['X',' ','O1','TS','O2',' ','X'])
+    SHORT_PATH_LENGTH = 2  # From start to slippery
+    CENTRAL_PATH_LENGTH = 1  # From start to top of middle corridor
+    LONG_PATH_LENGTH = 10  # From middle corridor to goal
+    assert (LONG_PATH_LENGTH - SHORT_PATH_LENGTH - CENTRAL_PATH_LENGTH + 4) % 2 == 1  # Should be even
+    WIDTH = LONG_PATH_LENGTH - SHORT_PATH_LENGTH - CENTRAL_PATH_LENGTH + 4
+    MIDDLE_CELL = WIDTH // 2
+
+    border_block = ['X'] * WIDTH
+    common_block = ['X'] * WIDTH
+    common_block[1] = ' '
+    common_block[-2] = ' '
+    common_block[MIDDLE_CELL] = ' '
+    corridor_block = [' '] * WIDTH
+    corridor_block[0] = 'X'
+    corridor_block[-1] = 'X'
+
+
+    map = [border_block.copy()]
+    map.append(corridor_block.copy())
+    map[1][MIDDLE_CELL] = 'TS'
+    map[1][MIDDLE_CELL - 1] = 'O1'
+    map[1][MIDDLE_CELL + 1] = 'O2'
     for _ in range(SHORT_PATH_LENGTH - 1):
-        map.append(['X', ' ', 'X', ' ', 'X', ' ', 'X'])
-    map.append(['X', ' ', 'X', '_', 'X', ' ', 'X'])
-    for _ in range((DETOUR_EXTRA_STEPS - 4) // 2):
-        map.append(['X', ' ', 'X', ' ', 'X', ' ', 'X'])
-    map.append(['X', ' ', ' ', ' ', ' ', ' ', 'X'])
-    map.append(['X', 'X', 'X', 'X', 'X', 'X', 'X'])
+        map.append(common_block.copy())
+    map.append(common_block.copy())
+    map[-1][MIDDLE_CELL] = '_'
+    for _ in range(CENTRAL_PATH_LENGTH - 1):
+        map.append(common_block.copy())
+    map.append(corridor_block.copy())
+    map.append(border_block.copy())
     return np.array(map)
 
 
@@ -586,6 +604,13 @@ class IceCorridor(GridEnv):
                     self.ice_start.append((r, c))
                 elif self.MAP[r, c] in {'O1', 'O2'}:
                     self.ice_end.append((r, c))
+
+        exit_states = {}
+        for s in self.object_ids:
+            symbol = self.MAP[s]
+            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
+
+        self.exit_states = exit_states
 
         self._create_coord_mapping()
         self._create_transition_function()
@@ -611,9 +636,13 @@ class IceCorridor(GridEnv):
         for start_s in range(self.s_dim):
             for a in range(self.a_dim):
                 if self.P[start_s, a, teleport_state] >= 0:
-                    for i in self.ice_end:
-                        self.P[start_s, a, self.coords_to_state[i]] += 1.0/len(self.object_ids) * self.P[start_s, a, teleport_state]
-                    self.P[start_s, a, teleport_state] = 0
+                    if self.state_to_coords[start_s] in self.ice_end:
+                        self.P[start_s, a, start_s] += self.P[start_s, a, teleport_state]
+                        self.P[start_s, a, teleport_state] = 0
+                    else:
+                        for i in self.ice_end:
+                            self.P[start_s, a, self.coords_to_state[i]] += 1.0/len(self.object_ids) * self.P[start_s, a, teleport_state]
+                        self.P[start_s, a, teleport_state] = 0
 
         # sanity check
         assert np.allclose(np.sum(self.P, axis=2), 1)
@@ -622,7 +651,7 @@ class IceCorridor(GridEnv):
 
 
 if __name__ == '__main__':
-    env = DoubleSlit(random_act_prob=0)
+    env = IceCorridor(random_act_prob=0)
     gamma = 0.99
     w = np.array([1.0, 0.0])
 
