@@ -182,7 +182,7 @@ class SF(RLAlgorithm):
                 f"{self.log_prefix}epsilon": self.epsilon,
                 f"{self.log_prefix}num timesteps": self.num_timesteps-self.learning_starts,
             }
-            if self.per:
+            if self.use_replay and self.per:
                 log_dict[f"{self.log_prefix}mean_priority"] = new_priorities.mean()
             wandb.log(log_dict)
         return max_td_error
@@ -287,7 +287,7 @@ class SF(RLAlgorithm):
                 episode_length = 0
 
                 # Should not be active if avg_td_threshold is not set
-                if run_avg_td_err < avg_td_threshold and timestep > total_timesteps / 2:
+                if avg_td_threshold > 0 and run_avg_td_err < avg_td_threshold and timestep > total_timesteps / 2:
                     break
             else:
                 self.obs = self.next_obs
