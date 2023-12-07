@@ -9,5 +9,5 @@ per: True
 use_gpi: True
 envelope: False
 batch_size: 5
-buffer_size: 2000
+buffer_size: 5000
 log: True

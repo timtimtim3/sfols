@@ -8,3 +8,9 @@ algorithm:
   gamma: 0.99
 
 eval_env: OfficeEval-v0
+fsa_name: task1
+
+gpi:
+  learn:
+    avg_td_step: -1
+    avg_td_threshold: -1

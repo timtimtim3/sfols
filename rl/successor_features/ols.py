@@ -354,7 +354,7 @@ class OLS:
             v_par.value = v
             constraints.append(v_par @ wc == v_n @ wc)
         prob = cp.Problem(objective, constraints)
-        prob.solve(verbose=False)  # (solver='SCS', verbose=False, eps=1e-5)
+        prob.solve(solver="SCS")  # (solver='SCS', verbose=False, eps=1e-5)
         if prob.status == cp.OPTIMAL:
             weight = np.clip(wc.value, 0, 1)  # ensure range [0,1]
             weight /= weight.sum()  # ensure sum to one

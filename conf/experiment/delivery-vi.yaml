@@ -8,4 +8,9 @@ algorithm:
   gamma: 0.99
 
 eval_env: DeliveryEval-v0
-task: task1
+fsa_name: task1
+
+gpi:
+  learn:
+    avg_td_step: -1
+    avg_td_threshold: -1

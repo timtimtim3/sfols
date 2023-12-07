@@ -1,4 +1,4 @@
-epsilon: 0.02
+epsilon: 0.01
 max_value: 1
 min_value:  0
-reverse_extremum: True
+reverse_extremum: False
