@@ -16,7 +16,7 @@ def load_fsa(name:str):
         return fsa_office2()
     elif name == "OfficeRSEval-v0-task1":
         return fsa_office1()
-    elif name in ("DoubleSlitEval-v0-task1", "DoubleSlitEval-v1-task1"):
+    elif name in ("DoubleSlitEval-v0-task1", "DoubleSlitEval-v1-task1", 'DoubleSlitRSEval-v0-task1', "IceCorridorEval-v0-task1"):
         return fsa_double_slit1()
     
 def fsa_double_slit1():
