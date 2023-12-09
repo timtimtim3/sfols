@@ -3,7 +3,7 @@ import gym
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from rl.successor_features.ols import OLS
-from rl.utils.utils import seed_everything, policy_eval_exact
+from rl.utils.utils import seed_everything, policy_eval_exact, policy_evaluation_mo
 from rl.successor_features.gpi import GPI
 import pickle as pkl
 import os
@@ -69,15 +69,17 @@ def main(cfg: DictConfig) -> None:
         print(f"Training {w}")
 
         gpi_agent.learn(w=w,
-                        eval_env=test_env,
                         reuse_value_ind=ols.get_set_max_policy_index(w),
                         fsa_env = eval_env,
+                        eval_env = test_env,
                         **cfg.gpi.learn
                         )
 
-        value = policy_eval_exact(agent=gpi_agent, env=test_env, w=w)
+        value = policy_eval_exact(agent=gpi_agent, env=test_env, w=w) # Do the expectation analytically
+        # print(f"policy{ols_iter} - exact value", value)
+        # value = policy_evaluation_mo(gpi_agent, test_env, w, rep=5) 
+        # print(f"policy{ols_iter} -estimated value", value)
 
-        # value = policy_evaluation_mo(gpi_agent, eval_env, w, rep=5)  # Do the expectation analytically
         remove_policies = ols.add_solution(
             value, w, gpi_agent=gpi_agent, env=test_env)
 

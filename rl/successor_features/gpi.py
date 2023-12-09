@@ -24,8 +24,7 @@ class GPI(RLAlgorithm):
         self.num_timesteps = 0
 
         self.log = log
-        if self.log:
-            self.setup_wandb(project_name, experiment_name)
+        self.define_wandb_metrics()
 
     def eval(self, obs, w, return_policy_index=False, exclude=None) -> int:
         """
@@ -90,7 +89,8 @@ class GPI(RLAlgorithm):
               total_timesteps,
               total_episodes=None,
               reset_num_timesteps=False,
-              eval_env=None, eval_freq=1000,
+              eval_env=None, 
+              eval_freq=1000,
               use_gpi=True,
               reset_learning_starts=True,
               new_policy=True,
@@ -98,6 +98,7 @@ class GPI(RLAlgorithm):
               fsa_env=None,
               **kwargs
               ):
+        
         # Creates new policy
         if new_policy:
             new_policy = self.algorithm_constructor(log_prefix=f"policies/policy{self.learned_policies}/")
@@ -138,14 +139,20 @@ class GPI(RLAlgorithm):
 
         # New policy learns using new w
         self.policies[-1].learn(w=w,
-                                total_timesteps=total_timesteps,
-                                total_episodes=total_episodes,
+                                total_timesteps = total_timesteps,
+                                total_episodes  = total_episodes,
                                 reset_num_timesteps=reset_num_timesteps,
-                                eval_freq=eval_freq,
-                                fsa_env = fsa_env,
+                                eval_freq = eval_freq,
+                                fsa_env   = fsa_env,
+                                eval_env  = eval_env,
                                 **kwargs)
         
         self.learned_policies += 1
+
+    def define_wandb_metrics(self):
+        wandb.define_metric(f"learning_step")
+        wandb.define_metric(f"fsa_reward", step_metric="learning_step")
+
 
     @property
     def gamma(self):

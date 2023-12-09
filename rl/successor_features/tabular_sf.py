@@ -178,23 +178,29 @@ class SF(RLAlgorithm):
         
         if self.log and self.num_timesteps % 1000 == 0:
             log_dict = {
-                f"{self.log_prefix}max_td_error": max_td_error,
-                f"{self.log_prefix}epsilon": self.epsilon,
-                f"{self.log_prefix}num timesteps": self.num_timesteps-self.learning_starts,
+                f"{self.log_prefix}_max_td_error": max_td_error,
+                f"{self.log_prefix}_epsilon": self.epsilon,
+                f"{self.log_prefix}_num timesteps": self.num_timesteps-self.learning_starts,
             }
             if self.per:
-                log_dict[f"{self.log_prefix}mean_priority"] = new_priorities.mean()
+                log_dict[f"{self.log_prefix}_mean_priority"] = new_priorities.mean()
             wandb.log(log_dict)
+        
         return max_td_error
 
     def define_wandb_metrics(self):
+        
         wandb.define_metric(f"{self.log_prefix}episode")
         wandb.define_metric(f"{self.log_prefix}discounted return", step_metric=f"{self.log_prefix}episode")
         wandb.define_metric(f"{self.log_prefix}episode_reward_obj*", step_metric=f"{self.log_prefix}episode")
-        wandb.define_metric(f"{self.log_prefix}num timesteps")
-        wandb.define_metric(f"{self.log_prefix}td_error", step_metric=f"{self.log_prefix}num timesteps")
-        wandb.define_metric(f"{self.log_prefix}epsilon", step_metric=f"{self.log_prefix}num timesteps")
-        wandb.define_metric(f"{self.log_prefix}mean_priority", step_metric=f"{self.log_prefix}num timesteps")
+
+        wandb.define_metric(f"{self.log_prefix}timestep")
+        wandb.define_metric(f"{self.log_prefix}max_td_error", step_metric=f"{self.log_prefix}timestep")
+        wandb.define_metric(f"{self.log_prefix}epsilon", step_metric=f"{self.log_prefix}timestep")
+        wandb.define_metric(f"{self.log_prefix}mean_priority", step_metric=f"{self.log_prefix}timestep")
+        wandb.define_metric(f"{self.log_prefix}total_reward", step_metric=f"{self.log_prefix}timestep")
+        wandb.define_metric(f"{self.log_prefix}discounted_return", step_metric=f"{self.log_prefix}timestep")
+
 
     def get_config(self) -> dict:
         return {'alpha': self.alpha,
@@ -214,12 +220,12 @@ class SF(RLAlgorithm):
               reset_num_timesteps=True,
               eval_freq=50,
               w=np.array([1.0,0.0]),
+              eval_env = None,
               fsa_env=None,
               avg_td_step=-1,
               avg_td_threshold=-1,
               ):
         
-        episode_reward = 0.0
         episode_length = 0
         episode_vec_reward = np.zeros(w.shape[0])
         num_episodes = 0
@@ -230,16 +236,15 @@ class SF(RLAlgorithm):
         self.num_timesteps = 0 if reset_num_timesteps else self.num_timesteps
         self.num_episodes = 0 if reset_num_timesteps else self.num_episodes
 
-        # TODO: Get the old q_function
-
-        # env. self
         run_avg_td_err = 0
+
         for timestep in range(1, total_timesteps+1):
             
             if total_episodes is not None and num_episodes == total_episodes:
                 break
 
             self.num_timesteps += 1
+            episode_length += 1
 
             self.action = self.act(self.obs, w)
             self.next_obs, reward, done, info = self.env.step(self.action)
@@ -249,42 +254,32 @@ class SF(RLAlgorithm):
             max_td_error = self.train(w)
             run_avg_td_err += avg_td_step * (max_td_error - run_avg_td_err)
 
-            # if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
-            #     total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
-            #     self.writer.add_scalar("eval/total_reward", total_reward, self.num_timesteps)
-            #     self.writer.add_scalar("eval/discounted_return", discounted_return, self.num_timesteps)
-            #     for i in range(episode_vec_reward.shape[0]):
-            #         self.writer.add_scalar(f"eval/total_reward_obj{i}", total_vec_r[i], self.num_timesteps)
-            #         self.writer.add_scalar(f"eval/return_obj{i}", total_vec_return[i], self.num_timesteps)
+            if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
+                total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
 
-            episode_reward += (self.gamma ** episode_length) * reward
-            episode_vec_reward += (self.gamma ** episode_length) * info['phi']
-            episode_length += 1
+                log_dict = {f"{self.log_prefix}total_reward": total_reward,
+                            f"{self.log_prefix}discounted_return": discounted_return}
 
-            if self.num_timesteps % eval_freq == 0:
+                for i in range(episode_vec_reward.shape[0]):
+                    log_dict[f"{self.log_prefix}total_reward_obj{i}"] = total_vec_r[i]
+                    log_dict[f"{self.log_prefix}return_obj{i}"] = total_vec_return[i]
+
+
                 fsa_reward = self.evaluate_fsa(fsa_env)
                 # print(self, total_timesteps)
-                wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps}, step=self.num_timesteps)
+                log_dict["learning/fsa_reward"] = fsa_reward
+                log_dict["learning_timestep"] = self.num_timesteps
+
+                wandb.log(log_dict)
+
+            wandb.log({f"{self.log_prefix}timestep": timestep, 
+                        f"{self.log_prefix}episode": num_episodes, 
+                        f"learning_step": self.num_timesteps})
             
             if done:
                 self.obs, done = self.env.reset(), False
                 num_episodes += 1
                 self.num_episodes += 1
-
-                # if num_episodes % 1000 == 0:
-                #     print(f"Episode: {self.num_episodes} Step: {self.num_timesteps}, Ep. Total Reward: {episode_reward}, {episode_vec_reward}")
-                if self.log:
-                    log_dict = {
-                        f"{self.log_prefix}episode": self.num_episodes,
-                        f"{self.log_prefix}discounted return": episode_reward,
-                        f"{self.log_prefix}num timesteps": self.num_timesteps-self.learning_starts,
-                    }
-                    for i in range(episode_vec_reward.shape[0]):
-                        log_dict[f"{self.log_prefix}episode_reward_obj{i}"] = episode_vec_reward[i]
-                    wandb.log(log_dict)
-                episode_reward = 0.0
-                episode_vec_reward = np.zeros(w.shape[0])
-                episode_length = 0
 
                 # Should not be active if avg_td_threshold is not set
                 if (run_avg_td_err < avg_td_threshold) and (timestep > total_timesteps / 2) and (False):

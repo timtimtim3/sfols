@@ -1,7 +1,7 @@
 _target_: rl.successor_features.tabular_sf.SF
-alpha: 0.15
+alpha: 0.25
 gamma: ???
-initial_epsilon: 1
+initial_epsilon: 0.5
 final_epsilon: 0.1
 epsilon_decay_steps: 10000
 use_replay: True
