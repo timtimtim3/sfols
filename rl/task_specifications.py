@@ -12,6 +12,8 @@ def load_fsa(name:str):
         return fsa_office1()
     elif name == "OfficeEval-v0-task2":
         return fsa_office2()
+    elif name == "OfficeEval-v0-task3":
+        return fsa_office3()
     elif name == "OfficeRSEval-v0-task1":
         return fsa_office1()
     elif name in ("DoubleSlitEval-v0-task1", "DoubleSlitEval-v1-task1"):
@@ -34,6 +36,62 @@ def fsa_double_slit1():
     return fsa
     
 def fsa_office1():
+
+    # Sequential: Get coffe, then mail, then go to an office
+    # COFFEE -> MAIL -> OFFICE
+
+    symbols_to_phi =  {"C1": 0, 
+                       "C2": 1, 
+                       "O1": 2, 
+                       "O2": 3, 
+                       "M1": 4, 
+                       "M2": 5, }
+
+    fsa = FiniteStateAutomaton(symbols_to_phi)
+
+    fsa.add_state("u0")
+    fsa.add_state("u1")
+    fsa.add_state("u2")
+    fsa.add_state("u3")
+
+    fsa.add_transition("u0", "u1", ["C1", "C2"])
+    fsa.add_transition("u1", "u2", ["M1", "M2"])
+    fsa.add_transition("u2", "u3", ["O1", "O2"])
+
+    return fsa
+
+def fsa_office2():
+
+    # OR: Get coffee or mail, then go to an office
+    # (COFFEE v MAIL) -> OFFICE
+
+    symbols_to_phi =  {"C1": 0, 
+                       "C2": 1, 
+                       "O1": 2, 
+                       "O2": 3, 
+                       "M1": 4, 
+                       "M2": 5, }
+
+    fsa = FiniteStateAutomaton(symbols_to_phi)
+
+    fsa.add_state("u0")
+    fsa.add_state("u1")
+    fsa.add_state("u2")
+    fsa.add_state("u3")
+
+    fsa.add_transition("u0", "u1", ["C1", "C2"])
+    fsa.add_transition("u0", "u2", ["M1", "M2"])
+    fsa.add_transition("u1", "u3", ["O1", "O2"])
+    fsa.add_transition("u2", "u3", ["O1", "O2"])
+
+    return fsa
+
+
+
+def fsa_office3():
+
+    # Composed: Get coffee AND email in any order, then go to office
+    # (COFFEE ^ MAIL) -> OFFICE
     
     symbols_to_phi =  {"C1": 0, 
                        "C2": 1, 
@@ -58,33 +116,10 @@ def fsa_office1():
 
     return fsa
 
-def fsa_office2():
-
-    # Sequential
-    symbols_to_phi =  {"C1": 0, 
-                       "C2": 1, 
-                       "O1": 2, 
-                       "O2": 3, 
-                       "M1": 4, 
-                       "M2": 5, }
-
-    fsa = FiniteStateAutomaton(symbols_to_phi)
-
-    fsa.add_state("u0")
-    fsa.add_state("u1")
-    fsa.add_state("u2")
-    fsa.add_state("u3")
-
-    fsa.add_transition("u0", "u1", ["C1", "C2"])
-    fsa.add_transition("u1", "u2", ["M1", "M2"])
-    fsa.add_transition("u2", "u3", ["O1", "O2"])
-
-    return fsa
-
 def fsa_delivery1():
 
-    # Sequential: Go to A, then B, then C, then H.
-    # A -> B -> C -> H
+    # Composite: Get coffe or mail in any order, then go to an office
+    # (COFFEE ^ MAIL) -> OFFICE
 
     symbols_to_phi = {"A": 0, 
                       "B": 1, 
