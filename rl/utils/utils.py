@@ -87,7 +87,7 @@ def eval(agent, env, render=False):
     return total_reward, discounted_return
 
 
-def eval_mo(agent, env, w, render=False):
+def eval_mo(agent, env, w, gamma=1.0, render=False):
     """
     Returns:
         w.total_reward, w.return, total vec reward, vec return
@@ -95,7 +95,6 @@ def eval_mo(agent, env, w, render=False):
     obs = env.reset()
     done = False
     total_vec_reward, vec_return = np.zeros_like(w), np.zeros_like(w)
-    gamma = 1.0
     while not done:
         if render:
             env.render()

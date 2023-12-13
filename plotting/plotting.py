@@ -217,13 +217,17 @@ def plot_policy(ax, arrow_data, grid, title_suffix="", values=True, headwidth=9,
     quiv = ax.quiver(x_pos, y_pos, x_dir, y_dir, color, cmap=cmap,
                      norm=norm, angles='xy', scale_units='xy',
                      scale=1, pivot='middle', clim=(0.3, 1), headwidth=headwidth, headaxislength=headlength, headlength=headlength)# width=0.1)
-    # for i in range(len(max_index)):
-    #     if max_index[i] != 5 or (x_pos[i] == 0 and y_pos[i] == 0):
-    #         continue
-    #     x = x_pos[i]
-    #     y = y_pos[i]
-    #     rect = patches.Rectangle((x - 0.25, y - 0.25), 0.5, 0.5, linewidth=2, edgecolor=cmap(norm(color[i])), facecolor=cmap(norm(color[i])))
-    #     ax.add_patch(rect)
+
+    if values:
+        for i in range(len(x_pos)):
+            x = x_pos[i]
+            y = y_pos[i]
+            if x_dir[i] == 0:
+                x -= 0.25
+            else:
+                y -= 0.25
+            ax.text(x, y, "%.3f" % color[i], horizontalalignment='center',
+                    verticalalignment='center', color="black", fontsize=7)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size=colorbar_size, pad=0.025)
     plt.colorbar(quiv, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0.3, 1.1, 0.1))

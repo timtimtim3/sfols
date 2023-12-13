@@ -45,6 +45,18 @@ gym.envs.register(
 )
 
 gym.envs.register(
+    id='DoubleSlitRS-v0',
+    entry_point='envs.grid_envs:DoubleSlitRS',
+    max_episode_steps=1000,
+)
+
+gym.envs.register(
+    id='DoubleSlitRSEval-v0',
+    entry_point='envs.grid_envs:DoubleSlitRS',
+    max_episode_steps=1000,
+)
+
+gym.envs.register(
     id='DoubleSlit-v1',
     entry_point='envs.grid_envs:DoubleSlit',
     max_episode_steps=1000,
@@ -71,6 +83,12 @@ gym.envs.register(
 gym.envs.register(
     id='IceCorridor-v0',
     entry_point='envs.grid_envs:IceCorridor',
-    max_episode_steps=100,
+    max_episode_steps=10000,
+)
+
+gym.envs.register(
+    id='IceCorridorEval-v0',
+    entry_point='envs.grid_envs:IceCorridor',
+    max_episode_steps=10000,
 )
 
