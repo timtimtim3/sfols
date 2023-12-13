@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from rl.utils.utils import eval_mo, linearly_decaying_epsilon
+from envs.wrappers import FlatQEnvWrapper
 from rl.rl_algorithm import RLAlgorithm
 from rl.successor_features.gpi import GPI
 from rl.utils.buffer import ReplayBuffer
@@ -262,10 +263,15 @@ class SF(RLAlgorithm):
             episode_length += 1
 
             if self.num_timesteps % eval_freq == 0:
-                fsa_reward = self.evaluate_fsa(fsa_env)
+                if isinstance(fsa_env, FlatQEnvWrapper):
+                    v = eval_mo(agent=self, env=fsa_env, w=w, render=False, gamma=self.gamma)[1]
+                    wandb.log({f"{self.log_prefix}exp return": v, "learning/timestep": self.num_timesteps},
+                              step=self.num_timesteps)
+                else:
+                    fsa_reward = self.evaluate_fsa(fsa_env)
                 # print(self, total_timesteps)
-                wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps}, step=self.num_timesteps)
-            
+                    wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps}, step=self.num_timesteps)
+
             if done:
                 self.obs, done = self.env.reset(), False
                 num_episodes += 1
@@ -277,7 +283,7 @@ class SF(RLAlgorithm):
                     log_dict = {
                         f"{self.log_prefix}episode": self.num_episodes,
                         f"{self.log_prefix}discounted return": episode_reward,
-                        f"{self.log_prefix}num timesteps": self.num_timesteps-self.learning_starts,
+                        f"{self.log_prefix}num timesteps": self.num_timesteps-self.learning_starts
                     }
                     for i in range(episode_vec_reward.shape[0]):
                         log_dict[f"{self.log_prefix}episode_reward_obj{i}"] = episode_vec_reward[i]
