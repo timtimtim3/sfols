@@ -1,0 +1,23 @@
+program: flat_q_learning.py
+method: grid
+entity: davidguillermo
+project: sfcomp
+metric:
+  goal: maximize
+  name: "exp return"
+parameters:
+  seed:
+    values: [25, 142, 745, 4165, 7989, 12324, 45621]
+  fsa_name:
+    values: ["task1", "task2", "task3"]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - +experiment=office-flat_q
+  - ++algorithm.alpha=0.15
+  - ++total_timesteps=160000
+  - ++total_episodes=160000
+  - ${args_no_hyphens}
+
