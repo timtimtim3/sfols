@@ -112,6 +112,7 @@ class FlatQEnvWrapper(gym.Env):
             done = self.fsa.is_terminal(self.fsa_state) or 'TimeLimit.truncated' in info
         else:
             done = self.fsa.is_terminal(self.fsa_state)
+        info.pop('TimeLimit.truncated', None)
 
         # TODO: Add failure case (crash into obstacle)
         info["phi"] = -1

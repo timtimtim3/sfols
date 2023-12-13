@@ -228,6 +228,7 @@ class SF(RLAlgorithm):
               ):
         
         episode_length = 0
+        episode_reward = 0
         episode_vec_reward = np.zeros(w.shape[0])
         num_episodes = 0
         self.obs, done = self.env.reset(), False
