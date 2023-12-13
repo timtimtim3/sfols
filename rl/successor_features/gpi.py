@@ -24,7 +24,7 @@ class GPI(RLAlgorithm):
         self.num_timesteps = 0
 
         self.log = log
-        self.define_wandb_metrics()
+        # self.define_wandb_metrics()
 
     def eval(self, obs, w, return_policy_index=False, exclude=None) -> int:
         """

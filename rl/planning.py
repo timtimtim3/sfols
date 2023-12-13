@@ -69,3 +69,4 @@ class SFFSAValueIteration:
         W = {u: W[U.index(u)] for u in U}
 
         return W, np.cumsum(timemarks)
+    
