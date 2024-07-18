@@ -21,6 +21,7 @@ class OLS:
         max_value: Optional[float] = None,
         min_value: Optional[float] = None,
         reverse_extremum: bool = False,
+        constraint : Optional[dict] = None, 
     ):
         self.m = m
         self.epsilon = epsilon
@@ -32,7 +33,7 @@ class OLS:
         self.max_value = max_value
         self.min_value = min_value
         self.worst_case_weight_repeated = False
-        extremum_weights = reversed(self.extrema_weights()) if reverse_extremum else self.extrema_weights()
+        extremum_weights = reversed(self.extrema_weights(constraint)) if reverse_extremum else self.extrema_weights(constraint)
         for w in extremum_weights:
             self.queue.append((float("inf"), w))
         self.define_wandb_metrics()
@@ -362,11 +363,14 @@ class OLS:
         else:
             return None
 
-    def extrema_weights(self) -> List[np.ndarray]:
+    def extrema_weights(self, constraint=False) -> List[np.ndarray]:
         extrema_weights = []
         for i in range(self.m):
             w = np.zeros(self.m)
             w[i] = 1.0
+            if constraint:
+                for c in constraint:
+                    w[c] = constraint[c]
             extrema_weights.append(w)
         return extrema_weights
 

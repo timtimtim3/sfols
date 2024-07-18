@@ -9,3 +9,6 @@ algorithm:
 
 eval_env: DeliveryEval-v0
 fsa_name: task1
+
+ols:
+  constraint: {-1: 1}

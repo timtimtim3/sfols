@@ -1,3 +1,0 @@
-- +experiment=pickup-dropoff
-- ++gpi.learn.total_timesteps=20000
-- ++seed=1
