@@ -232,21 +232,23 @@ class GridEnv(ABC, gym.Env):
 
 class Delivery(GridEnv):
     
-    MAP = np.array([['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    ['O', 'O', 'O', 'C', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    [' ', 'A', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'B', ' ', ' ', ' ' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],
-                    ['O', 'O', 'O', ' ', 'O', 'O', 'O', 'H', 'O', 'O', 'O', ' ', 'O', 'O', 'O' ],])
+    MAP = np.array([['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', 'C', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', ' ', 'A', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'B', ' ', ' ', ' ', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'H', 'O', 'O', 'O', ' ', 'O', 'O', 'O', 'O' ],
+                    ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O' ],])
     
     PHI_OBJ_TYPES = ['A', 'B', 'C', 'H']
     
@@ -289,7 +291,9 @@ class Delivery(GridEnv):
             phi[:] = -100
         
         return phi
-
+    
+    def is_done(self, state, action, next_state):
+        return next_state in self.exit_states.values()
     
     def custom_render(self, square_map: dict[tuple[int, int]]):
         for square_coords in square_map:
@@ -307,7 +311,65 @@ class Delivery(GridEnv):
                 continue
             square.set_color(*color)
 
+
+class DeliveryPenalty(Delivery):
+    
+    PHI_OBJ_TYPES = ['A', 'B', 'C', 'H', 'O']
+
+
+    def __init__(self, add_obj_to_start=True, random_act_prob=0.0):
+        super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
+
+        exit_states = {}
+        for s in self.object_ids:
+            symbol = self.MAP[s]
+            if symbol in ("O"):
+                continue
+            exit_states[self.PHI_OBJ_TYPES.index(symbol)] = s
+
+        mask = []
+
+        for s in self.initial:
+            if self.MAP[s] == "O":
+                mask.append(1)
+            else:
+                mask.append(0)
+        
+        self.exit_states = exit_states
+        self.initial = [self.initial[i] for i in range(len(self.initial)) if not mask[i]]
+        
+    def features(self, state, action, next_state):
+        s1 = next_state
+        nc = self.feat_dim
+        phi = np.zeros(nc, dtype=np.float32)
+        if s1 in self.object_ids:
+            y, x = s1
+            object_index = self.all_objects[self.MAP[y, x]]
+            phi[object_index] = 1. if self.MAP[s1] != "O" else -1
+        # elif self.MAP[s1] == "O":
+        #     phi[-1] = -1
+        
+        return phi
+
+
+class DeliveryMiniPenalty(DeliveryPenalty):
+
+    MAP = np.array([['O', 'O', 'O', 'O','O', 'O', 'O', 'O'],
+                    ['O', 'O', ' ', 'O','O', ' ', 'O', 'O'],
+                    ['O', 'O', ' ', 'O','O', ' ', 'O', 'O'],
+                    ['O', ' ', 'A', ' ',' ', 'B', ' ', 'O'],
+                    ['O', 'O', ' ', 'O','O', ' ', 'O', 'O'],
+                    ['O', 'O', ' ', 'O','O', ' ', 'O', 'O'],
+                    ['O', 'O', ' ', 'H',' ', ' ', 'O', 'O'],
+                    ['O', 'O', 'O', 'O','O', '', 'O', 'O']])
+
+
+    PHI_OBJ_TYPES = ['A', 'B', 'H', 'O']
+
+
+    
 class DoubleSlit(GridEnv):
+    
     MAP = np.array([
         ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'O1', 'X'],
         ['X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X'],
@@ -455,27 +517,6 @@ class DoubleSlitRS(DoubleSlit):
 
 
 class Office(GridEnv):
-    # MAP = np.array([ ['O1',' ', ' ', ' ', ' ', 'X', 'C2', ' ', ' ',   ' ',  ' '],
-    #                  [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
-    #                  [' ', ' ', ' ', ' ', ' ', ' ', ' ',  ' ',  ' ',  ' ',  ' '],
-    #                  [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
-    #                  [' ', ' ', ' ', ' ', 'M2','X', ' ',  ' ',  ' ',  ' ',  'O2'],
-    #                  ['X', 'X', ' ', 'X', 'X', 'X', ' ',  'X',  'X',  ' ',  'X'],
-    #                  [' ', ' ', ' ', ' ', ' ','X', ' ',  ' ',  ' ',  ' ',  'M1'],
-    #                  [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
-    #                  [' ', ' ', ' ', ' ', ' ', ' ', ' ',  'C1', ' ',  ' ',  ' '],
-    #                  [' ', ' ', ' ', ' ', ' ', 'X', ' ',  ' ',  ' ',  ' ',  ' '],
-    #                  [' ', ' ', '_', ' ', ' ', 'X', ' ',  ' ',  ' ', ' ', ' '],])
-    
-
-    # MAP = np.array([[' ', ' ', ' ',   'X', ' ', 'C2', ' ', ' '],
-    #                  [' ', ' ', 'C1', 'X', 'X', ' ', ' ', ' '],
-    #                  ['M2', ' ', ' ',  ' ', 'X', 'O2', ' ', ' '],
-    #                  [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
-    #                  [' ', ' ', ' ',  ' ',  'X', ' ', ' ', ' '],
-    #                  [' ', ' ', ' ',  ' ',  ' ', ' ', ' ', ' '],
-    #                  [' ', ' ', '_',  ' ',  ' ', ' ', ' ', ' '],
-    #                  ['O1', ' ',' ',  ' ',  ' ', ' ', ' ', 'M1'], ])
 
     MAP = np.array([ [' ', ' ', 'C1',' ', ' ',  'X', ' ', 'C2', ' ',  ' ',  ' '],
                      [' ', ' ', ' ', ' ', ' ',  'X', ' ',  ' ', ' ',  ' ',  ' '],
@@ -514,27 +555,34 @@ class Office(GridEnv):
     def _create_transition_function(self):
         self._create_transition_function_base()
 
-class ShapesColors(GridEnv):
-    MAP = np.array([ [' ', ' ','S2',  ' ',  ' ', ' ', 'C3', ' '],
-                     [' ', ' ',' ',  ' ',  ' ', ' ', ' ', ' '],
-                     ['C1', ' ',' ',  ' ',  ' ', ' ', ' ', ' '],
-                     [' ', ' ',' ',  ' ',  ' ', ' ', 'S1', ' '],
-                     [' ', ' ',' ',  ' ',  'C2', ' ', ' ', ' '],
-                     [' ', '_',' ',  ' ',  ' ', ' ', ' ', ' '],
-                     [' ', ' ',' ',  ' ',  ' ', ' ', ' ', ' '],
-                     ['S3', ' ',' ',  ' ',  ' ', ' ', ' ', ' '], ])
+class PickupDropoff(GridEnv):
+
+    MAP = np.array([ [' ', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<',  ' ',  ' '],
+                     [' ', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<',  ' ',  'A'],
+                     [' ', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X',  ' ',  ' '],
+                     [' ', '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  ' ',  ' '],
+                     ['H', '>', '>', '>', '>', '>', '>', '>', '>', '>', 'X',  ' ',  ' '],
+                     [' ', '>', '>', '>', '>', '>', '>', '>', '>', 'X', 'X',  ' ',  ' '],
+                     [' ', '>', '>', '>', '>', '>', '>', '>', 'X', 'X', 'X',  ' ',  ' '],
+                     ['_', '>', '>', '>', '>', '>', '>', 'X', 'X', 'X', 'X',  ' ',  ' '],
+                     [' ', '>', '>', '>', '>', '>', '>', '>', 'X', 'X', 'X',  ' ',  ' '],
+                     [' ', '>', '>', '>', '>', '>', '>', '>', '>', 'X', 'X',  ' ',  ' '],
+                     ['C', '>', '>', '>', '>', '>', '>', '>', '>', '>', 'X',  ' ',  ' '],
+                     [' ', '>', '>', '>', '>', '>', '>', '>', '>', '>', '>',  ' ',  ' '],
+                     [' ', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X', 'X',  ' ',  ' '],
+                     [' ', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<',  ' ',  'T'],
+                     [' ', '<', '<', '<', '<', '<', '<', '<', '<', '<', '<',  ' ',  ' '],])
     
-    PHI_OBJ_TYPES = ['C1', 'C2', 'O1', 'O2', 'M1', 'M2', 'D1', 'D2']
+    PHI_OBJ_TYPES = ['H', 'C', 'A', 'T']
     
     """
-    A simplified version of the office environment introduced in [1].
-    This simplified version consists of 2 coffee machines and 2 office locations.
+    New environment.
 
-    [1] Icarte, RT, et al. "Reward Machines: Exploiting Reward Function Structure in Reinforcement Learning".
     """
 
-    def __init__(self, add_obj_to_start=False, random_act_prob=0.0):
+    def __init__(self, random_act_prob=0.0, add_obj_to_start=False, max_wind=1):
         super().__init__(add_obj_to_start=add_obj_to_start, random_act_prob=random_act_prob)
+        self._max_wind = max_wind
         self._create_coord_mapping()
         self._create_transition_function()
 
@@ -545,9 +593,84 @@ class ShapesColors(GridEnv):
 
         self.exit_states = exit_states
 
+    # 
+    def coords_act_transition_distr(self, coords, action):
+        row, col = coords
+        distr = []
+
+        if self.MAP[(row, col)] == ">":
+
+            for wind in range(-self._max_wind, self._max_wind + 1, 1):
+                
+                new_row = row
+                new_col = col
+
+                vert_move = wind - (action == self.UP) + (action == self.DOWN)
+                horiz_move = 1 + (action == self.RIGHT)
+
+                # Check vert move
+                direction = -1 if vert_move < 0 else 1
+                while vert_move != 0:
+                    vert_move -= direction
+                    if (new_row + direction, new_col) not in self.occupied:
+                        new_row = min(self.height - 1, new_row + direction)
+                        new_row = max(0, new_row)
+
+                # Check horiz move
+                direction = -1 if horiz_move < 0 else 1
+                while horiz_move != 0:
+                    horiz_move -= direction
+                    if (new_row, new_col + direction) not in self.occupied:
+                        new_col = min(self.width - 1, new_col + direction)
+                        new_col = max(0, new_col)
+
+                entry = ((new_row, new_col), 1.0/(self._max_wind * 2 + 1))
+                distr.append(entry)
+
+        else:
+            next_states = [self.base_movement(coords, a)  for a in range(self.a_dim)]
+            probs = [1-self.random_act_prob if a == action else self.random_act_prob / (self.a_dim-1) for a in range(self.a_dim)]
+            
+            distr = list(zip(next_states, probs))
+
+        return distr
 
     def _create_transition_function(self):
-        self._create_transition_function_base()
+        # Basic movement
+        self.P = np.zeros((self.s_dim, self.a_dim, self.s_dim))
+        for start_s in range(self.s_dim):
+            for eff_a in range(self.a_dim):
+                start_coords = self.state_to_coords[start_s]
+                # if start_coords in self.object_ids:
+                    # self.P[start_s, eff_a, start_s] += 1  # Set transitions in goal states to 1 to pass the sanity check
+                    # continue
+                distr = self.coords_act_transition_distr(coords=start_coords, action=eff_a)
+                for end_coords, prob in distr:
+                    new_s = self.coords_to_state[end_coords]
+                    self.P[start_s, eff_a, new_s] += prob
+        # sanity check
+        assert np.allclose(np.sum(self.P, axis=2), 1)
+
+    def base_movement(self, coords, action):
+        
+        row, col = coords
+
+        if action == self.LEFT and self.MAP[row, col] != ">":
+            col -= 1
+        elif action == self.UP:
+            row -= 1
+        elif action == self.RIGHT and self.MAP[row, col] != "<":
+            col += 1
+        elif action == self.DOWN:
+            row += 1
+        elif action == self.RIGHT:
+            return (row, col)
+        else:
+            raise Exception('bad action {}'.format(action))
+        if col < 0 or col >= self.width or row < 0 or row >= self.height or (row, col) in self.occupied: # no move
+            return coords
+        else:
+            return (row, col)
 
 
 def make_ice_corridor_map():

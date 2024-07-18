@@ -1,0 +1,3 @@
+- +experiment=delivery-penalty
+- ++gpi.learn.total_timesteps=7000
+- ++seed=10

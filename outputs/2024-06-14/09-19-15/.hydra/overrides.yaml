@@ -1,0 +1,4 @@
+- +experiment=delivery-penalty
+- ++gpi.learn.total_timesteps=7000
+- ++fsa_name=task2
+- ++seed=10

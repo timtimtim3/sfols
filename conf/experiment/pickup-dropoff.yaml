@@ -1,0 +1,11 @@
+# @package _global_
+defaults:
+  - override /algorithm: sf
+  - override /env: pickup-dropoff
+
+seed: 42
+algorithm:
+  gamma: 0.99
+
+eval_env: PickupDropoffEval-v0
+fsa_name: task1

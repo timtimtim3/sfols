@@ -1,0 +1,11 @@
+# @package _global_
+defaults:
+  - override /algorithm: sf
+  - override /env: delivery-penalty
+
+seed: 42
+algorithm:
+  gamma: 0.99
+
+eval_env: DeliveryPenaltyEval-v0
+fsa_name: task1

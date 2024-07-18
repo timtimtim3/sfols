@@ -17,7 +17,7 @@ class SFFSAValueIteration:
         U = self.fsa.states
         
         if weights is None:       
-            W = np.zeros((len(U), len(exit_states)))
+            W = np.zeros((len(U), len(self.env.PHI_OBJ_TYPES)))
         else:
             W = np.asarray(list(weights.values()))
 
@@ -41,7 +41,7 @@ class SFFSAValueIteration:
                     if not self.fsa.graph.has_edge(u, v):
                         continue
 
-                    w = np.zeros((len(exit_states)))
+                    w = np.zeros((len(self.env.PHI_OBJ_TYPES)))
 
                     # Get the predicates satisfied by the transition
                     propositions = self.fsa.get_predicate((u, v)) 

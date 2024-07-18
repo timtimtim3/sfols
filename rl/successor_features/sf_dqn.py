@@ -57,6 +57,7 @@ class SFDQN(RLAlgorithm):
                 project_name: str = 'sfqqn',
                 experiment_name: str = 'sfdqn',
                 log: bool = True,
+                log_prefix: str = "",
                 device: Union[th.device, str] = 'auto'):
 
         super(SFDQN, self).__init__(env, device)
@@ -182,10 +183,10 @@ class SFDQN(RLAlgorithm):
         
         if self.log and self.num_timesteps % 100 == 0:
             if self.per:
-                self.writer.add_scalar("metrics/mean_priority", np.mean(priority), self.num_timesteps)
-                self.writer.add_scalar("metrics/mean_td_error_w", per.abs().mean().item(), self.num_timesteps)
-            self.writer.add_scalar("losses/critic_loss", critic_loss.item(), self.num_timesteps)
-            self.writer.add_scalar("metrics/epsilon", self.epsilon, self.num_timesteps)
+                wb.log({"metrics/mean_priority": np.mean(priority)}, step = self.num_timesteps)
+                wb.log({"metrics/mean_td_error_w": per.abs().mean().item()}, step = self.num_timesteps)
+            wb.log({"losses/critic_loss": critic_loss.item()}, step = self.num_timesteps)
+            wb.log({"metrics/epsilon": self.epsilon}, step = self.num_timesteps)
 
         if not self.police_indices:
             return
@@ -244,7 +245,7 @@ class SFDQN(RLAlgorithm):
             else:
                 return th.argmax(self.q_values(obs, w), dim=1).item()
 
-    def learn(self, total_timesteps, total_episodes=None, reset_num_timesteps=True, eval_env=None, eval_freq=1000, w=np.array([1.0,0.0]), M=[np.array([1.0,0.0]), np.array([0.0,1.0]), np.array([0.5,0.5])]):
+    def learn(self, total_timesteps, fsa_env= None, total_episodes=None, reset_num_timesteps=True, eval_env=None, eval_freq=1000, w=np.array([1.0,0.0]), M=[np.array([1.0,0.0]), np.array([0.0,1.0]), np.array([0.5,0.5])]):
         episode_reward = 0.0
         episode_vec_reward = np.zeros_like(w)
         num_episodes = 0
@@ -277,11 +278,11 @@ class SFDQN(RLAlgorithm):
             
             if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
                 total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
-                self.writer.add_scalar("eval/total_reward", total_reward, self.num_timesteps)
-                self.writer.add_scalar("eval/discounted_return", discounted_return, self.num_timesteps)
+                wb.log({"eval/total_reward": total_reward}, step = self.num_timesteps)
+                wb.log({"eval/discounted_return": discounted_return}, step = self.num_timesteps)
                 for i in range(episode_vec_reward.shape[0]):
-                    self.writer.add_scalar(f"eval/total_reward_obj{i}", total_vec_r[i], self.num_timesteps)
-                    self.writer.add_scalar(f"eval/return_obj{i}", total_vec_return[i], self.num_timesteps)
+                    wb.log({f"eval/total_reward_obj{i}": total_vec_r[i]}, step = self.num_timesteps)
+                    wb.log({f"eval/return_obj{i}": total_vec_return[i]}, step = self.num_timesteps)
 
             episode_reward += reward
             episode_vec_reward += info['phi']
@@ -295,10 +296,10 @@ class SFDQN(RLAlgorithm):
                 if self.log:
                     wb.log({'metrics/policy_index': np.array(self.police_indices), 'global_step': self.num_timesteps})
                     self.police_indices = []
-                    self.writer.add_scalar("metrics/episode", self.num_episodes, self.num_timesteps)
-                    self.writer.add_scalar("metrics/episode_reward", episode_reward, self.num_timesteps)
+                    wb.log({"metrics/episode": self.num_episodes}, step = self.num_timesteps)
+                    wb.log({"metrics/episode_reward": episode_reward}, step =  self.num_timesteps)
                     for i in range(episode_vec_reward.shape[0]):
-                        self.writer.add_scalar(f"metrics/episode_reward_obj{i}", episode_vec_reward[i], self.num_timesteps)
+                        wb.log({f"metrics/episode_reward_obj{i}": episode_vec_reward[i]}, step = self.num_timesteps)
 
                 episode_reward = 0.0
                 episode_vec_reward = np.zeros_like(w)

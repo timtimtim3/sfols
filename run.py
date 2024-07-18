@@ -40,6 +40,7 @@ def main(cfg: DictConfig) -> None:
     task = cfg.fsa_name
 
     task_name = '-'.join([eval_env.unwrapped.spec.id, task])
+
     fsa = load_fsa(task_name) # Load FSA
     eval_env = GridEnvWrapper(eval_env, fsa)
 

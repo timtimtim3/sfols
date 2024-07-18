@@ -104,7 +104,7 @@ class QValueIteration(RLAlgorithm):
                         b = np.argmax(np.dot(Psi_sf[ns], w))
                         # Change this
                         q += prob * (features + self.gamma * (1-done) * Psi_sf[ns, b])
-                        
+
                         if is_option and ns == tsidx:
                                 To[s, ns] = self.gamma ** 0            
                     Psi_new[s, a] = q

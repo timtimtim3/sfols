@@ -9,7 +9,7 @@ target_positions = list(map(lambda l: np.array(l), [(0.14, 0.0), (-0.14, 0.0), (
 
 class ReacherBulletEnv(BaseBulletEnv):
 
-    def __init__(self, target=(0.14, 0.0), weight=np.array([1.0,0,0,0.0])):#np.array([1.0,0,0,0,0,0,0,0,0,0,0,0])):
+    def __init__(self, target=(0.14, 0.0), weight=np.array([1.0,0,0,0])):#np.array([1.0,0,0,0,0,0,0,0,0,0,0,0])):
         self.robot = ReacherRobot(target)
         BaseBulletEnv.__init__(self, self.robot)
         self._cam_dist = 0.75
@@ -46,7 +46,10 @@ class ReacherBulletEnv(BaseBulletEnv):
         phi = np.zeros(len(self.target_positions))
         for index, target in enumerate(self.target_positions):
             delta = np.linalg.norm(np.array(self.robot.fingertip.pose().xyz()[:2]) - target)
-            phi[index] = (1. - 4*delta) # 1 - 4
+            
+            phi[index] = int( delta < 0.05)
+        
+
         scalar_reward = np.dot(phi, self.w)
 
         self.HUD(state, real_action, False)
@@ -61,6 +64,7 @@ class ReacherBulletEnv(BaseBulletEnv):
 
 
 class ReacherRobot(MJCFBasedRobot):
+    
     TARG_LIMIT = 0.27
 
     def __init__(self, target):

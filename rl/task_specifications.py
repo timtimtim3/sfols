@@ -2,6 +2,14 @@ from .fsa import FiniteStateAutomaton
 
 def load_fsa(name:str):
 
+    if name == "DeliveryPenaltyEval-v0-task1":
+        return fsa_delivery_penalty1()
+    if name == "DeliveryPenaltyEval-v0-task2":
+        return fsa_delivery_penalty2()
+    if name == "DeliveryPenaltyEval-v0-task3":
+        return fsa_delivery_penalty3()
+    if name == "DeliveryMiniPenaltyEval-v0-task1":
+        return fsa_delivery_mini_penalty1()
     if name == "DeliveryEval-v0-task1":
         return fsa_delivery1()
     elif name == "DeliveryEval-v0-task2":
@@ -18,7 +26,30 @@ def load_fsa(name:str):
         return fsa_office1()
     elif name in ("DoubleSlitEval-v0-task1", "DoubleSlitEval-v1-task1", 'DoubleSlitRSEval-v0-task1', "IceCorridorEval-v0-task1"):
         return fsa_double_slit1()
+    elif name in ("PickupDropoffEval-v0-task1"):
+        return fsa_pickup_dropoff1()
     
+
+def fsa_pickup_dropoff1():
+
+     
+    symbols_to_phi =  {"H": 0, 
+                       "C": 1,
+                       "A": 2,
+                       "T": 3}
+    
+    fsa = FiniteStateAutomaton(symbols_to_phi)
+
+    fsa.add_state("u0")
+    fsa.add_state("u1")
+    fsa.add_state("u2")
+
+
+    fsa.add_transition("u0", "u1", ["T", "A"])
+    fsa.add_transition("u1", "u2", ["H"])
+
+    return fsa
+
 def fsa_double_slit1():
     
     symbols_to_phi =  {"O1": 0, 
@@ -192,6 +223,127 @@ def fsa_delivery3():
     fsa.add_transition("u1", "u3", ["B"] )
     fsa.add_transition("u2", "u3", ["A"] )
     fsa.add_transition("u3", "u4", ["C"] )
+    fsa.add_transition("u4", "u5", ["H"] )
+
+    return fsa
+
+
+def fsa_delivery_penalty1():
+
+    symbols_to_phi = {"A": 0, 
+                      "B": 1, 
+                      "C": 2, 
+                      "H": 3, 
+                      "O": 4}
+    
+    fsa = FiniteStateAutomaton(symbols_to_phi)
+
+    fsa.add_state("u0")
+    fsa.add_state("u1")
+    fsa.add_state("u2")
+    fsa.add_state("u3")
+    fsa.add_state("u4")
+    fsa.add_state("u5")
+
+    fsa.add_transition("u0", "u1", ["A"] )
+    fsa.add_transition("u0", "u5", ["O"] )
+    fsa.add_transition("u1", "u2", ["B"] )
+    fsa.add_transition("u1", "u5", ["O"] )
+    fsa.add_transition("u2", "u3", ["C"] )
+    fsa.add_transition("u2", "u5", ["O"] )
     fsa.add_transition("u3", "u4", ["H"] )
+    fsa.add_transition("u3", "u5", ["O"] )
+
+    return fsa
+
+def fsa_delivery_penalty2():
+
+    # OR: Go to A "OR" B, then C, then H.
+    # (A v B ) -> C -> H
+    
+    symbols_to_phi = {"A": 0, 
+                      "B": 1, 
+                      "C": 2, 
+                      "H": 3,
+                      "O": 4}
+
+    
+    fsa = FiniteStateAutomaton(symbols_to_phi)
+
+    fsa.add_state("u0")
+    fsa.add_state("u1")
+    fsa.add_state("u2")
+    fsa.add_state("u3")
+    fsa.add_state("u4")
+    fsa.add_state("u5")
+
+    fsa.add_transition("u0", "u1", ["A"] )
+    fsa.add_transition("u0", "u2", ["B"] )
+    fsa.add_transition("u0", "u5", ["O"] )
+    fsa.add_transition("u1", "u3", ["C"] )
+    fsa.add_transition("u1", "u5", ["O"] )
+    fsa.add_transition("u2", "u3", ["C"] )
+    fsa.add_transition("u2", "u5", ["O"] )
+    fsa.add_transition("u3", "u4", ["H"] )
+    fsa.add_transition("u3", "u5", ["O"] )
+
+    return fsa
+
+def fsa_delivery_penalty3():
+
+    # OR: Go to A "OR" B, then C, then H.
+    # (A v B ) -> C -> H
+    symbols_to_phi = {"A": 0, 
+                      "B": 1, 
+                      "C": 2, 
+                      "H": 3,
+                      "O": 4}
+    
+    fsa = FiniteStateAutomaton(symbols_to_phi)
+
+    fsa.add_state("u0")
+    fsa.add_state("u1")
+    fsa.add_state("u2")
+    fsa.add_state("u3")
+    fsa.add_state("u4")
+    fsa.add_state("u5")
+    fsa.add_state("u6")
+
+    fsa.add_transition("u0", "u1", ["A"] )
+    fsa.add_transition("u0", "u2", ["B"] )
+    fsa.add_transition("u0", "u6", ["O"] )
+    fsa.add_transition("u1", "u3", ["B"] )
+    fsa.add_transition("u1", "u6", ["O"] )
+    fsa.add_transition("u2", "u3", ["A"] )
+    fsa.add_transition("u2", "u6", ["O"] )
+    fsa.add_transition("u3", "u4", ["C"] )
+    fsa.add_transition("u3", "u6", ["O"] )
+    fsa.add_transition("u3", "u4", ["H"] )
+    fsa.add_transition("u3", "u6", ["O"] )
+
+    return fsa
+
+def fsa_delivery_mini_penalty1():
+    
+    symbols_to_phi = {"A": 0, 
+                      "B": 1, 
+                      "H": 2, 
+                      "O": 3}
+    
+    fsa = FiniteStateAutomaton(symbols_to_phi)
+
+    fsa.add_state("u0")
+    fsa.add_state("u1")
+    fsa.add_state("u2")
+    fsa.add_state("u3")
+    fsa.add_state("u4")
+
+
+    fsa.add_transition("u0", "u1", ["A"] )
+    fsa.add_transition("u0", "u4", ["O"] )
+    fsa.add_transition("u1", "u2", ["B"] )
+    fsa.add_transition("u1", "u4", ["O"] )
+    fsa.add_transition("u2", "u3", ["H"] )
+    fsa.add_transition("u2", "u4", ["O"] )
 
     return fsa

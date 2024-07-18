@@ -10,6 +10,7 @@ class GridEnvWrapper(gym.Env):
         self.fsa = fsa
         self.fsa_init_state = fsa_init_state
         self.exit_states = self.env.unwrapped.exit_states
+        self.PHI_OBJ_TYPES = env.PHI_OBJ_TYPES
 
 
     def get_state(self):
