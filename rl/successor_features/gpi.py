@@ -1,9 +1,8 @@
 from typing import Union, Callable
 import numpy as np
 import torch as th
-import wandb
 from copy import deepcopy
-from rl.rl_algorithm import RLAlgorithm
+from sfols.rl.rl_algorithm import RLAlgorithm
 
 
 class GPI(RLAlgorithm):
@@ -11,11 +10,11 @@ class GPI(RLAlgorithm):
     def __init__(self,
                  env,
                  algorithm_constructor: Callable,
+                 fsa_env = None,
                  log: bool = True,
-                 project_name: str = 'gpi',
-                 experiment_name: str = 'gpi',
                  device: Union[th.device, str] = 'auto'):
-        super(GPI, self).__init__(env, device)
+        
+        super(GPI, self).__init__(env, device, fsa_env=fsa_env)
 
         self.algorithm_constructor = algorithm_constructor
         self.policies = []
@@ -24,7 +23,6 @@ class GPI(RLAlgorithm):
         self.num_timesteps = 0
 
         self.log = log
-        # self.define_wandb_metrics()
 
     def eval(self, obs, w, return_policy_index=False, exclude=None) -> int:
         """
@@ -89,13 +87,11 @@ class GPI(RLAlgorithm):
               total_timesteps,
               total_episodes=None,
               reset_num_timesteps=False,
-              eval_env=None, 
               eval_freq=1000,
               use_gpi=True,
               reset_learning_starts=True,
               new_policy=True,
               reuse_value_ind=None,
-              fsa_env=None,
               **kwargs
               ):
         
@@ -143,15 +139,9 @@ class GPI(RLAlgorithm):
                                 total_episodes  = total_episodes,
                                 reset_num_timesteps=reset_num_timesteps,
                                 eval_freq = eval_freq,
-                                fsa_env   = fsa_env,
-                                eval_env  = eval_env,
                                 **kwargs)
         
         self.learned_policies += 1
-
-    def define_wandb_metrics(self):
-        wandb.define_metric(f"learning_step")
-        wandb.define_metric(f"fsa_reward", step_metric="learning_step")
 
 
     @property

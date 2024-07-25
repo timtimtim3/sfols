@@ -1,11 +1,11 @@
 import numpy as np
 import random
-from rl.utils.utils import eval_mo, linearly_decaying_epsilon
+from sfols.rl.utils.utils import eval_mo, linearly_decaying_epsilon
 from envs.wrappers import FlatQEnvWrapper
-from rl.rl_algorithm import RLAlgorithm
-from rl.successor_features.gpi import GPI
-from rl.utils.buffer import ReplayBuffer
-from rl.utils.prioritized_buffer import PrioritizedReplayBuffer
+from sfols.rl.rl_algorithm import RLAlgorithm
+from sfols.rl.successor_features.gpi import GPI
+from sfols.rl.utils.buffer import ReplayBuffer
+from sfols.rl.utils.prioritized_buffer import PrioritizedReplayBuffer
 import wandb
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -15,6 +15,7 @@ class SF(RLAlgorithm):
 
     def __init__(self,
                 env,
+                fsa_env = None,
                 alpha: float = 0.01, 
                 gamma: float = 0.99,
                 initial_epsilon: float = 0.01,
@@ -30,10 +31,11 @@ class SF(RLAlgorithm):
                 use_gpi: bool = False,
                 envelope: bool = False,
                 log: bool = False,
+                constraint : dict = None, 
                 log_prefix: str = ""
                 ):
 
-        super().__init__(env, device=None, log_prefix=log_prefix)
+        super().__init__(env, device=None, fsa_env=fsa_env,  log_prefix=log_prefix)
 
         self.phi_dim = len(env.unwrapped.w)
         self.alpha = alpha
@@ -51,6 +53,7 @@ class SF(RLAlgorithm):
         self.per = per
         self.min_priority = min_priority
         self.envelope = envelope
+        self.constraint = constraint
 
         self.q_table = dict()
         # NOTE: Modified this to include the "SF values" actually in the terminal states
@@ -99,6 +102,7 @@ class SF(RLAlgorithm):
         return np.dot(self.q_table[obs], w)
 
     def train(self, w: np.array):
+        self.w = w
         obs = tuple(self.obs)
         next_obs = tuple(self.next_obs)
 
@@ -109,7 +113,8 @@ class SF(RLAlgorithm):
             if self.envelope:
                 max_q = self.gpi.max_q(self.next_obs, w)
             else:
-                max_q = self.q_table[next_obs][self.gpi.eval(self.next_obs, w)]  # GPI used to select next max action
+                # GPI used to select next max action
+                max_q = self.q_table[next_obs][self.gpi.eval(self.next_obs, w)]  
         else:
             max_q = self.q_table[next_obs][np.argmax(np.dot(self.q_table[next_obs], w))]
         
@@ -118,7 +123,7 @@ class SF(RLAlgorithm):
         max_td_error = abs(td_error @ w)
 
         # Update other learned_policies
-        # D: This should update the policy that was selected in act part  using the same data
+        # D: This should update the policy that was selected in act part using the same data
         if self.gpi is not None:
             if self.policy_index is not None and self.policy_index != len(self.gpi.policies) - 1:
                 i, pi = self.policy_index, self.gpi.policies[self.policy_index]
@@ -179,13 +184,16 @@ class SF(RLAlgorithm):
         
         if self.log and self.num_timesteps % 1000 == 0:
             log_dict = {
-                f"{self.log_prefix}_max_td_error": max_td_error,
-                f"{self.log_prefix}_epsilon": self.epsilon,
-                f"{self.log_prefix}_num timesteps": self.num_timesteps-self.learning_starts,
+                f"{self.log_prefix}max_td_error": max_td_error,
+                f"{self.log_prefix}epsilon": self.epsilon,
+                f"{self.log_prefix}num timesteps": self.num_timesteps-self.learning_starts,
             }
             if self.use_replay and self.per:
                 log_dict[f"{self.log_prefix}mean_priority"] = new_priorities.mean()
             wandb.log(log_dict)
+
+
+        
         
         return max_td_error
 
@@ -195,12 +203,12 @@ class SF(RLAlgorithm):
         wandb.define_metric(f"{self.log_prefix}discounted return", step_metric=f"{self.log_prefix}episode")
         wandb.define_metric(f"{self.log_prefix}episode_reward_obj*", step_metric=f"{self.log_prefix}episode")
 
-        wandb.define_metric(f"{self.log_prefix}timestep")
-        wandb.define_metric(f"{self.log_prefix}max_td_error", step_metric=f"{self.log_prefix}timestep")
-        wandb.define_metric(f"{self.log_prefix}epsilon", step_metric=f"{self.log_prefix}timestep")
-        wandb.define_metric(f"{self.log_prefix}mean_priority", step_metric=f"{self.log_prefix}timestep")
-        wandb.define_metric(f"{self.log_prefix}total_reward", step_metric=f"{self.log_prefix}timestep")
-        wandb.define_metric(f"{self.log_prefix}discounted_return", step_metric=f"{self.log_prefix}timestep")
+        wandb.define_metric(f"learning/timestep")
+        wandb.define_metric(f"{self.log_prefix}max_td_error", step_metric=f"learning/timestep")
+        wandb.define_metric(f"{self.log_prefix}epsilon", step_metric=f"learning/timestep")
+        wandb.define_metric(f"{self.log_prefix}mean_priority", step_metric=f"learning/timestep")
+        wandb.define_metric(f"{self.log_prefix}total_reward", step_metric=f"learning/timestep")
+        wandb.define_metric(f"{self.log_prefix}discounted_return", step_metric=f"learning/timestep")
 
 
     def get_config(self) -> dict:
@@ -221,8 +229,6 @@ class SF(RLAlgorithm):
               reset_num_timesteps=True,
               eval_freq=50,
               w=np.array([1.0,0.0]),
-              eval_env = None,
-              fsa_env=None,
               avg_td_step=-1,
               avg_td_threshold=-1,
               ):
@@ -249,34 +255,27 @@ class SF(RLAlgorithm):
             episode_length += 1
 
             self.action = self.act(self.obs, w)
-            self.next_obs, reward, done, info = self.env.step(self.action)
+            self.next_obs, _, done, info = self.env.step(self.action)
+
+            reward = np.dot(info['phi'], w)
+
             self.reward = info['phi'] # vectorized reward
             self.terminal = done if 'TimeLimit.truncated' not in info else not info['TimeLimit.truncated']
 
             max_td_error = self.train(w)
             run_avg_td_err += avg_td_step * (max_td_error - run_avg_td_err)
 
-            # if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
-            #     total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
-            #     self.writer.add_scalar("eval/total_reward", total_reward, self.num_timesteps)
-            #     self.writer.add_scalar("eval/discounted_return", discounted_return, self.num_timesteps)
-            #     for i in range(episode_vec_reward.shape[0]):
-            #         self.writer.add_scalar(f"eval/total_reward_obj{i}", total_vec_r[i], self.num_timesteps)
-            #         self.writer.add_scalar(f"eval/return_obj{i}", total_vec_return[i], self.num_timesteps)
-
             episode_reward += (self.gamma ** episode_length) * reward
             episode_vec_reward += (self.gamma ** episode_length) * info['phi']
             episode_length += 1
 
             if self.num_timesteps % eval_freq == 0:
-                if isinstance(fsa_env, FlatQEnvWrapper):
-                    v = eval_mo(agent=self, env=fsa_env, w=w, render=False, gamma=self.gamma)[1]
-                    wandb.log({f"{self.log_prefix}exp return": v, "learning/timestep": self.num_timesteps},
-                              step=self.num_timesteps)
+                if isinstance(self.fsa_env, FlatQEnvWrapper):
+                    v = eval_mo(agent=self, env=self.fsa_env, w=w, render=False, gamma=self.gamma)[1]
+                    wandb.log({f"{self.log_prefix}exp return": v, "learning/timestep": self.num_timesteps})
                 else:
-                    fsa_reward = self.evaluate_fsa(fsa_env)
-                # print(self, total_timesteps)
-                    wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps}, step=self.num_timesteps)
+                    fsa_reward = self.evaluate_fsa()
+                    wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps})
 
             if done:
                 self.obs, done = self.env.reset(), False
@@ -289,10 +288,10 @@ class SF(RLAlgorithm):
                     log_dict = {
                         f"{self.log_prefix}episode": self.num_episodes,
                         f"{self.log_prefix}discounted return": episode_reward,
-                        f"{self.log_prefix}num timesteps": self.num_timesteps-self.learning_starts
+                        f"{self.log_prefix}num timesteps": self.num_timesteps-self.learning_starts,
                     }
                     for i in range(episode_vec_reward.shape[0]):
-                        log_dict[f"{self.log_prefix}episode_reward_obj{i}"] = episode_vec_reward[i]
+                        log_dict[f"{self.log_prefix}episode_feature{i}"] = episode_vec_reward[i]
                     wandb.log(log_dict)
                 episode_reward = 0.0
                 episode_vec_reward = np.zeros(w.shape[0])
@@ -303,41 +302,5 @@ class SF(RLAlgorithm):
                     break
             else:
                 self.obs = self.next_obs
-        
+
         self.w = w
-
-
-    def evaluate_fsa(self, fsa_env):
-
-        # Custom function to evaluate the so-far computed CCS,
-        # on a given FSA.
-        
-        sys.path.append("..")
-
-        from ..planning import SFFSAValueIteration as VI
-       
-        def evaluate(env, W, num_steps = 100):
-    
-            env.reset()
-            acc_reward = 0
-
-            for _ in range(num_steps):
-
-                (f, state) = env.get_state()
-                w = W[f]
-               
-                action = self.gpi.eval(state, w)
-
-                _, reward, done, _ = env.step(action)
-                acc_reward+=reward
-
-                if done:
-                    break
-
-            return acc_reward
-        
-        planning = VI(fsa_env, self.gpi)
-        W, _ = planning.traverse(None, k=15)
-        acc_reward = evaluate(fsa_env, W, num_steps=200)
-
-        return acc_reward

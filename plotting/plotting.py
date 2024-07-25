@@ -85,7 +85,7 @@ def plot_policy(ax, arrow_data, grid, title_suffix="", values=True, headwidth=9,
             else:
                 y -= 0.25
             ax.text(x, y, "%2d" % (color[i] * 100), horizontalalignment='center',
-                    verticalalignment='center', color="black", fontsize=7)
+                    verticalalignment='center', color="black", fontsize=4)
     # cax = divider.append_axes("right", size=colorbar_size, pad=0.025)
     # plt.colorbar(quiv, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0.3, 1.1, 0.1))
     # ax.set_title(("Maximum likelihood actions in states" + title_suffix))

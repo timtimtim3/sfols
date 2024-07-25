@@ -4,8 +4,8 @@ from typing import Union
 import torch as th
 import wandb
 
-from rl.rl_algorithm import RLAlgorithm
-from rl.successor_features.gpi import GPI
+from sfols.rl.rl_algorithm import RLAlgorithm
+from sfols.rl.successor_features.gpi import GPI
 import numpy as np
 
 
@@ -14,15 +14,17 @@ class QValueIteration(RLAlgorithm):
 
     def __init__(self,  
                 env,
+                fsa_env = None,
                 gamma: float = 0.95,
                 delta: float = 1e-3, 
                 gpi: GPI = None,
                 use_gpi: bool = False,
                 log: bool = False,
-                log_prefix: str = ""
+                log_prefix: str = "",
+                constraint: dict = None,
                 ):
         
-        super().__init__(env, device=None, log_prefix=log_prefix)
+        super().__init__(env, fsa_env=fsa_env, device=None, log_prefix=log_prefix)
         self.phi_dim = len(env.unwrapped.w)
         self.gamma = gamma 
         self.delta = delta
@@ -33,6 +35,8 @@ class QValueIteration(RLAlgorithm):
         self.replay_buffer = None
 
         self.q_table = dict()
+
+        self.constraint = constraint
 
     
     def act(self, obs: np.array, w: np.array):
@@ -137,4 +141,5 @@ class QValueIteration(RLAlgorithm):
         # TODO: Add information about the policy obtained?
 
         init_state = self.env.unwrapped.initial[0]
-        wandb.log({f"{self.log_prefix}vi iters": total_sweeps})
+        if self.log:
+            wandb.log({f"{self.log_prefix}vi iters": total_sweeps})

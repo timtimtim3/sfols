@@ -99,8 +99,12 @@ def eval_mo(agent, env, w, gamma=1.0, render=False):
         if render:
             env.render()
         obs, r, done, info = env.step(agent.eval(obs, w))
-        total_vec_reward += info['phi']
-        vec_return += gamma * info['phi']
+        try:
+            total_vec_reward += info['phi']
+            vec_return += gamma * info['phi']
+        except:
+            print(obs, r, done, info)
+            exit()
         gamma *= agent.gamma
     return np.dot(w, total_vec_reward), np.dot(w, vec_return), total_vec_reward, vec_return
 
