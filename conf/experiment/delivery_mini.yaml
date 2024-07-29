@@ -1,8 +1,0 @@
-# @package _global_
-defaults:
-  - override /algorithm: qvalue_iter
-  - override /env: delivery_mini
-
-seed: 42
-algorithm:
-  gamma: 0.99

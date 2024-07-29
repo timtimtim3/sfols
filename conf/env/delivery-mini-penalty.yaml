@@ -1,5 +1,0 @@
-defaults:
-  - grid_env
-
-gym_name: DeliveryMiniPenalty-v0
-add_obj_to_start: True

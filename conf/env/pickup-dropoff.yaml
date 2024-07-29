@@ -1,5 +1,0 @@
-defaults:
-  - grid_env
-
-gym_name: PickupDropoff-v0
-add_obj_to_start: True
