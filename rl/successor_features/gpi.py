@@ -1,8 +1,9 @@
-from typing import Union, Callable
+from fsa.planning import SFFSAValueIteration as ValueIteration
+from sfols.rl.rl_algorithm import RLAlgorithm
+from typing import Union, Callable, Optional
 import numpy as np
 import torch as th
 from copy import deepcopy
-from sfols.rl.rl_algorithm import RLAlgorithm
 
 
 class GPI(RLAlgorithm):
@@ -12,9 +13,10 @@ class GPI(RLAlgorithm):
                  algorithm_constructor: Callable,
                  fsa_env = None,
                  log: bool = True,
-                 device: Union[th.device, str] = 'auto'):
+                 device: Union[th.device, str] = 'auto', 
+                 planning_constraint: Optional[dict] = None):
         
-        super(GPI, self).__init__(env, device, fsa_env=fsa_env)
+        super(GPI, self).__init__(env, device, fsa_env=fsa_env, planning_constraint=planning_constraint)
 
         self.algorithm_constructor = algorithm_constructor
         self.policies = []
@@ -155,3 +157,41 @@ class GPI(RLAlgorithm):
         if len(self.policies) > 0:
             return self.policies[0].get_config()
         return {}
+
+    def evaluate_fsa(self, fsa_env) -> int:
+
+        # Custom function to evaluate the so-far computed CCS,
+        # on a given FSA.
+
+        planning = ValueIteration(fsa_env, self, constraint=self.planning_constraint)
+        W, _ = planning.traverse(None, num_iters=15)
+        
+        acc_reward = GPI.evaluate(self, fsa_env, W, num_steps=200)
+
+        return acc_reward
+    
+
+    @staticmethod
+    def evaluate(gpi, 
+                 env, 
+                 W: dict, 
+                 num_steps : Optional[int] = 200) -> int:
+    
+            env.reset()
+            acc_reward = 0
+
+            for _ in range(num_steps):
+
+                (f, state) = env.get_state()
+                w = W[f]
+               
+                action = gpi.eval(state, w)        
+
+                _, reward, done, _ = env.step(action)
+                acc_reward+=reward
+
+                if done:
+                    break
+
+            return acc_reward
+        

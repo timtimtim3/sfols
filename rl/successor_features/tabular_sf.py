@@ -1,14 +1,15 @@
-import numpy as np
-import random
+from sfols.rl.utils.prioritized_buffer import PrioritizedReplayBuffer
 from sfols.rl.utils.utils import eval_mo, linearly_decaying_epsilon
-from envs.wrappers import FlatQEnvWrapper
-from sfols.rl.rl_algorithm import RLAlgorithm
 from sfols.rl.successor_features.gpi import GPI
 from sfols.rl.utils.buffer import ReplayBuffer
-from sfols.rl.utils.prioritized_buffer import PrioritizedReplayBuffer
-import wandb
+from sfols.rl.rl_algorithm import RLAlgorithm
+from envs.wrappers import FlatQEnvWrapper
+
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
+import random
+import wandb
 import sys
 
 class SF(RLAlgorithm):
@@ -32,8 +33,7 @@ class SF(RLAlgorithm):
                 envelope: bool = False,
                 log: bool = False,
                 constraint : dict = None, 
-                log_prefix: str = ""
-                ):
+                log_prefix: str = ""):
 
         super().__init__(env, device=None, fsa_env=fsa_env,  log_prefix=log_prefix)
 
@@ -274,7 +274,7 @@ class SF(RLAlgorithm):
                     v = eval_mo(agent=self, env=self.fsa_env, w=w, render=False, gamma=self.gamma)[1]
                     wandb.log({f"{self.log_prefix}exp return": v, "learning/timestep": self.num_timesteps})
                 else:
-                    fsa_reward = self.evaluate_fsa()
+                    fsa_reward = self.gpi.evaluate_fsa(self.fsa_env)
                     wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps})
 
             if done:
