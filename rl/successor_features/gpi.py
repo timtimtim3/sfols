@@ -4,7 +4,7 @@ import glob
 import pickle as pkl
 from fsa.planning import SFFSAValueIteration as ValueIteration
 from sfols.rl.rl_algorithm import RLAlgorithm
-from typing import Union, Callable, Optional
+from typing import Union, Callable, Optional, List
 import numpy as np
 import torch as th
 from copy import deepcopy
@@ -211,8 +211,7 @@ class GPI(RLAlgorithm):
                                render: bool = False, verbose: bool = False, initial_sleep: float = 3,
                                get_stuck_max: int = 10) -> int:
         """
-        Evaluates a single policy (identified by policy_index) on the environment using the given
-        weight vector mapping W.
+        Evaluates a single policy (identified by policy_index) on the environment.
 
         Parameters:
           - policy_index (int): The index of the policy in self.policies to use for action selection.
@@ -264,6 +263,32 @@ class GPI(RLAlgorithm):
                 break
 
         return acc_reward
+
+    def evaluate_all_single_policies(self, env, num_steps: Optional[int] = 200,
+                                     render: bool = False, verbose: bool = False,
+                                     get_stuck_max: int = 10) -> list[int]:
+        """
+        Evaluates all policies on the environment.
+
+        Parameters:
+          - env: The environment (NOT wrapped with the FSA) on which to evaluate.
+          - num_steps (Optional[int]): Maximum number of steps for evaluation.
+          - render (bool): Whether to render the environment at each step.
+          - verbose (bool): Whether to print.
+          - get_stuck_max (int): If the agent gets stuck in the same state for get_stuck_max times we quit.
+
+        Returns:
+          - acc_reward (list[int]): The accumulated reward from the evaluation.
+        """
+        acc_rewards = []
+        initial_sleep = 3
+        for idx in range(len(self.policies)):
+            acc_reward = self.evaluate_single_policy(idx, env, render=render, verbose=verbose,
+                                                     get_stuck_max=get_stuck_max,
+                                                     initial_sleep=initial_sleep, num_steps=num_steps)
+            acc_rewards.append(acc_reward)
+            initial_sleep = 1
+        return acc_rewards
 
     def load_policies_and_tasks(self, policy_dir: str) -> None:
         """
