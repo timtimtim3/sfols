@@ -1,3 +1,7 @@
+import time
+import os
+import glob
+import pickle as pkl
 from fsa.planning import SFFSAValueIteration as ValueIteration
 from sfols.rl.rl_algorithm import RLAlgorithm
 from typing import Union, Callable, Optional
@@ -11,11 +15,11 @@ class GPI(RLAlgorithm):
     def __init__(self,
                  env,
                  algorithm_constructor: Callable,
-                 fsa_env = None,
+                 fsa_env=None,
                  log: bool = True,
-                 device: Union[th.device, str] = 'auto', 
+                 device: Union[th.device, str] = 'auto',
                  planning_constraint: Optional[dict] = None):
-        
+
         super(GPI, self).__init__(env, device, fsa_env=fsa_env, planning_constraint=planning_constraint)
 
         self.algorithm_constructor = algorithm_constructor
@@ -33,13 +37,13 @@ class GPI(RLAlgorithm):
             What this actually returns in the GPI policy given the current CCS.
         
         """
-        
+
         if not hasattr(self.policies[0], 'q_table'):
             if isinstance(obs, np.ndarray):
                 obs = th.tensor(obs).float().to(self.device)
                 w = th.tensor(w).float().to(self.device)
             q_vals = th.stack([policy.q_values(obs, w)
-                              for policy in self.policies])
+                               for policy in self.policies])
             max_q, a = th.max(q_vals, dim=2)
             policy_index = th.argmax(max_q)
 
@@ -48,7 +52,7 @@ class GPI(RLAlgorithm):
             return a[policy_index].detach().long().item()
         else:
             q_vals = np.stack([policy.q_values(obs, w)
-                              for policy in self.policies if policy is not exclude])
+                               for policy in self.policies if policy is not exclude])
             policy_index, action = np.unravel_index(
                 np.random.choice(np.flatnonzero(q_vals == q_vals.max())), q_vals.shape
             )
@@ -74,7 +78,7 @@ class GPI(RLAlgorithm):
                 return max_psis
         else:
             q_vals = np.stack([policy.q_values(obs, w)
-                              for policy in self.policies])
+                               for policy in self.policies])
             policy_ind, action = np.unravel_index(
                 np.argmax(q_vals), q_vals.shape)
             return self.policies[policy_ind].q_table[tuple(obs)][action]
@@ -84,8 +88,8 @@ class GPI(RLAlgorithm):
             self.policies.pop(i)
             self.tasks.pop(i)
 
-    def learn(self, 
-              w, 
+    def learn(self,
+              w,
               total_timesteps,
               total_episodes=None,
               reset_num_timesteps=False,
@@ -96,7 +100,7 @@ class GPI(RLAlgorithm):
               reuse_value_ind=None,
               **kwargs
               ):
-        
+
         # Creates new policy
         if new_policy:
             new_policy = self.algorithm_constructor(log_prefix=f"policies/policy{self.learned_policies}/")
@@ -137,14 +141,13 @@ class GPI(RLAlgorithm):
 
         # New policy learns using new w
         self.policies[-1].learn(w=w,
-                                total_timesteps = total_timesteps,
-                                total_episodes  = total_episodes,
+                                total_timesteps=total_timesteps,
+                                total_episodes=total_episodes,
                                 reset_num_timesteps=reset_num_timesteps,
-                                eval_freq = eval_freq,
+                                eval_freq=eval_freq,
                                 **kwargs)
-        
-        self.learned_policies += 1
 
+        self.learned_policies += 1
 
     @property
     def gamma(self):
@@ -165,33 +168,133 @@ class GPI(RLAlgorithm):
 
         planning = ValueIteration(fsa_env, self, constraint=self.planning_constraint)
         W, _ = planning.traverse(None, num_iters=15)
-        
+
         acc_reward = GPI.evaluate(self, fsa_env, W, num_steps=200)
 
         return acc_reward
-    
 
     @staticmethod
-    def evaluate(gpi, 
-                 env, 
-                 W: dict, 
-                 num_steps : Optional[int] = 200) -> int:
-    
-            env.reset()
-            acc_reward = 0
+    def evaluate(gpi,
+                 env,
+                 W: dict,
+                 num_steps: Optional[int] = 200,
+                 render=False,
+                 initial_sleep=3) -> int:
 
-            for _ in range(num_steps):
+        env.reset()
+        acc_reward = 0
 
-                (f, state) = env.get_state()
-                w = W[f]
-               
-                action = gpi.eval(state, w)        
+        if render:
+            env.env.render()
+            time.sleep(initial_sleep)  # Add delay for better visualization
 
-                _, reward, done, _ = env.step(action)
-                acc_reward+=reward
+        for _ in range(num_steps):
 
-                if done:
-                    break
+            (f, state) = env.get_state()
+            w = W[f]
 
-            return acc_reward
-        
+            action = gpi.eval(state, w)
+
+            _, reward, done, _ = env.step(action)
+            acc_reward += reward
+
+            if render:
+                env.env.render()
+                time.sleep(0.3)  # Add delay for better visualization
+
+            if done:
+                break
+
+        return acc_reward
+
+    def evaluate_single_policy(self, policy_index: int, env, task_index: int = None, num_steps: Optional[int] = 200,
+                               render: bool = False, verbose: bool = False, initial_sleep: float = 3,
+                               get_stuck_max: int = 10) -> int:
+        """
+        Evaluates a single policy (identified by policy_index) on the environment using the given
+        weight vector mapping W.
+
+        Parameters:
+          - policy_index (int): The index of the policy in self.policies to use for action selection.
+          - env: The environment (NOT wrapped with the FSA) on which to evaluate.
+          - task_index (int): Which task (weight vector) to eval on
+          - num_steps (Optional[int]): Maximum number of steps for evaluation.
+          - render (bool): Whether to render the environment at each step.
+          - verbose (bool): Whether to print.
+          - initial_sleep (float): How many seconds to sleep before the agent starts.
+          - get_stuck_max (int): If the agent gets stuck in the same state for get_stuck_max times we quit.
+
+        Returns:
+          - acc_reward (int): The accumulated reward from the evaluation.
+        """
+        task_idx = task_index if task_index is not None else policy_index
+        w = self.tasks[task_idx]
+
+        if verbose:
+            print(f"Evaluating policy: {policy_index}, on task: {task_idx}, with w: {w}.")
+
+        env.reset()
+        acc_reward = 0
+        selected_policy = self.policies[policy_index]
+
+        # Optional: Render an initial frame if requested
+        if render:
+            env.env.render()
+            import time
+            time.sleep(initial_sleep)
+
+        stuck_count = 0
+        for _ in range(num_steps):
+            # Get the current combined state: (fsa_state, env_state)
+            state = self.env.state
+            action = selected_policy.eval(state, w)
+
+            # Step in the environment using the chosen action
+            new_state, reward, done, _ = env.step(action)
+            acc_reward += reward
+
+            if np.array_equal(new_state, state):
+                stuck_count += 1
+
+            if render:
+                env.env.render()
+                time.sleep(0.3)
+
+            if done or get_stuck_max == stuck_count:
+                break
+
+        return acc_reward
+
+    def load_policies_and_tasks(self, policy_dir: str) -> None:
+        """
+        Loads saved policies and tasks from the specified directory and assigns them to self.policies and self.tasks.
+
+        Parameters:
+            policy_dir (str): The directory where the policy pickle files and tasks.pkl are stored.
+        """
+        # Load tasks.pkl (if it exists) and assign to self.tasks
+        tasks_path = os.path.join(policy_dir, "tasks.pkl")
+        if os.path.exists(tasks_path):
+            with open(tasks_path, "rb") as f:
+                tasks_data = pkl.load(f)
+            self.tasks = tasks_data
+            print(f"Loaded {len(self.tasks)} tasks from {tasks_path}")
+        else:
+            self.tasks = []
+            print(f"No tasks.pkl found in {policy_dir}. self.tasks is set to an empty list.")
+
+        # Load policy pickle files from the directory
+        pkl_files = sorted(glob.glob(os.path.join(policy_dir, "discovered_policy_*.pkl")))
+        print(f"Loading {len(pkl_files)} policies from {policy_dir}")
+        for pkl_path in pkl_files:
+            with open(pkl_path, "rb") as fp:
+                policy_data = pkl.load(fp)
+            # Reconstruct a new policy by calling the algorithm constructor.
+            # This ensures that the policy object has the correct class and methods.
+            policy = self.algorithm_constructor(log_prefix="load-policy")
+            # Restore attributes from the unpickled dictionary
+            for k, v in policy_data.items():
+                setattr(policy, k, v)
+            # Insert the policy into the GPI agent's policy list
+            self.policies.append(policy)
+        print(f"Loaded {len(self.policies)} policies into GPI agent.")
