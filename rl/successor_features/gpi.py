@@ -77,11 +77,15 @@ class GPI(RLAlgorithm):
                     1, max_acts.reshape(-1, 1, 1).expand(psi_i.size(0), 1, psi_i.size(2))).squeeze(1)
                 return max_psis
         else:
+            # q_vals is now a matrix of (n_policies, action_dim) where each row is the Q-values for that policy for the
+            # different actions
             q_vals = np.stack([policy.q_values(obs, w)
                                for policy in self.policies])
+            # finds the index of the maximum Q-value in the entire q_vals matrix, then uses unravel_index to convert
+            # the flat index into a (row, column) index, so we get the best policy and corresponding best action index
             policy_ind, action = np.unravel_index(
                 np.argmax(q_vals), q_vals.shape)
-            return self.policies[policy_ind].q_table[tuple(obs)][action]
+            return self.policies[policy_ind].q_table[tuple(obs)][action]  # returns the sf of the max Q
 
     def delete_policies(self, delete_indx):
         for i in sorted(delete_indx, reverse=True):

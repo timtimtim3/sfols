@@ -99,6 +99,9 @@ class SF(RLAlgorithm):
 
         if obs not in self.q_table:
             self.q_table[obs] = np.zeros((self.action_dim, self.phi_dim))
+            # q_table is really a table of successor features here
+            # we have for each action one Q value but in this case this is for each action one sucessor feature of size
+            # phi_dim (or w.size) so that we can get its Q-value using np.dot(sf, w)
         return np.dot(self.q_table[obs], w)
 
     def train(self, w: np.array):
