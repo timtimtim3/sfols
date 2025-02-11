@@ -7,37 +7,22 @@ from matplotlib.ticker import FuncFormatter
 import matplotlib.patches as patches
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
+from envs.utils import convert_map_to_grid
+
 
 # Define a custom colormap from light gray to dark gray
 custom_gray = mcolors.LinearSegmentedColormap.from_list(
     "custom_gray", ["#D3D3D3", "#303030"]  # Light gray → Dark gray
 )
-import pickle
 # TODO (low priority) general refactor
 
-
-def create_grid_plot(ax, grid, color_map="binary"):
-    if color_map == "binary":
-        grid = 1 - grid
-    size_y = grid.shape[0]
-    size_x = grid.shape[1]
-    vmax = max(float(np.max(grid)), 1)
-    vmin = 0
-
-    mat = ax.matshow(np.flip(grid, 0), cmap=plt.get_cmap(color_map), extent=[0, size_x, 0, size_y], vmin=vmin, vmax=vmax)
-    ax.set_xticks(np.arange(0, size_x))
-    ax.set_xticks(np.arange(0.5, size_x + 0.5), minor=True)
-    # ax.set_xticklabels(np.arange(0, size_x), minor=True)
-    plt.setp(ax.get_xmajorticklabels(), visible=False)
-    ax.set_yticks(np.arange(0, size_y))
-    ax.set_yticks(np.arange(0.5, size_y + 0.5), minor=True)
-    # ax.set_yticklabels(np.arange(0, size_y), minor=True)
-    ax.invert_yaxis()
-    plt.setp(ax.get_ymajorticklabels(), visible=False)
-
-    ax.tick_params(axis='both', which='both', length=0)
-    ax.grid(color="black")
-    return mat
+RBF_COLORS = {
+    "A": "cyan",
+    "B": "magenta",
+    "C": "lime",
+    "D": "orange",
+    "E": "blue",
+}
 
 
 def create_grid_plot_values(ax, grid, color_map, coords, probs, values=True):
@@ -69,34 +54,10 @@ def plot_terminations(ax, probs, coords, grid, title_suffix="", values=True, col
     mat = create_grid_plot_values(ax, grid, "OrRd", coords, probs.numpy(), values=values)
     divider = make_axes_locatable(ax)
     # cax = divider.append_axes("right", size=colorbar_size, pad=0.025)
-    # plt.colorbar(mat, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0.0, 1.1, 0.25))
+    # plt.colorbar(mat, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)),
+    #              ticks=np.arange(0.0, 1.1, 0.25))
     # ax.set_title(("Termination probabilities in states" + title_suffix))
     return mat
-
-
-def plot_policy(ax, arrow_data, grid, title_suffix="", values=True, headwidth=9, headlength=20, colorbar_size='10%'):
-    create_grid_plot(ax, grid)
-    x_pos, y_pos, x_dir, y_dir, color = arrow_data
-    quiv = ax.quiver(x_pos, y_pos, x_dir, y_dir, color, cmap=plt.get_cmap("viridis"),
-                     norm=colors.Normalize(vmin=color.min(), vmax=color.max()), angles='xy', scale_units='xy',
-                     scale=1, pivot='middle', clim=(0.3, 1), headwidth=headwidth, headaxislength=headlength, headlength=headlength)# width=0.1)
-    divider = make_axes_locatable(ax)
-
-    if values:
-        for i in range(len(x_pos)):
-            x = x_pos[i]
-            y = y_pos[i]
-            if x_dir[i] == 0:
-                x -= 0.25
-            else:
-                y -= 0.25
-            ax.text(x, y, "%2d" % (color[i] * 100), horizontalalignment='center',
-                    verticalalignment='center', color="black", fontsize=4)
-    # cax = divider.append_axes("right", size=colorbar_size, pad=0.025)
-    # plt.colorbar(quiv, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0.3, 1.1, 0.1))
-    # ax.set_title(("Maximum likelihood actions in states" + title_suffix))
-
-    return quiv
 
 
 def plot_policy_alternative(ax, arrow_data, grid, title_suffix="", values=True, colorbar_size='10%', fixed_colors=True):
@@ -160,7 +121,6 @@ def plot_policy_alternative(ax, arrow_data, grid, title_suffix="", values=True, 
     ax.set_title(("Maximum likelihood actions in states" + title_suffix))
 
 
-
 def get_plot_arrow_params(q_table, w, grid_env):
     x_pos = []
     y_pos = []
@@ -192,6 +152,7 @@ def get_plot_arrow_params(q_table, w, grid_env):
     # down, up , right, left
     return np.array(x_pos), np.array(y_pos), np.array(x_dir), np.array(y_dir), np.array(color)
 
+
 def create_grid_plot(ax, grid, cmap=custom_gray):
     """
     Plots a 2D grid representation of the environment using a custom gray colormap.
@@ -199,6 +160,7 @@ def create_grid_plot(ax, grid, cmap=custom_gray):
     Args:
         ax: Matplotlib axis object.
         grid: 2D numpy array representation of the environment.
+        cmap: Color map for the env.
     """
     size_y, size_x = grid.shape
     vmax = np.max(grid)
@@ -221,31 +183,31 @@ def create_grid_plot(ax, grid, cmap=custom_gray):
 
     return mat
 
-def plot_policy(ax, arrow_data, grid, title_suffix="", values=False, headwidth=9, headlength=20, colorbar_size='10%', max_index=None):
+
+def plot_policy(ax, arrow_data, values=False, headwidth=6, headlength=10, headaxislength=7, colorbar_size='10%'):
     """
     Plots arrows representing the optimal actions based on the Q-values.
 
     Args:
         ax: Matplotlib axis object.
         arrow_data: Tuple containing (x_pos, y_pos, x_dir, y_dir, color).
-        grid: The environment's 2D grid representation.
-        title_suffix: Title suffix.
         values: Whether to display the Q-values as numbers.
         headwidth: Arrow head width.
         headlength: Arrow head length.
+        headaxislength: Head axis length.
         colorbar_size: Size of the colorbar.
     """
     x_pos, y_pos, x_dir, y_dir, color = arrow_data
-    norm = colors.Normalize(vmin=color.min(), vmax=color.max())
+    color = np.array(color)
+    color = (color - color.min()) / (color.max() - color.min())
+    # norm = colors.Normalize(vmin=color.min(), vmax=color.max())
+
     cmap = cm.get_cmap('viridis')
-    # quiv = ax.quiver(x_pos, y_pos, x_dir, y_dir, color, cmap=cmap,
-    #                  norm=norm, angles='xy', scale_units='xy',
-    #                  scale=1, pivot='middle', clim=(0.3, 1), headwidth=headwidth, headaxislength=headlength, headlength=headlength)
     quiv = ax.quiver(
         x_pos, y_pos, x_dir, y_dir, color, cmap=cmap,
-        norm=norm, angles='xy', scale_units='xy',
-        scale=1, pivot='middle', clim=(0.3, 1),
-        headwidth=6, headlength=10, headaxislength=7, width=0.005  # Customize arrow shape
+        angles='xy', scale_units='xy',
+        scale=1, pivot='middle',
+        headwidth=headwidth, headlength=headlength, headaxislength=headaxislength, width=0.005  # Customize arrow shape
     )
 
     # Only plot values if show_values is True
@@ -262,8 +224,9 @@ def plot_policy(ax, arrow_data, grid, title_suffix="", values=False, headwidth=9
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size=colorbar_size, pad=0.025)
-    plt.colorbar(quiv, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0.3, 1.1, 0.1))
+    plt.colorbar(quiv, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0, 1.1, 0.1))
     return quiv
+
 
 def add_legend(ax, mapping, cmap=custom_gray):
     """
@@ -294,6 +257,7 @@ def add_legend(ax, mapping, cmap=custom_gray):
         frameon=False  # Removes legend box outline
     )
 
+
 def smooth(scalars, weight):  # Weight between 0 and 1
     last = scalars[0]  # First value in the plot (first timestep)
     smoothed = list()
@@ -305,3 +269,127 @@ def smooth(scalars, weight):  # Weight between 0 and 1
     return smoothed
 
 
+def add_rbf_activations(ax, rbf_data):
+    """
+    For each cell that has one or more RBF activations, plot a small marker
+    (circle or square) in one of the four corners. The color is unique for each RBF,
+    and the marker's transparency (alpha) is proportional to the activation value.
+    """
+    # First, collect activations per cell and gather the unique RBF identifiers.
+    # An RBF is uniquely identified by (symbol, center_coords).
+    cell_to_rbfs = {}   # key: (y,x) cell coordinate; value: list of tuples (rbf_id, activation)
+    unique_rbfs = []    # list of all unique (symbol, center_coords) pairs
+
+    for symbol, centers in rbf_data.items():
+        for center_coords, cell_dict in centers.items():
+            rbf_id = (symbol, center_coords)
+            unique_rbfs.append(rbf_id)
+            for cell, activation in cell_dict.items():
+                if cell not in cell_to_rbfs:
+                    cell_to_rbfs[cell] = []
+                cell_to_rbfs[cell].append((rbf_id, activation))
+
+    # Create a unique color for each RBF using a colormap.
+    cmap = plt.get_cmap('tab10')
+    rbf_colors = {}
+    # (If you have more than 10, consider using a different or extended colormap.)
+    for i, rbf_id in enumerate(unique_rbfs):
+        rbf_colors[rbf_id] = cmap(i % 10)
+
+    # Now, for each cell, plot markers at the corners.
+    # We assume that each cell (with top-left at (x,y)) spans x -> x+1 and y -> y+1.
+    # Adjust the offsets if your grid is different.
+    # Here we use fixed offsets (0.2 and 0.8) so that up to 4 markers (one per corner) fit.
+    for (y, x), rbf_list in cell_to_rbfs.items():
+        # Sort for consistency (so the same RBF always goes to the same corner).
+        rbf_list = sorted(rbf_list, key=lambda tup: (tup[0][0], tup[0][1]))
+        # Define corner offsets; here the order is: top-left, top-right, bottom-left, bottom-right.
+        # (Adjust these as needed for your plotting coordinate system.)
+        corner_offsets = [(0.2, 0.2), (0.8, 0.2), (0.2, 0.8), (0.8, 0.8)]
+        for i, (rbf_id, activation) in enumerate(rbf_list):
+            if i >= len(corner_offsets):
+                break  # In case there are >4 overlapping activations.
+            offset_x, offset_y = corner_offsets[i]
+            # The marker will be placed at (x + offset_x, y + offset_y)
+            marker_x = x + offset_x
+            marker_y = y + offset_y
+            # Plot the marker. You can change 'o' to 's' if you prefer a square.
+            ax.scatter(marker_x, marker_y, s=19, marker='o',
+                       color=rbf_colors[rbf_id],
+                       alpha=0.2 + activation * 0.7,
+                       edgecolors='k', zorder=3)
+
+
+def plot_q_vals(policy_index, policy, w, env, rbf_data=None):
+    """
+    Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
+    RBF activation markers in the cell corners.
+    """
+    arrow_data = get_plot_arrow_params(policy.q_table, w, env)  # e.g., returns (x_pos, y_pos, x_dir, y_dir, color)
+
+    fig, ax = plt.subplots()
+
+    grid, mapping = convert_map_to_grid(env)
+    create_grid_plot(ax, grid)  # Draw the grid cells.
+    add_legend(ax, mapping)     # Add legend (obstacles, goals, etc.)
+
+    # Format the weight vector as a string for the title.
+    weight_str = np.array2string(w, precision=3, separator=", ")
+    ax.set_title(f"Policy {policy_index} | Weights: {weight_str}")
+
+    # Plot the arrows that indicate the policy's best actions.
+    quiv = plot_policy(ax, arrow_data, values=False)
+
+    # If RBF data is provided, overlay the small markers.
+    if rbf_data is not None:
+        add_rbf_activations(ax, rbf_data)
+
+    plt.show()
+
+
+def plot_all_rbfs(rbf_data, grid_size, colors_symbol_centers=None):
+    """
+    Plots all RBF activations on a single heatmap.
+
+    Args:
+        rbf_data: Dictionary of RBF activations per center.
+        grid_size: (grid_height, grid_width) of the environment.
+        colors_symbol_centers: Color map for mapping RBF centers by their symbol to a color.
+    """
+    if colors_symbol_centers is None:
+        colors_symbol_centers = RBF_COLORS
+
+    grid_height, grid_width = grid_size
+    combined_activation_grid = np.zeros((grid_height, grid_width))
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+
+    # Aggregate all RBF activations
+    for symbol, centers in rbf_data.items():
+        for center_coords, activations in centers.items():
+            for (y, x), activation_value in activations.items():
+                combined_activation_grid[y, x] += activation_value  # Sum overlapping RBFs
+
+    # Plot heatmap
+    im = ax.imshow(combined_activation_grid, cmap="hot", origin="upper", extent=(0, grid_width, 0, grid_height))
+
+    # Plot RBF centers with distinct colors per symbol
+    for symbol, centers in rbf_data.items():
+        center_color = colors_symbol_centers.get(symbol, "white")  # Default to white if symbol not found
+        for (cy, cx) in centers.keys():
+            ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100, edgecolors="black",
+                       label=f"RBF {symbol}" if f"RBF {symbol}" not in ax.get_legend_handles_labels()[1] else None)
+
+    # Formatting
+    ax.set_title("All RBF Activations Combined")
+    ax.set_xlabel("X Coordinate")
+    ax.set_ylabel("Y Coordinate")
+    plt.colorbar(im, label="RBF Activation Intensity")
+    ax.grid(False)
+
+    # Ensure legend only shows unique symbols
+    handles, labels = ax.get_legend_handles_labels()
+    unique_labels = dict(zip(labels, handles))  # Remove duplicates
+    ax.legend(unique_labels.values(), unique_labels.keys(), loc="upper left")
+
+    plt.show()

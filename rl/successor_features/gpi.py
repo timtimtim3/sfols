@@ -234,7 +234,7 @@ class GPI(RLAlgorithm):
         w = self.tasks[task_idx]
 
         if verbose:
-            print(f"Evaluating policy: {policy_index}, on task: {task_idx}, with w: {w}.")
+            print(f"Evaluating policy: {policy_index}, on task: {task_idx}, with w: {np.array2string(w, precision=2, separator=', ')}.")
 
         env.reset()
         acc_reward = 0
@@ -243,7 +243,6 @@ class GPI(RLAlgorithm):
         # Optional: Render an initial frame if requested
         if render:
             env.env.render()
-            import time
             time.sleep(initial_sleep)
 
         stuck_count = 0
