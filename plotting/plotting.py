@@ -315,10 +315,12 @@ def add_rbf_activations(ax, rbf_data, env, only_add_rbf_on_its_goal=True):
             # The marker will be placed at (x + offset_x, y + offset_y)
             marker_x = x + offset_x
             marker_y = y + offset_y
-            # Plot the marker. You can change 'o' to 's' if you prefer a square.
-            ax.scatter(marker_x, marker_y, s=19, marker='o',
+            marker_size = 10 + 8 * activation  # 10 when activation=0, 18 when activation=1
+            # If the current cell is the RBF center, use a square ('s'); otherwise, use a circle ('o').
+            marker_style = 's' if (y, x) == rbf_id[1] else 'o'
+            ax.scatter(marker_x, marker_y, s=marker_size, marker=marker_style,
                        color=rbf_colors[rbf_id],
-                       alpha=0.2 + activation * 0.7,
+                       alpha=activation,
                        edgecolors='k', zorder=3)
 
 
