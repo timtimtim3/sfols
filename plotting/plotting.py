@@ -347,7 +347,7 @@ def plot_q_vals(policy_index, policy, w, env, rbf_data=None):
     plt.show()
 
 
-def plot_all_rbfs(rbf_data, grid_size, colors_symbol_centers=None):
+def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=True, colors_symbol_centers=None):
     """
     Plots all RBF activations on a single heatmap.
 
@@ -368,7 +368,13 @@ def plot_all_rbfs(rbf_data, grid_size, colors_symbol_centers=None):
     for symbol, centers in rbf_data.items():
         for center_coords, activations in centers.items():
             for (y, x), activation_value in activations.items():
-                combined_activation_grid[y, x] += activation_value  # Sum overlapping RBFs
+                if skip_non_goal and not env.MAP[y, x] == symbol:
+                    activation_value = 0 #  Set to 0, so it isn't added / maxed over
+
+                if aggregation == "sum":
+                    combined_activation_grid[y, x] += activation_value  # Sum overlapping RBFs
+                elif aggregation == "max" and activation_value > combined_activation_grid[y, x]:
+                    combined_activation_grid[y, x] = activation_value
 
     # Plot heatmap
     im = ax.imshow(combined_activation_grid, cmap="hot", origin="upper", extent=(0, grid_width, 0, grid_height))
