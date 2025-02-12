@@ -269,7 +269,7 @@ def smooth(scalars, weight):  # Weight between 0 and 1
     return smoothed
 
 
-def add_rbf_activations(ax, rbf_data):
+def add_rbf_activations(ax, rbf_data, env, only_add_rbf_on_its_goal=True):
     """
     For each cell that has one or more RBF activations, plot a small marker
     (circle or square) in one of the four corners. The color is unique for each RBF,
@@ -284,10 +284,12 @@ def add_rbf_activations(ax, rbf_data):
         for center_coords, cell_dict in centers.items():
             rbf_id = (symbol, center_coords)
             unique_rbfs.append(rbf_id)
-            for cell, activation in cell_dict.items():
-                if cell not in cell_to_rbfs:
-                    cell_to_rbfs[cell] = []
-                cell_to_rbfs[cell].append((rbf_id, activation))
+            for (y, x), activation in cell_dict.items():
+                if only_add_rbf_on_its_goal and env.MAP[y, x] != symbol:
+                    continue
+                if (y, x) not in cell_to_rbfs:
+                    cell_to_rbfs[(y, x)] = []
+                cell_to_rbfs[(y, x)].append((rbf_id, activation))
 
     # Create a unique color for each RBF using a colormap.
     cmap = plt.get_cmap('tab10')
@@ -342,7 +344,7 @@ def plot_q_vals(policy_index, policy, w, env, rbf_data=None):
 
     # If RBF data is provided, overlay the small markers.
     if rbf_data is not None:
-        add_rbf_activations(ax, rbf_data)
+        add_rbf_activations(ax, rbf_data, env)
 
     plt.show()
 
