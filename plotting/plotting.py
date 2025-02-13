@@ -247,15 +247,15 @@ def add_legend(ax, mapping, cmap=custom_gray):
         for key, value in filtered_mapping.items()
     ]
 
-    # Move legend to the **left** of the plot, outside the grid area
-    ax.legend(
+    legend1 = ax.legend(
         handles=legend_patches,
         loc="center left",
-        bbox_to_anchor=(-0.3, 0.5),  # Moves the legend further left
+        bbox_to_anchor=(-0.3, 0.5),  # Move the legend left
         title="Legend",
         fontsize=8,
-        frameon=False  # Removes legend box outline
+        frameon=False  # Remove legend box outline
     )
+    ax.add_artist(legend1)  # keep legend1 on the axes
 
 
 def smooth(scalars, weight):  # Weight between 0 and 1
@@ -294,19 +294,16 @@ def add_rbf_activations(ax, rbf_data, env, only_add_rbf_on_its_goal=True):
     # Create a unique color for each RBF using a colormap.
     cmap = plt.get_cmap('tab10')
     rbf_colors = {}
-    # (If you have more than 10, consider using a different or extended colormap.)
     for i, rbf_id in enumerate(unique_rbfs):
         rbf_colors[rbf_id] = cmap(i % 10)
 
     # Now, for each cell, plot markers at the corners.
     # We assume that each cell (with top-left at (x,y)) spans x -> x+1 and y -> y+1.
-    # Adjust the offsets if your grid is different.
     # Here we use fixed offsets (0.2 and 0.8) so that up to 4 markers (one per corner) fit.
     for (y, x), rbf_list in cell_to_rbfs.items():
         # Sort for consistency (so the same RBF always goes to the same corner).
         rbf_list = sorted(rbf_list, key=lambda tup: (tup[0][0], tup[0][1]))
         # Define corner offsets; here the order is: top-left, top-right, bottom-left, bottom-right.
-        # (Adjust these as needed for your plotting coordinate system.)
         corner_offsets = [(0.2, 0.2), (0.8, 0.2), (0.2, 0.8), (0.8, 0.8)]
         for i, (rbf_id, activation) in enumerate(rbf_list):
             if i >= len(corner_offsets):
@@ -316,7 +313,7 @@ def add_rbf_activations(ax, rbf_data, env, only_add_rbf_on_its_goal=True):
             marker_x = x + offset_x
             marker_y = y + offset_y
             marker_size = 10 + 8 * activation  # 10 when activation=0, 18 when activation=1
-            # If the current cell is the RBF center, use a square ('s'); otherwise, use a circle ('o').
+            # If the current cell is the RBF center we use a square ('s'); otherwise, we use a circle ('o').
             marker_style = 's' if (y, x) == rbf_id[1] else 'o'
             ax.scatter(marker_x, marker_y, s=marker_size, marker=marker_style,
                        color=rbf_colors[rbf_id],
@@ -337,16 +334,64 @@ def plot_q_vals(policy_index, policy, w, env, rbf_data=None):
     create_grid_plot(ax, grid)  # Draw the grid cells.
     add_legend(ax, mapping)     # Add legend (obstacles, goals, etc.)
 
-    # Format the weight vector as a string for the title.
-    weight_str = np.array2string(w, precision=3, separator=", ")
-    ax.set_title(f"Policy {policy_index} | Weights: {weight_str}")
+    # Format the weight vector as a string for the title
+    if rbf_data is None:
+        weight_str = np.array2string(w, precision=2, separator=", ")
+        ax.set_title(f"Policy {policy_index} | Weights: {weight_str}")
 
-    # Plot the arrows that indicate the policy's best actions.
+    # Plot the arrows that indicate the policy's best actions
     quiv = plot_policy(ax, arrow_data, values=False)
 
-    # If RBF data is provided, overlay the small markers.
+    # If RBF data is provided, overlay the RBF activation markers
     if rbf_data is not None:
         add_rbf_activations(ax, rbf_data, env)
+
+        # compute a mapping from each RBF center (with symbol) to its unique color
+        unique_rbfs = []
+        for symbol, centers in rbf_data.items():
+            for center_coords, _ in centers.items():
+                unique_rbfs.append((symbol, center_coords))
+        unique_rbfs = sorted(set(unique_rbfs), key=lambda x: (x[0], x[1]))
+        cmap = plt.get_cmap('tab10')
+        rbf_colors = {rbf_id: cmap(i % 10) for i, rbf_id in enumerate(unique_rbfs)}
+
+        # Build a mapping from weight index to the color of its corresponding RBF
+        # env.rbf_indices maps center_coords -> weight index
+        weight_to_color = {}
+        for center_coords, weight_idx in env.rbf_indices.items():
+            # Find the corresponding symbol for this center_coords in rbf_data:
+            found = False
+            for symbol, centers in rbf_data.items():
+                if center_coords in centers:
+                    rbf_id = (symbol, center_coords)
+                    weight_to_color[weight_idx] = rbf_colors[rbf_id]
+                    found = True
+                    break
+            if not found:
+                weight_to_color[weight_idx] = 'gray'  # fallback color if not found
+
+        from matplotlib.lines import Line2D
+
+        # Create custom legend handles using square markers
+        handles = []
+        for i, weight in enumerate(w):
+            color = weight_to_color.get(i, 'gray')
+            handle = Line2D([], [], marker='s', color='none',
+                            markerfacecolor=color, markersize=8,
+                            label=f"w[{i}]={weight:.2f}")
+            handles.append(handle)
+
+        # Place the legend above the plot
+        legend2 = ax.legend(
+            handles=handles,
+            loc='upper center',
+            bbox_to_anchor=(0.5, 1.10),
+            ncol=len(handles),
+            handlelength=1,
+            handletextpad=0.2,
+            columnspacing=0.5,
+            frameon=False
+        )
 
     plt.show()
 
@@ -373,7 +418,7 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
         for center_coords, activations in centers.items():
             for (y, x), activation_value in activations.items():
                 if skip_non_goal and not env.MAP[y, x] == symbol:
-                    activation_value = 0 #  Set to 0, so it isn't added / maxed over
+                    activation_value = 0  # Set to 0, so it isn't added / maxed over
 
                 if aggregation == "sum":
                     combined_activation_grid[y, x] += activation_value  # Sum overlapping RBFs
