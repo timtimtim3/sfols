@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.colors as colors
@@ -321,12 +323,22 @@ def add_rbf_activations(ax, rbf_data, env, only_add_rbf_on_its_goal=True):
                        edgecolors='k', zorder=3)
 
 
-def plot_q_vals(policy_index, policy, w, env, rbf_data=None):
+def plot_q_vals(policy_index, q_table, w, env, rbf_data=None, save_path=None, show=True):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
-    RBF activation markers in the cell corners.
+    RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
+    and only show the plot if show is True.
+
+    Args:
+        policy_index: Index of the current policy.
+        q_table: The Q-table (sf).
+        w: Weight vector.
+        env: Environment object.
+        rbf_data: (Optional) RBF activation data.
+        save_path: (Optional) Path to save the figure.
+        show: (Optional) If True, display the plot (default True).
     """
-    arrow_data = get_plot_arrow_params(policy.q_table, w, env)  # e.g., returns (x_pos, y_pos, x_dir, y_dir, color)
+    arrow_data = get_plot_arrow_params(q_table, w, env)  # e.g., returns (x_pos, y_pos, x_dir, y_dir, color)
 
     fig, ax = plt.subplots()
 
@@ -393,8 +405,18 @@ def plot_q_vals(policy_index, policy, w, env, rbf_data=None):
             frameon=False
         )
 
-    plt.show()
+    # Save the figure if a save_path is provided.
+    if save_path is not None:
+        directory = os.path.dirname(save_path)
+        if directory and not os.path.exists(directory):
+            os.makedirs(directory)
+        plt.savefig(save_path, bbox_inches='tight')
 
+    # Show or close the plot.
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=True, colors_symbol_centers=None):
     """

@@ -120,7 +120,6 @@ class GPI(RLAlgorithm):
         if self.log:
             self.policies[-1].log = self.log
 
-        # TLDR copies values metrics from previous policies for good initialization
         if len(self.policies) > 1:
             # Copy steps and episodes for further counting?
             self.policies[-1].num_timesteps = self.policies[-2].num_timesteps
@@ -293,15 +292,9 @@ class GPI(RLAlgorithm):
             initial_sleep = 1
         return acc_rewards
 
-    def load_policies_and_tasks(self, policy_dir: str) -> None:
-        """
-        Loads saved policies and tasks from the specified directory and assigns them to self.policies and self.tasks.
-
-        Parameters:
-            policy_dir (str): The directory where the policy pickle files and tasks.pkl are stored.
-        """
+    def load_tasks(self, task_dir):
         # Load tasks.pkl (if it exists) and assign to self.tasks
-        tasks_path = os.path.join(policy_dir, "tasks.pkl")
+        tasks_path = os.path.join(task_dir, "tasks.pkl")
         if os.path.exists(tasks_path):
             with open(tasks_path, "rb") as f:
                 tasks_data = pkl.load(f)
@@ -309,12 +302,21 @@ class GPI(RLAlgorithm):
             print(f"Loaded {len(self.tasks)} tasks from {tasks_path}")
         else:
             self.tasks = []
-            print(f"No tasks.pkl found in {policy_dir}. self.tasks is set to an empty list.")
+            print(f"No tasks.pkl found in {task_dir}. self.tasks is set to an empty list.")
+
+    def load_policies(self, policy_dir: str, q_tables):
+        """
+        Loads saved policies and tasks from the specified directory and assigns them to self.policies and self.tasks.
+
+        Parameters:
+            policy_dir (str): The directory where the policy pickle files and tasks.pkl are stored.
+            q_tables (dict): Dictionary holding policy indicices mapped to q-table dictionaries.
+        """
 
         # Load policy pickle files from the directory
         pkl_files = sorted(glob.glob(os.path.join(policy_dir, "discovered_policy_*.pkl")))
         print(f"Loading {len(pkl_files)} policies from {policy_dir}")
-        for pkl_path in pkl_files:
+        for i, pkl_path in enumerate(pkl_files):
             with open(pkl_path, "rb") as fp:
                 policy_data = pkl.load(fp)
             # Reconstruct a new policy by calling the algorithm constructor.
@@ -322,7 +324,11 @@ class GPI(RLAlgorithm):
             policy = self.algorithm_constructor(log_prefix="load-policy")
             # Restore attributes from the unpickled dictionary
             for k, v in policy_data.items():
+                if k == 'q_table':
+                    continue
                 setattr(policy, k, v)
+
+            policy.q_table = q_tables[i]
             # Insert the policy into the GPI agent's policy list
             self.policies.append(policy)
         print(f"Loaded {len(self.policies)} policies into GPI agent.")
