@@ -8,7 +8,14 @@ from typing import Union, Callable, Optional, List
 import numpy as np
 import torch as th
 from copy import deepcopy
+from typing import Union, Tuple
 
+EvalReturnType = Union[
+    int,                       # Only the action is returned
+    Tuple[int, int],           # Action and policy index
+    Tuple[int, float],         # Action and q-value
+    Tuple[int, int, float]     # Action, policy index, and q-value
+]
 
 class GPI(RLAlgorithm):
 
@@ -30,7 +37,7 @@ class GPI(RLAlgorithm):
 
         self.log = log
 
-    def eval(self, obs, w, return_policy_index=False, exclude=None) -> int:
+    def eval(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False) -> EvalReturnType:
         """
         
             This takes in an observation and a weight vector and returns an action.
@@ -56,10 +63,24 @@ class GPI(RLAlgorithm):
             policy_index, action = np.unravel_index(
                 np.random.choice(np.flatnonzero(q_vals == q_vals.max())), q_vals.shape
             )
+            selected_qval = q_vals[policy_index, action]
 
-            if return_policy_index:
+            if return_policy_index and return_q_val:
+                return action, policy_index, selected_qval
+            elif return_policy_index:
                 return action, policy_index
+            elif return_q_val:
+                return action, selected_qval
             return action
+
+    def get_gpi_policy_on_w(self, w):
+        actions, policy_indices, qvals = {}, {}, {}
+        for state in self.policies[0].q_table.keys():
+            action, policy_index, selected_qval = self.eval(state, w, return_policy_index=True, return_q_val=True)
+            actions[state] = action
+            policy_indices[state] = policy_index
+            qvals[state] = selected_qval
+        return actions, policy_indices, qvals
 
     # Given obs returns
     def max_q(self, obs, w, tensor=False, exclude=None):

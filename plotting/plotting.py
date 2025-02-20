@@ -155,6 +155,34 @@ def get_plot_arrow_params(q_table, w, grid_env):
     return np.array(x_pos), np.array(y_pos), np.array(x_dir), np.array(y_dir), np.array(color)
 
 
+def get_plot_arrow_params_from_eval(actions, qvals, grid_env):
+    x_pos = []
+    y_pos = []
+    x_dir = []
+    y_dir = []
+    color = []
+
+    for coords, max_index in actions.items():
+        max_val = qvals[coords]
+        x_d = y_d = 0
+        if max_index == grid_env.DOWN:
+            y_d = 1
+        elif max_index == grid_env.UP:
+            y_d = -1
+        elif max_index == grid_env.RIGHT:
+            x_d = 1
+        elif max_index == grid_env.LEFT:
+            x_d = -1
+
+        x_pos.append(coords[1] + 0.5)
+        y_pos.append(coords[0] + 0.5)
+        x_dir.append(x_d)
+        y_dir.append(y_d)
+        color.append(max_val)
+    # down, up , right, left
+    return np.array(x_pos), np.array(y_pos), np.array(x_dir), np.array(y_dir), np.array(color)
+
+
 def create_grid_plot(ax, grid, cmap=custom_gray):
     """
     Plots a 2D grid representation of the environment using a custom gray colormap.
@@ -323,22 +351,27 @@ def add_rbf_activations(ax, rbf_data, env, only_add_rbf_on_its_goal=True):
                        edgecolors='k', zorder=3)
 
 
-def plot_q_vals(policy_index, q_table, w, env, rbf_data=None, save_path=None, show=True):
+def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, rbf_data=None, save_path=None, show=True):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
     RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
     and only show the plot if show is True.
 
     Args:
-        policy_index: Index of the current policy.
-        q_table: The Q-table (sf).
         w: Weight vector.
         env: Environment object.
+        q_table: The Q-table (sf).
+        arrow_data: Either pass Q-table or pass arrow data
+        policy_index: Index of the current policy.
         rbf_data: (Optional) RBF activation data.
         save_path: (Optional) Path to save the figure.
         show: (Optional) If True, display the plot (default True).
     """
-    arrow_data = get_plot_arrow_params(q_table, w, env)  # e.g., returns (x_pos, y_pos, x_dir, y_dir, color)
+    if q_table is None and arrow_data is None:
+        raise Exception("Pass a q-table or arrow data")
+
+    if arrow_data is None:
+        arrow_data = get_plot_arrow_params(q_table, w, env)  # e.g., returns (x_pos, y_pos, x_dir, y_dir, color)
 
     fig, ax = plt.subplots()
 
@@ -349,7 +382,8 @@ def plot_q_vals(policy_index, q_table, w, env, rbf_data=None, save_path=None, sh
     # Format the weight vector as a string for the title
     if rbf_data is None:
         weight_str = np.array2string(w, precision=2, separator=", ")
-        ax.set_title(f"Policy {policy_index} | Weights: {weight_str}")
+        title = f"Policy {policy_index} | Weights: {weight_str}" if policy_index is not None else f"Weights: {weight_str}"
+        ax.set_title(title)
 
     # Plot the arrows that indicate the policy's best actions
     quiv = plot_policy(ax, arrow_data, values=False)
