@@ -129,6 +129,7 @@ def get_plot_arrow_params(q_table, w, grid_env):
     x_dir = []
     y_dir = []
     color = []
+    coords_list = []
 
     for coords,q_vals in q_table.items():
         max_val = np.max(q_vals @ w)
@@ -151,8 +152,9 @@ def get_plot_arrow_params(q_table, w, grid_env):
         x_dir.append(x_d)
         y_dir.append(y_d)
         color.append(max_val)
+        coords_list.append(coords)
     # down, up , right, left
-    return np.array(x_pos), np.array(y_pos), np.array(x_dir), np.array(y_dir), np.array(color)
+    return np.array(x_pos), np.array(y_pos), np.array(x_dir), np.array(y_dir), np.array(color), coords_list
 
 
 def get_plot_arrow_params_from_eval(actions, qvals, grid_env):
@@ -161,6 +163,7 @@ def get_plot_arrow_params_from_eval(actions, qvals, grid_env):
     x_dir = []
     y_dir = []
     color = []
+    coords_list = []
 
     for coords, max_index in actions.items():
         max_val = qvals[coords]
@@ -179,8 +182,9 @@ def get_plot_arrow_params_from_eval(actions, qvals, grid_env):
         x_dir.append(x_d)
         y_dir.append(y_d)
         color.append(max_val)
+        coords_list.append(coords)
     # down, up , right, left
-    return np.array(x_pos), np.array(y_pos), np.array(x_dir), np.array(y_dir), np.array(color)
+    return np.array(x_pos), np.array(y_pos), np.array(x_dir), np.array(y_dir), np.array(color), coords_list
 
 
 def create_grid_plot(ax, grid, cmap=custom_gray):
@@ -227,7 +231,7 @@ def plot_policy(ax, arrow_data, values=False, headwidth=6, headlength=10, headax
         headaxislength: Head axis length.
         colorbar_size: Size of the colorbar.
     """
-    x_pos, y_pos, x_dir, y_dir, color = arrow_data
+    x_pos, y_pos, x_dir, y_dir, color, coords_list = arrow_data
     color = np.array(color)
     color = (color - color.min()) / (color.max() - color.min())
     # norm = colors.Normalize(vmin=color.min(), vmax=color.max())
@@ -351,7 +355,58 @@ def add_rbf_activations(ax, rbf_data, env, only_add_rbf_on_its_goal=True):
                        edgecolors='k', zorder=3)
 
 
-def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, rbf_data=None, save_path=None, show=True):
+def add_policy_indices(ax, policy_indices, arrow_data, fontsize=4, color="black"):
+    """
+    Adds policy indices as text annotations to each cell in the grid.
+    The position of the text depends on the arrow's direction in arrow_data:
+      - For arrows pointing left/right, the text is placed at the top middle of the cell.
+      - For arrows pointing up/down, the text is placed on the right-hand side of the cell.
+
+    Args:
+        ax: Matplotlib axis object.
+        policy_indices: Dictionary mapping (y, x) cell coordinates to an integer.
+        arrow_data: Tuple of (x_pos, y_pos, x_dir, y_dir, arrow_colors, arrow_coords).
+                    The arrow_coords element is a list of (y, x) tuples corresponding to the arrows.
+        fontsize: Font size of the text.
+        color: Color of the text.
+    """
+    # Unpack the arrow_data tuple.
+    x_pos, y_pos, x_dir, y_dir, arrow_colors, arrow_coords = arrow_data
+
+    for (y, x), index in policy_indices.items():
+        # Default placement if no arrow info is available.
+        text_x = x + 0.5
+        text_y = y + 0.5
+
+        try:
+            # Look for the cell in the arrow_coords.
+            idx = arrow_coords.index((y, x))
+            # Get the corresponding arrow direction.
+            xd = x_dir[idx]
+            yd = y_dir[idx]
+            # If the arrow is pointing left or right.
+            if abs(xd) == 1 and yd == 0:
+                text_x = x + 0.5  # center horizontally
+                text_y = y + 0.2  # near the top edge
+            # If the arrow is pointing up or down.
+            elif abs(yd) == 1 and xd == 0:
+                text_x = x + 0.8  # near the right edge
+                text_y = y + 0.5  # center vertically
+            # (You can add additional logic for diagonal arrows if needed.)
+        except ValueError:
+            # If the current cell is not in arrow_coords, keep the default.
+            pass
+
+        ax.text(text_x, text_y, str(index),
+                horizontalalignment='center',
+                verticalalignment='center',
+                fontsize=fontsize,
+                color=color,
+                zorder=4)
+
+
+def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy_indices=None, rbf_data=None,
+                save_path=None, show=True):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
     RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
@@ -363,6 +418,8 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, rbf_da
         q_table: The Q-table (sf).
         arrow_data: Either pass Q-table or pass arrow data
         policy_index: Index of the current policy.
+        policy_indices: A dictionary mapping each state to the GPI policy index of the max Q-val over policies and
+        actions.
         rbf_data: (Optional) RBF activation data.
         save_path: (Optional) Path to save the figure.
         show: (Optional) If True, display the plot (default True).
@@ -387,6 +444,10 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, rbf_da
 
     # Plot the arrows that indicate the policy's best actions
     quiv = plot_policy(ax, arrow_data, values=False)
+
+    # If policy_indices are provided, add them to each cell.
+    if policy_indices is not None:
+        add_policy_indices(ax, policy_indices, arrow_data)
 
     # If RBF data is provided, overlay the RBF activation markers
     if rbf_data is not None:
