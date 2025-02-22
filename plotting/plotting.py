@@ -272,7 +272,10 @@ def add_legend(ax, mapping, cmap=custom_gray):
         cmap: The colormap used for the grid.
     """
     # Remove keys for empty spaces and starting location
-    filtered_mapping = {k: v for k, v in mapping.items() if k not in [" ", "_"]}
+    filtered_mapping = {k: v for k, v in mapping.items() if k not in ["_"]}
+    empty_color = filtered_mapping[" "]
+    filtered_mapping.pop(" ")
+    filtered_mapping["Empty"] = empty_color
 
     norm = plt.Normalize(min(filtered_mapping.values()), max(filtered_mapping.values()))
 
@@ -432,7 +435,7 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
 
     fig, ax = plt.subplots()
 
-    grid, mapping = convert_map_to_grid(env)
+    grid, mapping = convert_map_to_grid(env, custom_mapping=env.QVAL_COLOR_MAP)
     create_grid_plot(ax, grid)  # Draw the grid cells.
     add_legend(ax, mapping)     # Add legend (obstacles, goals, etc.)
 
