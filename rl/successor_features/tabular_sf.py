@@ -307,3 +307,23 @@ class SF(RLAlgorithm):
                 self.obs = self.next_obs
 
         self.w = w
+
+    def set_augmented_psi_table(self, n_fsa_states, feat_dim, indicator_edge_has_proposition):
+        self.augmented_psi_table = dict()
+
+        for uidx in range(n_fsa_states):
+            self.augmented_psi_table[uidx] = dict()
+            for state in self.q_table.keys():
+                psis = self.q_table[state]
+                augmented_psis = np.zeros((psis.shape[0], n_fsa_states * feat_dim))
+
+                for i, psi in enumerate(psis):
+                    # Repeat psi across n_fsa_states times
+                    augmented_psi = np.tile(psi, n_fsa_states)
+                    augmented_psi *= indicator_edge_has_proposition[uidx]
+                    augmented_psis[i, :] = augmented_psi
+
+                self.augmented_psi_table[uidx][state] = augmented_psis
+
+    def get_augmented_psis(self, uidx, state):
+        return self.augmented_psi_table[uidx][state]

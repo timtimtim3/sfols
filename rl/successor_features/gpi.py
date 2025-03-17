@@ -25,7 +25,8 @@ class GPI(RLAlgorithm):
                  fsa_env=None,
                  log: bool = True,
                  device: Union[th.device, str] = 'auto',
-                 planning_constraint: Optional[dict] = None):
+                 planning_constraint: Optional[dict] = None,
+                 psis_are_augmented=False):
 
         super(GPI, self).__init__(env, device, fsa_env=fsa_env, planning_constraint=planning_constraint)
 
@@ -36,30 +37,19 @@ class GPI(RLAlgorithm):
         self.num_timesteps = 0
 
         self.log = log
+        self.psis_are_augmented = psis_are_augmented
 
-    def eval(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False) -> EvalReturnType:
+    def eval(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False, uidx=None) -> EvalReturnType:
         """
         
             This takes in an observation and a weight vector and returns an action.
             What this actually returns in the GPI policy given the current CCS.
         
         """
+        if self.psis_are_augmented:
+            all_policy_augmented_psis = np.stack([policy.get_augmented_psis(uidx, obs) for policy in self.policies])
 
-        if not hasattr(self.policies[0], 'q_table'):
-            if isinstance(obs, np.ndarray):
-                obs = th.tensor(obs).float().to(self.device)
-                w = th.tensor(w).float().to(self.device)
-            q_vals = th.stack([policy.q_values(obs, w)
-                               for policy in self.policies])
-            max_q, a = th.max(q_vals, dim=2)
-            policy_index = th.argmax(max_q)
-
-            if return_policy_index:
-                return a[policy_index].detach().long().item(), policy_index.item()
-            return a[policy_index].detach().long().item()
-        else:
-            q_vals = np.stack([policy.q_values(obs, w)
-                               for policy in self.policies if policy is not exclude])
+            q_vals = np.stack([augmented_psis @ w for augmented_psis in all_policy_augmented_psis])
             policy_index, action = np.unravel_index(
                 np.random.choice(np.flatnonzero(q_vals == q_vals.max())), q_vals.shape
             )
@@ -72,11 +62,40 @@ class GPI(RLAlgorithm):
             elif return_q_val:
                 return action, selected_qval
             return action
+        else:
+            if not hasattr(self.policies[0], 'q_table'):
+                if isinstance(obs, np.ndarray):
+                    obs = th.tensor(obs).float().to(self.device)
+                    w = th.tensor(w).float().to(self.device)
+                q_vals = th.stack([policy.q_values(obs, w)
+                                   for policy in self.policies])
+                max_q, a = th.max(q_vals, dim=2)
+                policy_index = th.argmax(max_q)
 
-    def get_gpi_policy_on_w(self, w):
+                if return_policy_index:
+                    return a[policy_index].detach().long().item(), policy_index.item()
+                return a[policy_index].detach().long().item()
+            else:
+                q_vals = np.stack([policy.q_values(obs, w)
+                                   for policy in self.policies if policy is not exclude])
+                policy_index, action = np.unravel_index(
+                    np.random.choice(np.flatnonzero(q_vals == q_vals.max())), q_vals.shape
+                )
+                selected_qval = q_vals[policy_index, action]
+
+                if return_policy_index and return_q_val:
+                    return action, policy_index, selected_qval
+                elif return_policy_index:
+                    return action, policy_index
+                elif return_q_val:
+                    return action, selected_qval
+                return action
+
+    def get_gpi_policy_on_w(self, w, uidx=None):
         actions, policy_indices, qvals = {}, {}, {}
         for state in self.policies[0].q_table.keys():
-            action, policy_index, selected_qval = self.eval(state, w, return_policy_index=True, return_q_val=True)
+            action, policy_index, selected_qval = self.eval(state, w, return_policy_index=True, return_q_val=True,
+                                                            uidx=uidx)
             actions[state] = action
             policy_indices[state] = policy_index
             qvals[state] = selected_qval
@@ -197,8 +216,8 @@ class GPI(RLAlgorithm):
 
         return acc_reward
 
-    @staticmethod
-    def evaluate(gpi,
+    def evaluate(self,
+                 gpi,
                  env,
                  W: dict,
                  num_steps: Optional[int] = 200,
@@ -215,9 +234,12 @@ class GPI(RLAlgorithm):
         for _ in range(num_steps):
 
             (f, state) = env.get_state()
-            w = W[f]
+            if self.psis_are_augmented:
+                w = np.asarray(list(W.values())).reshape(-1)
+            else:
+                w = W[f]
 
-            action = gpi.eval(state, w)
+            action = gpi.eval(state, w, uidx=int(f.split('u')[1]))
 
             _, reward, done, _ = env.step(action)
             acc_reward += reward
