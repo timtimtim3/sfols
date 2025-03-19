@@ -2,20 +2,21 @@ import time
 import os
 import glob
 import pickle as pkl
-from fsa.planning import SFFSAValueIteration as ValueIteration
+from fsa.planning import SFFSAValueIteration as ValueIteration, get_augmented_phi
 from sfols.rl.rl_algorithm import RLAlgorithm
-from typing import Union, Callable, Optional, List
+from typing import Union, Callable, Optional, List, Tuple, Any
 import numpy as np
 import torch as th
 from copy import deepcopy
 from typing import Union, Tuple
 
 EvalReturnType = Union[
-    int,                       # Only the action is returned
-    Tuple[int, int],           # Action and policy index
-    Tuple[int, float],         # Action and q-value
-    Tuple[int, int, float]     # Action, policy index, and q-value
+    int,  # Only the action is returned
+    Tuple[int, int],  # Action and policy index
+    Tuple[int, float],  # Action and q-value
+    Tuple[int, int, float]  # Action, policy index, and q-value
 ]
+
 
 class GPI(RLAlgorithm):
 
@@ -253,6 +254,65 @@ class GPI(RLAlgorithm):
 
         return acc_reward
 
+    def do_rollout(self,
+                   gpi,
+                   env,
+                   W: dict,
+                   n_fsa_states,
+                   feat_dim,
+                   num_steps: Optional[int] = 200,
+                   render=False,
+                   initial_sleep=3,
+                   sleep_time=0.3,
+                   gamma=0.99) -> tuple[list[Any], list[Any], list[Any], list[Any]]:
+
+        env.reset()
+        acc_reward = 0
+        gamma_t = 1.0
+        all_gamma_t = []
+        all_max_q = []
+        all_v = []
+
+        if render:
+            env.env.render()
+            time.sleep(initial_sleep)  # Add delay for better visualization
+
+        for _ in range(num_steps):
+
+            (f, state) = env.get_state()
+            if self.psis_are_augmented:
+                w = np.asarray(list(W.values())).reshape(-1)
+            else:
+                w = W[f]
+
+            uidx = int(f.split('u')[1])
+            action, q_val = gpi.eval(state, w, uidx=uidx, return_q_val=True)
+
+            _, reward, done, _ = env.step(action)
+            acc_reward += reward
+            gamma_t *= gamma
+
+            phi = self.env.env.features(state=None, action=None, next_state=state)
+            augmented_phi = get_augmented_phi(phi, uidx, n_fsa_states, feat_dim)
+
+            v_val = augmented_phi @ w
+
+            all_gamma_t.append(gamma_t)
+            all_max_q.append(q_val)
+            all_v.append(v_val)
+
+            if render:
+                env.env.render()
+                time.sleep(sleep_time)  # Add delay for better visualization
+
+            if done:
+                break
+
+        all_gamma_t_v_values = all_gamma_t
+        all_gamma_t_q_values = [1.0] + all_gamma_t[:-1]
+
+        return all_max_q, all_v, list(reversed(all_gamma_t_v_values)), list(reversed(all_gamma_t_q_values))
+
     def evaluate_single_policy(self, policy_index: int, env, task_index: int = None, num_steps: Optional[int] = 200,
                                render: bool = False, verbose: bool = False, initial_sleep: float = 3,
                                get_stuck_max: int = 10) -> int:
@@ -276,7 +336,8 @@ class GPI(RLAlgorithm):
         w = self.tasks[task_idx]
 
         if verbose:
-            print(f"Evaluating policy: {policy_index}, on task: {task_idx}, with w: {np.array2string(w, precision=2, separator=', ')}.")
+            print(
+                f"Evaluating policy: {policy_index}, on task: {task_idx}, with w: {np.array2string(w, precision=2, separator=', ')}.")
 
         env.reset()
         acc_reward = 0
