@@ -67,7 +67,9 @@ class OLS:
                 "ols_iter": self.iteration
 
             })
+            print("Deleting new policy because it is dominated")
             return [len(self.ccs)]
+
         for i, v in enumerate(self.ccs):
             if np.allclose(v, value):
                 w_table = wandb.Table(columns=[f"w{i}" for i in range(self.m)], data=[(c.tolist()) for c in self.ccs])
@@ -80,6 +82,7 @@ class OLS:
                     "ols_iter": self.iteration
 
                 })
+                print("Deleting new policy because it has same val as old one")
                 return [len(self.ccs)]  # delete new policy as it has same value as an old one
 
         W_del = self.remove_obsolete_weights(new_value=value)
@@ -232,6 +235,7 @@ class OLS:
                     break
             if best_in_all:
                 print("removed value", self.ccs[i])
+                print("removed weights", self.ccs_weights[i])
                 removed_indx.append(i)
                 self.ccs.pop(i)
                 self.ccs_weights.pop(i)

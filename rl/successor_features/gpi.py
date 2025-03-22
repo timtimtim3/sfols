@@ -2,7 +2,7 @@ import time
 import os
 import glob
 import pickle as pkl
-from fsa.planning import SFFSAValueIteration as ValueIteration, get_augmented_phi
+from fsa.planning import get_augmented_phi
 from sfols.rl.rl_algorithm import RLAlgorithm
 from typing import Union, Callable, Optional, List, Tuple, Any
 import numpy as np
@@ -143,6 +143,7 @@ class GPI(RLAlgorithm):
               reset_learning_starts=True,
               new_policy=True,
               reuse_value_ind=None,
+              ValueIteration=None,
               **kwargs
               ):
 
@@ -189,6 +190,7 @@ class GPI(RLAlgorithm):
                                 total_episodes=total_episodes,
                                 reset_num_timesteps=reset_num_timesteps,
                                 eval_freq=eval_freq,
+                                ValueIteration=ValueIteration,
                                 **kwargs)
 
         self.learned_policies += 1
@@ -205,10 +207,13 @@ class GPI(RLAlgorithm):
             return self.policies[0].get_config()
         return {}
 
-    def evaluate_fsa(self, fsa_env) -> int:
+    def evaluate_fsa(self, fsa_env, ValueIteration=None) -> int:
 
         # Custom function to evaluate the so-far computed CCS,
         # on a given FSA.
+
+        if ValueIteration is None:
+            from fsa.planning import SFFSAValueIteration as ValueIteration
 
         planning = ValueIteration(fsa_env, self, constraint=self.planning_constraint)
         W, _ = planning.traverse(None, num_iters=15)
@@ -217,8 +222,8 @@ class GPI(RLAlgorithm):
 
         return acc_reward
 
-    def evaluate(self,
-                 gpi,
+    @staticmethod
+    def evaluate(gpi,
                  env,
                  W: dict,
                  num_steps: Optional[int] = 200,
@@ -235,7 +240,7 @@ class GPI(RLAlgorithm):
         for _ in range(num_steps):
 
             (f, state) = env.get_state()
-            if self.psis_are_augmented:
+            if gpi.psis_are_augmented:
                 w = np.asarray(list(W.values())).reshape(-1)
             else:
                 w = W[f]

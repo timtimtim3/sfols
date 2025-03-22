@@ -468,17 +468,10 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         # Build a mapping from weight index to the color of its corresponding RBF
         # env.rbf_indices maps center_coords -> weight index
         weight_to_color = {}
-        for center_coords, weight_idx in env.rbf_indices.items():
-            # Find the corresponding symbol for this center_coords in rbf_data:
-            found = False
-            for symbol, centers in rbf_data.items():
-                if center_coords in centers:
-                    rbf_id = (symbol, center_coords)
-                    weight_to_color[weight_idx] = rbf_colors[rbf_id]
-                    found = True
-                    break
-            if not found:
-                weight_to_color[weight_idx] = 'gray'  # fallback color if not found
+        for prop in env.rbf_indices.keys():
+            for center_coords, weight_idx in env.rbf_indices[prop].items():
+                rbf_id = (prop, center_coords)
+                weight_to_color[weight_idx] = rbf_colors[rbf_id]
 
         from matplotlib.lines import Line2D
 
