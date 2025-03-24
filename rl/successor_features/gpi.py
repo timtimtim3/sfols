@@ -228,7 +228,8 @@ class GPI(RLAlgorithm):
                  W: dict,
                  num_steps: Optional[int] = 200,
                  render=False,
-                 initial_sleep=3) -> int:
+                 initial_sleep=3,
+                 sleep_time=0.3) -> int:
 
         env.reset()
         acc_reward = 0
@@ -252,7 +253,7 @@ class GPI(RLAlgorithm):
 
             if render:
                 env.env.render()
-                time.sleep(0.3)  # Add delay for better visualization
+                time.sleep(sleep_time)  # Add delay for better visualization
 
             if done:
                 break

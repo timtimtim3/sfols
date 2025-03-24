@@ -441,7 +441,8 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
 
     # Format the weight vector as a string for the title
     if rbf_data is None:
-        weight_str = np.array2string(w, precision=2, separator=", ")
+        rounded_weights = np.round(w, decimals=2)
+        weight_str = np.array2string(rounded_weights, precision=2, separator=", ")
         title = f"Policy {policy_index} | Weights: {weight_str}" if policy_index is not None else f"Weights: {weight_str}"
         ax.set_title(title)
 
