@@ -510,55 +510,94 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
     else:
         plt.close(fig)
 
-def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=True, colors_symbol_centers=None):
+
+def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=True,
+                  colors_symbol_centers=None, seperate_plots_for_goals=True):
     """
-    Plots all RBF activations on a single heatmap.
+    Plots RBF activations. If `seperate_plots_for_goals` is True, creates a subplot for each symbol;
+    otherwise, aggregates all activations into a single heatmap.
 
     Args:
         rbf_data: Dictionary of RBF activations per center.
-        grid_size: (grid_height, grid_width) of the environment.
-        colors_symbol_centers: Color map for mapping RBF centers by their symbol to a color.
+        grid_size: Tuple (grid_height, grid_width) of the environment.
+        env: Environment object that contains the MAP attribute.
+        aggregation: Method to combine overlapping activations ("sum" or "max").
+        skip_non_goal: If True, ignores activations where the map cell doesn't match the symbol.
+        colors_symbol_centers: Mapping from symbol to color for the center markers.
+        seperate_plots_for_goals: If True, plots each symbol on a separate subplot.
     """
     if colors_symbol_centers is None:
         colors_symbol_centers = RBF_COLORS
 
     grid_height, grid_width = grid_size
-    combined_activation_grid = np.zeros((grid_height, grid_width))
 
-    fig, ax = plt.subplots(figsize=(8, 8))
+    if seperate_plots_for_goals:
+        num_symbols = len(rbf_data)
+        # Create one row of subplots for each symbol, with an increased overall figure size.
+        fig, axes = plt.subplots(nrows=1, ncols=num_symbols, figsize=(10 * num_symbols, 8), squeeze=False)
+        axes = axes[0]  # Only one row of subplots
 
-    # Aggregate all RBF activations
-    for symbol, centers in rbf_data.items():
-        for center_coords, activations in centers.items():
-            for (y, x), activation_value in activations.items():
-                if skip_non_goal and not env.MAP[y, x] == symbol:
-                    activation_value = 0  # Set to 0, so it isn't added / maxed over
+        for ax, (symbol, centers) in zip(axes, rbf_data.items()):
+            activation_grid = np.zeros((grid_height, grid_width))
+            # Compute activations for this symbol.
+            for center_coords, activations in centers.items():
+                for (y, x), activation_value in activations.items():
+                    if skip_non_goal and not env.MAP[y, x] == symbol:
+                        activation_value = 0  # Ignore activations not matching the symbol.
+                    if aggregation == "sum":
+                        activation_grid[y, x] += activation_value
+                    elif aggregation == "max" and activation_value > activation_grid[y, x]:
+                        activation_grid[y, x] = activation_value
 
-                if aggregation == "sum":
-                    combined_activation_grid[y, x] += activation_value  # Sum overlapping RBFs
-                elif aggregation == "max" and activation_value > combined_activation_grid[y, x]:
-                    combined_activation_grid[y, x] = activation_value
+            im = ax.imshow(activation_grid, cmap="hot", origin="upper",
+                           extent=(0, grid_width, 0, grid_height))
+            # Plot RBF centers without legend.
+            center_color = colors_symbol_centers.get(symbol, "white")
+            for (cy, cx) in centers.keys():
+                ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
+                           edgecolors="black")
+            ax.set_title(f"RBF Activations for {symbol}", fontsize=14)
+            ax.grid(False)
+            # Add a colorbar without axis labels.
+            fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
-    # Plot heatmap
-    im = ax.imshow(combined_activation_grid, cmap="hot", origin="upper", extent=(0, grid_width, 0, grid_height))
+        # Adjust layout: add extra horizontal spacing between the subplot groups.
+        plt.tight_layout(pad=3.0, w_pad=3.0)
+        fig.subplots_adjust(wspace=0.2)
+        plt.show()
+    else:
+        # Aggregated plot for all RBF activations in one heatmap.
+        combined_activation_grid = np.zeros((grid_height, grid_width))
+        fig, ax = plt.subplots(figsize=(10, 10))
 
-    # Plot RBF centers with distinct colors per symbol
-    for symbol, centers in rbf_data.items():
-        center_color = colors_symbol_centers.get(symbol, "white")  # Default to white if symbol not found
-        for (cy, cx) in centers.keys():
-            ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100, edgecolors="black",
-                       label=f"RBF {symbol}" if f"RBF {symbol}" not in ax.get_legend_handles_labels()[1] else None)
+        for symbol, centers in rbf_data.items():
+            for center_coords, activations in centers.items():
+                for (y, x), activation_value in activations.items():
+                    if skip_non_goal and not env.MAP[y, x] == symbol:
+                        activation_value = 0
+                    if aggregation == "sum":
+                        combined_activation_grid[y, x] += activation_value
+                    elif aggregation == "max" and activation_value > combined_activation_grid[y, x]:
+                        combined_activation_grid[y, x] = activation_value
 
-    # Formatting
-    ax.set_title("All RBF Activations Combined")
-    ax.set_xlabel("X Coordinate")
-    ax.set_ylabel("Y Coordinate")
-    plt.colorbar(im, label="RBF Activation Intensity")
-    ax.grid(False)
+        im = ax.imshow(combined_activation_grid, cmap="hot", origin="upper",
+                       extent=(0, grid_width, 0, grid_height))
+        # Plot RBF centers and add legend entry only once per symbol.
+        legend_added = {}
+        for symbol, centers in rbf_data.items():
+            center_color = colors_symbol_centers.get(symbol, "white")
+            for (cy, cx) in centers.keys():
+                label = f"RBF {symbol}" if symbol not in legend_added else None
+                ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
+                           edgecolors="black", label=label)
+                legend_added[symbol] = True
 
-    # Ensure legend only shows unique symbols
-    handles, labels = ax.get_legend_handles_labels()
-    unique_labels = dict(zip(labels, handles))  # Remove duplicates
-    ax.legend(unique_labels.values(), unique_labels.keys(), loc="upper left")
-
-    plt.show()
+        ax.set_title("All RBF Activations Combined", fontsize=14)
+        ax.grid(False)
+        # Remove duplicate legend entries.
+        handles, labels = ax.get_legend_handles_labels()
+        unique_labels = dict(zip(labels, handles))
+        ax.legend(unique_labels.values(), unique_labels.keys(), loc="upper left", fontsize=10)
+        plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        plt.tight_layout(pad=3.0)
+        plt.show()
