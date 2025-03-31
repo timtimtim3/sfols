@@ -262,6 +262,8 @@ class SF(RLAlgorithm):
             self.next_obs, _, done, info = self.env.step(self.action)
 
             reward = np.dot(info['phi'], w)
+            # reward = np.dot(info['phi'], w) if done else 0
+            # reward = self.env.get_reward(self.action, info['phi'], w)
 
             self.reward = info['phi'] # vectorized reward
             self.terminal = done if 'TimeLimit.truncated' not in info else not info['TimeLimit.truncated']

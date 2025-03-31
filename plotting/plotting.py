@@ -146,6 +146,8 @@ def get_plot_arrow_params(q_table, w, grid_env):
             x_d = 1
         elif max_index == grid_env.LEFT:
             x_d = -1
+        elif max_index == grid_env.TERMINATE:
+            pass
 
         x_pos.append(coords[1] + 0.5)
         y_pos.append(coords[0] + 0.5)
@@ -221,45 +223,130 @@ def create_grid_plot(ax, grid, cmap=custom_gray):
 def plot_policy(ax, arrow_data, values=False, headwidth=6, headlength=10, headaxislength=7, colorbar_size='10%'):
     """
     Plots arrows representing the optimal actions based on the Q-values.
+    Terminate actions (where the agent stays in place) are indicated with a smaller hollow circle (donut marker).
 
     Args:
         ax: Matplotlib axis object.
-        arrow_data: Tuple containing (x_pos, y_pos, x_dir, y_dir, color).
+        arrow_data: Tuple containing (x_pos, y_pos, x_dir, y_dir, color, coords_list).
         values: Whether to display the Q-values as numbers.
         headwidth: Arrow head width.
         headlength: Arrow head length.
         headaxislength: Head axis length.
         colorbar_size: Size of the colorbar.
     """
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    from matplotlib import cm
+    from matplotlib.ticker import FuncFormatter
+
     x_pos, y_pos, x_dir, y_dir, color, coords_list = arrow_data
     color = np.array(color)
-    color = (color - color.min()) / (color.max() - color.min())
-    # norm = colors.Normalize(vmin=color.min(), vmax=color.max())
-
+    normed_color = (color - color.min()) / (color.max() - color.min())
     cmap = cm.get_cmap('viridis')
-    quiv = ax.quiver(
-        x_pos, y_pos, x_dir, y_dir, color, cmap=cmap,
-        angles='xy', scale_units='xy',
-        scale=1, pivot='middle',
-        headwidth=headwidth, headlength=headlength, headaxislength=headaxislength, width=0.005  # Customize arrow shape
-    )
 
-    # Only plot values if show_values is True
+    # Identify indices for normal actions and terminate actions
+    normal_indices = np.where((x_dir != 0) | (y_dir != 0))[0]
+    term_indices = np.where((x_dir == 0) & (y_dir == 0))[0]
+
+    # Plot arrows for normal actions
+    if len(normal_indices) > 0:
+        quiv = ax.quiver(
+            np.array(x_pos)[normal_indices],
+            np.array(y_pos)[normal_indices],
+            np.array(x_dir)[normal_indices],
+            np.array(y_dir)[normal_indices],
+            normed_color[normal_indices],
+            cmap=cmap,
+            angles='xy', scale_units='xy', scale=1, pivot='middle',
+            headwidth=headwidth, headlength=headlength, headaxislength=headaxislength, width=0.005
+        )
+
+    # Plot termination actions with a smaller hollow circle ("donut" marker)
+    if len(term_indices) > 0:
+        scatter = ax.scatter(
+            np.array(x_pos)[term_indices],
+            np.array(y_pos)[term_indices],
+            facecolors='none',  # Hollow circle (donut)
+            edgecolors=cmap(normed_color[term_indices]),
+            marker='o', s=40,  # Smaller marker size
+            linewidths=1.5
+        )
+        if values:
+            for i in term_indices:
+                ax.text(x_pos[i], y_pos[i], "%.3f" % normed_color[i],
+                        horizontalalignment='center', verticalalignment='center',
+                        color='black', fontsize=7)
+
+    # Optionally, annotate normal action arrows with their Q-values
     if values:
-        for i in range(len(x_pos)):
+        for i in normal_indices:
             x = x_pos[i]
             y = y_pos[i]
             if x_dir[i] == 0:
                 x -= 0.25
             else:
                 y -= 0.25
-            ax.text(x, y, "%.3f" % color[i], horizontalalignment='center',
-                    verticalalignment='center', color="black", fontsize=7)
+            ax.text(x, y, "%.3f" % normed_color[i],
+                    horizontalalignment='center', verticalalignment='center',
+                    color='black', fontsize=7)
 
+    # Add the colorbar
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size=colorbar_size, pad=0.025)
-    plt.colorbar(quiv, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0, 1.1, 0.1))
-    return quiv
+    if len(normal_indices) > 0:
+        plt.colorbar(quiv, cax=cax, ax=ax,
+                     format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)),
+                     ticks=np.arange(0, 1.1, 0.1))
+    else:
+        plt.colorbar(scatter, cax=cax, ax=ax,
+                     format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)),
+                     ticks=np.arange(0, 1.1, 0.1))
+    return ax
+
+
+# def plot_policy(ax, arrow_data, values=False, headwidth=6, headlength=10, headaxislength=7, colorbar_size='10%'):
+#     """
+#     Plots arrows representing the optimal actions based on the Q-values.
+#
+#     Args:
+#         ax: Matplotlib axis object.
+#         arrow_data: Tuple containing (x_pos, y_pos, x_dir, y_dir, color).
+#         values: Whether to display the Q-values as numbers.
+#         headwidth: Arrow head width.
+#         headlength: Arrow head length.
+#         headaxislength: Head axis length.
+#         colorbar_size: Size of the colorbar.
+#     """
+#     x_pos, y_pos, x_dir, y_dir, color, coords_list = arrow_data
+#     color = np.array(color)
+#     color = (color - color.min()) / (color.max() - color.min())
+#     # norm = colors.Normalize(vmin=color.min(), vmax=color.max())
+#
+#     cmap = cm.get_cmap('viridis')
+#     quiv = ax.quiver(
+#         x_pos, y_pos, x_dir, y_dir, color, cmap=cmap,
+#         angles='xy', scale_units='xy',
+#         scale=1, pivot='middle',
+#         headwidth=headwidth, headlength=headlength, headaxislength=headaxislength, width=0.005  # Customize arrow shape
+#     )
+#
+#     # Only plot values if show_values is True
+#     if values:
+#         for i in range(len(x_pos)):
+#             x = x_pos[i]
+#             y = y_pos[i]
+#             if x_dir[i] == 0:
+#                 x -= 0.25
+#             else:
+#                 y -= 0.25
+#             ax.text(x, y, "%.3f" % color[i], horizontalalignment='center',
+#                     verticalalignment='center', color="black", fontsize=7)
+#
+#     divider = make_axes_locatable(ax)
+#     cax = divider.append_axes("right", size=colorbar_size, pad=0.025)
+#     plt.colorbar(quiv, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0, 1.1, 0.1))
+#     return quiv
 
 
 def add_legend(ax, mapping, cmap=custom_gray):
@@ -406,6 +493,49 @@ def add_policy_indices(ax, policy_indices, arrow_data, fontsize=4, color="black"
                 fontsize=fontsize,
                 color=color,
                 zorder=4)
+
+
+def plot_maxqvals(w, env, q_table=None, arrow_data=None, policy_index=None, policy_indices=None, rbf_data=None,
+                save_path=None, show=True):
+    """
+    Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
+    RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
+    and only show the plot if show is True.
+
+    Args:
+        w: Weight vector.
+        env: Environment object.
+        q_table: The Q-table (sf).
+        arrow_data: Either pass Q-table or pass arrow data
+        policy_index: Index of the current policy.
+        policy_indices: A dictionary mapping each state to the GPI policy index of the max Q-val over policies and
+        actions.
+        rbf_data: (Optional) RBF activation data.
+        save_path: (Optional) Path to save the figure.
+        show: (Optional) If True, display the plot (default True).
+    """
+    if q_table is None and arrow_data is None:
+        raise Exception("Pass a q-table or arrow data")
+
+    if arrow_data is None:
+        arrow_data = get_plot_arrow_params(q_table, w, env)  # e.g., returns (x_pos, y_pos, x_dir, y_dir, color)
+
+    fig, ax = plt.subplots()
+
+    grid, mapping = convert_map_to_grid(env, custom_mapping=env.QVAL_COLOR_MAP)
+    create_grid_plot(ax, grid)  # Draw the grid cells.
+    add_legend(ax, mapping)     # Add legend (obstacles, goals, etc.)
+
+    # Format the weight vector as a string for the title
+    if rbf_data is None:
+        rounded_weights = np.round(w, decimals=2)
+        weight_str = np.array2string(rounded_weights, precision=2, separator=", ")
+        title = f"Policy {policy_index} | Weights: {weight_str}" if policy_index is not None else f"Weights: {weight_str}"
+        ax.set_title(title)
+
+    # Plot the arrows that indicate the policy's best actions
+    quiv = plot_policy(ax, arrow_data, values=True)
+    plt.show()
 
 
 def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy_indices=None, rbf_data=None,
