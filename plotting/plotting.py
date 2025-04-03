@@ -599,8 +599,12 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         # Build a mapping from weight index to the color of its corresponding RBF
         # env.rbf_indices maps center_coords -> weight index
         weight_to_color = {}
-        for prop in env.rbf_indices.keys():
-            for center_coords, weight_idx in env.rbf_indices[prop].items():
+        for prop in env.PHI_OBJ_TYPES:
+            for feat in env.FEAT_DATA[prop]:
+                cy, cx, _ = feat
+                center_coords = (cy, cx)
+                weight_idx = env.get_feat_idx(prop, feat)
+
                 rbf_id = (prop, center_coords)
                 weight_to_color[weight_idx] = rbf_colors[rbf_id]
 
