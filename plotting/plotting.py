@@ -393,43 +393,43 @@ def smooth(scalars, weight):  # Weight between 0 and 1
     return smoothed
 
 
-def add_rbf_activations(ax, rbf_data, env, only_add_rbf_on_its_goal=True):
+def add_activations(ax, activations, env, only_add_feat_on_its_goal=True, unique_symbol_for_centers=False):
     """
-    For each cell that has one or more RBF activations, plot a small marker
-    (circle or square) in one of the four corners. The color is unique for each RBF,
+    For each cell that has one or more feature activations, plot a small marker
+    (circle or square) in one of the four corners. The color is unique for each feat,
     and the marker's transparency (alpha) is proportional to the activation value.
     """
-    # First, collect activations per cell and gather the unique RBF identifiers.
-    # An RBF is uniquely identified by (symbol, center_coords).
-    cell_to_rbfs = {}   # key: (y,x) cell coordinate; value: list of tuples (rbf_id, activation)
-    unique_rbfs = []    # list of all unique (symbol, center_coords) pairs
+    # First, collect activations per cell and gather the unique feat identifiers.
+    # A feat is uniquely identified by (symbol, feat).
+    cell_to_feats = {}   # key: (y,x) cell coordinate; value: list of tuples (feat_id, activation)
+    unique_feats = []    # list of all unique (symbol, feat) pairs
 
-    for symbol, centers in rbf_data.items():
-        for center_coords, cell_dict in centers.items():
-            rbf_id = (symbol, center_coords)
-            unique_rbfs.append(rbf_id)
+    for symbol, features in activations.items():
+        for feat, cell_dict in features.items():
+            feat_id = (symbol, feat)
+            unique_feats.append(feat_id)
             for (y, x), activation in cell_dict.items():
-                if only_add_rbf_on_its_goal and env.MAP[y, x] != symbol:
+                if only_add_feat_on_its_goal and env.MAP[y, x] != symbol:
                     continue
-                if (y, x) not in cell_to_rbfs:
-                    cell_to_rbfs[(y, x)] = []
-                cell_to_rbfs[(y, x)].append((rbf_id, activation))
+                if (y, x) not in cell_to_feats:
+                    cell_to_feats[(y, x)] = []
+                cell_to_feats[(y, x)].append((feat_id, activation))
 
-    # Create a unique color for each RBF using a colormap.
+    # Create a unique color for each feature using a colormap.
     cmap = plt.get_cmap('tab10')
-    rbf_colors = {}
-    for i, rbf_id in enumerate(unique_rbfs):
-        rbf_colors[rbf_id] = cmap(i % 10)
+    feat_colors = {}
+    for i, feat_id in enumerate(unique_feats):
+        feat_colors[feat_id] = cmap(i % 10)
 
     # Now, for each cell, plot markers at the corners.
     # We assume that each cell (with top-left at (x,y)) spans x -> x+1 and y -> y+1.
     # Here we use fixed offsets (0.2 and 0.8) so that up to 4 markers (one per corner) fit.
-    for (y, x), rbf_list in cell_to_rbfs.items():
+    for (y, x), feat_list in cell_to_feats.items():
         # Sort for consistency (so the same RBF always goes to the same corner).
-        rbf_list = sorted(rbf_list, key=lambda tup: (tup[0][0], tup[0][1]))
+        feat_list = sorted(feat_list, key=lambda tup: (tup[0][0], tup[0][1]))
         # Define corner offsets; here the order is: top-left, top-right, bottom-left, bottom-right.
         corner_offsets = [(0.2, 0.2), (0.8, 0.2), (0.2, 0.8), (0.8, 0.8)]
-        for i, (rbf_id, activation) in enumerate(rbf_list):
+        for i, (feat_id, activation) in enumerate(feat_list):
             if i >= len(corner_offsets):
                 break  # In case there are >4 overlapping activations.
             offset_x, offset_y = corner_offsets[i]
@@ -438,12 +438,12 @@ def add_rbf_activations(ax, rbf_data, env, only_add_rbf_on_its_goal=True):
             marker_y = y + offset_y
             marker_size = 10 + 8 * activation  # 10 when activation=0, 18 when activation=1
             # If the current cell is the RBF center we use a square ('s'); otherwise, we use a circle ('o').
-            marker_style = 's' if (y, x) == rbf_id[1] else 'o'
+            marker_style = 's' if unique_symbol_for_centers and (y, x) == (feat_id[1][0], feat_id[1][1]) else 'o'
             ax.scatter(marker_x, marker_y, s=marker_size, marker=marker_style,
-                       color=rbf_colors[rbf_id],
+                       color=feat_colors[feat_id],
                        alpha=activation,
                        edgecolors='k', zorder=3)
-
+    return unique_feats
 
 def add_policy_indices(ax, policy_indices, arrow_data, fontsize=4, color="black"):
     """
@@ -538,8 +538,8 @@ def plot_maxqvals(w, env, q_table=None, arrow_data=None, policy_index=None, poli
     plt.show()
 
 
-def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy_indices=None, rbf_data=None,
-                save_path=None, show=True):
+def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy_indices=None, activation_data=None,
+                save_path=None, show=True, unique_symbol_for_centers=False):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
     RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
@@ -570,7 +570,7 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
     add_legend(ax, mapping)     # Add legend (obstacles, goals, etc.)
 
     # Format the weight vector as a string for the title
-    if rbf_data is None:
+    if activation_data is None:
         rounded_weights = np.round(w, decimals=2)
         weight_str = np.array2string(rounded_weights, precision=2, separator=", ")
         title = f"Policy {policy_index} | Weights: {weight_str}" if policy_index is not None else f"Weights: {weight_str}"
@@ -584,29 +584,21 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         add_policy_indices(ax, policy_indices, arrow_data)
 
     # If RBF data is provided, overlay the RBF activation markers
-    if rbf_data is not None:
-        add_rbf_activations(ax, rbf_data, env)
+    if activation_data is not None:
+        unique_feats = add_activations(ax, activation_data, env, unique_symbol_for_centers=unique_symbol_for_centers)
 
-        # compute a mapping from each RBF center (with symbol) to its unique color
-        unique_rbfs = []
-        for symbol, centers in rbf_data.items():
-            for center_coords, _ in centers.items():
-                unique_rbfs.append((symbol, center_coords))
-        unique_rbfs = sorted(set(unique_rbfs), key=lambda x: (x[0], x[1]))
+        # build a mapping from each feat_id to its unique color
         cmap = plt.get_cmap('tab10')
-        rbf_colors = {rbf_id: cmap(i % 10) for i, rbf_id in enumerate(unique_rbfs)}
+        feat_colors = {feat_id: cmap(i % 10) for i, feat_id in enumerate(unique_feats)}
 
         # Build a mapping from weight index to the color of its corresponding RBF
         # env.rbf_indices maps center_coords -> weight index
         weight_to_color = {}
         for prop in env.PHI_OBJ_TYPES:
             for feat in env.FEAT_DATA[prop]:
-                cy, cx, _ = feat
-                center_coords = (cy, cx)
                 weight_idx = env.get_feat_idx(prop, feat)
-
-                rbf_id = (prop, center_coords)
-                weight_to_color[weight_idx] = rbf_colors[rbf_id]
+                feat_id = (prop, feat)
+                weight_to_color[weight_idx] = feat_colors[feat_id]
 
         from matplotlib.lines import Line2D
 
@@ -671,10 +663,10 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
         fig, axes = plt.subplots(nrows=1, ncols=num_symbols, figsize=(10 * num_symbols, 8), squeeze=False)
         axes = axes[0]  # Only one row of subplots
 
-        for ax, (symbol, centers) in zip(axes, rbf_data.items()):
+        for ax, (symbol, features) in zip(axes, rbf_data.items()):
             activation_grid = np.zeros((grid_height, grid_width))
             # Compute activations for this symbol.
-            for center_coords, activations in centers.items():
+            for _, activations in features.items():
                 for (y, x), activation_value in activations.items():
                     if skip_non_goal and not env.MAP[y, x] == symbol:
                         activation_value = 0  # Ignore activations not matching the symbol.
@@ -687,7 +679,7 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
                            extent=(0, grid_width, 0, grid_height))
             # Plot RBF centers without legend.
             center_color = colors_symbol_centers.get(symbol, "white")
-            for (cy, cx) in centers.keys():
+            for (cy, cx, d) in features.keys():
                 ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
                            edgecolors="black")
             ax.set_title(f"RBF Activations for {symbol}", fontsize=14)
@@ -704,8 +696,8 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
         combined_activation_grid = np.zeros((grid_height, grid_width))
         fig, ax = plt.subplots(figsize=(10, 10))
 
-        for symbol, centers in rbf_data.items():
-            for center_coords, activations in centers.items():
+        for symbol, features in rbf_data.items():
+            for _, activations in features.items():
                 for (y, x), activation_value in activations.items():
                     if skip_non_goal and not env.MAP[y, x] == symbol:
                         activation_value = 0
@@ -718,9 +710,9 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
                        extent=(0, grid_width, 0, grid_height))
         # Plot RBF centers and add legend entry only once per symbol.
         legend_added = {}
-        for symbol, centers in rbf_data.items():
+        for symbol, features in rbf_data.items():
             center_color = colors_symbol_centers.get(symbol, "white")
-            for (cy, cx) in centers.keys():
+            for (cy, cx, d) in features.keys():
                 label = f"RBF {symbol}" if symbol not in legend_added else None
                 ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
                            edgecolors="black", label=label)
