@@ -1,5 +1,5 @@
 import os
-
+import math
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.colors as colors
@@ -635,6 +635,81 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         plt.show()
     else:
         plt.close(fig)
+
+
+def plot_all_fourier(activation_data, grid_size, env, skip_non_goal=False, cmap="Greys"):
+    """
+    Plots Fourier activations for each unique feature across all symbols.
+
+    For each unique Fourier feature (identified by its (fx, fy) tuple),
+    this function uses the activations from the first symbol that contains that feature.
+    The (fx, fy) identifier is displayed above each subplot.
+
+    Args:
+        activation_data: Dictionary of feature activations.
+            Expected structure is:
+                {
+                    symbol1: {
+                        feature1: {(y, x): activation_value, ...},
+                        feature2: {...},
+                        ...
+                    },
+                    symbol2: { ... },
+                    ...
+                }
+        grid_size: Tuple (grid_height, grid_width) of the environment.
+        env: Environment object that contains the MAP attribute.
+        skip_non_goal: If True, ignores activations where the map cell doesn't match the symbol.
+        cmap: Colormap to use for plotting (e.g., "hot", "Greys", etc.).
+    """
+    grid_height, grid_width = grid_size
+
+    # Gather unique features from all symbols.
+    # For each feature, only the first occurrence is used.
+    unique_feature_activations = {}
+    for symbol, features in activation_data.items():
+        for feature, activations in features.items():
+            if feature not in unique_feature_activations:
+                filtered_activations = {}
+                for (y, x), activation_value in activations.items():
+                    if skip_non_goal and env.MAP[y, x] != symbol:
+                        continue
+                    filtered_activations[(y, x)] = activation_value
+                unique_feature_activations[feature] = filtered_activations
+
+    num_features = len(unique_feature_activations)
+    # Determine layout: maximum 3 columns per row.
+    ncols = min(3, num_features)
+    nrows = math.ceil(num_features / ncols)
+
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(10 * ncols, 8 * nrows))
+    # Flatten axes for easy iteration.
+    if nrows * ncols == 1:
+        axes = np.array([axes])
+    else:
+        axes = axes.flatten()
+
+    # Plot each unique feature.
+    for ax, (feature, activations_dict) in zip(axes, unique_feature_activations.items()):
+        activation_grid = np.zeros((grid_height, grid_width))
+        for (y, x), value in activations_dict.items():
+            activation_grid[y, x] = value
+
+        im = ax.imshow(activation_grid, cmap=cmap, origin="upper",
+                       extent=(0, grid_width, 0, grid_height))
+        # Title now only shows the (fx, fy) identifier.
+        ax.set_title(f"{feature}", fontsize=14)
+        ax.grid(False)
+        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
+    # Hide any unused subplots.
+    for ax in axes[len(unique_feature_activations):]:
+        ax.axis('off')
+
+    # Increase padding between rows and columns to prevent overlap.
+    plt.tight_layout(pad=3.0, w_pad=3.0, h_pad=3.0)
+    fig.subplots_adjust(wspace=0.2, hspace=0.3)
+    plt.show()
 
 
 def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=True,
