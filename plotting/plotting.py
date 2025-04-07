@@ -371,13 +371,15 @@ def add_legend(ax, mapping, cmap=custom_gray):
         for key, value in filtered_mapping.items()
     ]
 
+    # Place the mapping legend above the plot
     legend1 = ax.legend(
         handles=legend_patches,
-        loc="center left",
-        bbox_to_anchor=(-0.3, 0.5),  # Move the legend left
-        title="Legend",
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.125),  # above the plot
+        title="Tiles",
         fontsize=8,
-        frameon=False  # Remove legend box outline
+        frameon=False,
+        ncol=len(legend_patches)  # all items in one row
     )
     ax.add_artist(legend1)  # keep legend1 on the axes
 
@@ -415,11 +417,11 @@ def add_activations(ax, activations, env, only_add_feat_on_its_goal=True, unique
                     cell_to_feats[(y, x)] = []
                 cell_to_feats[(y, x)].append((feat_id, activation))
 
-    # Create a unique color for each feature using a colormap.
-    cmap = plt.get_cmap('tab10')
-    feat_colors = {}
-    for i, feat_id in enumerate(unique_feats):
-        feat_colors[feat_id] = cmap(i % 10)
+    # Use a colormap that supports the desired number of discrete colors, 'hsv', 'plasma', or 'tab20'
+    cmap_dynamic = plt.get_cmap('tab20', len(unique_feats))
+
+    # Build a mapping from each feat_id to its unique color
+    feat_colors = {feat_id: cmap_dynamic(i) for i, feat_id in enumerate(unique_feats)}
 
     # Now, for each cell, plot markers at the corners.
     # We assume that each cell (with top-left at (x,y)) spans x -> x+1 and y -> y+1.
@@ -443,7 +445,7 @@ def add_activations(ax, activations, env, only_add_feat_on_its_goal=True, unique
                        color=feat_colors[feat_id],
                        alpha=activation,
                        edgecolors='k', zorder=3)
-    return unique_feats
+    return unique_feats, feat_colors
 
 def add_policy_indices(ax, policy_indices, arrow_data, fontsize=4, color="black"):
     """
@@ -539,7 +541,7 @@ def plot_maxqvals(w, env, q_table=None, arrow_data=None, policy_index=None, poli
 
 
 def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy_indices=None, activation_data=None,
-                save_path=None, show=True, unique_symbol_for_centers=False):
+                save_path=None, show=True, unique_symbol_for_centers=False, display_feat_ids=True):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
     RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
@@ -585,20 +587,18 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
 
     # If RBF data is provided, overlay the RBF activation markers
     if activation_data is not None:
-        unique_feats = add_activations(ax, activation_data, env, unique_symbol_for_centers=unique_symbol_for_centers)
-
-        # build a mapping from each feat_id to its unique color
-        cmap = plt.get_cmap('tab10')
-        feat_colors = {feat_id: cmap(i % 10) for i, feat_id in enumerate(unique_feats)}
+        unique_feats, feat_colors = add_activations(ax, activation_data, env, unique_symbol_for_centers=unique_symbol_for_centers)
 
         # Build a mapping from weight index to the color of its corresponding RBF
         # env.rbf_indices maps center_coords -> weight index
         weight_to_color = {}
+        feat_ids = {}
         for prop in env.PHI_OBJ_TYPES:
             for feat in env.FEAT_DATA[prop]:
                 weight_idx = env.get_feat_idx(prop, feat)
                 feat_id = (prop, feat)
                 weight_to_color[weight_idx] = feat_colors[feat_id]
+                feat_ids[weight_idx] = feat_id
 
         from matplotlib.lines import Line2D
 
@@ -606,21 +606,28 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         handles = []
         for i, weight in enumerate(w):
             color = weight_to_color.get(i, 'gray')
+            feat_id = feat_ids[i]
+            label = f"w[{i}]={weight:.2f}" if not display_feat_ids else f"w[{i}]={weight:.2f} {feat_id}"
             handle = Line2D([], [], marker='s', color='none',
                             markerfacecolor=color, markersize=8,
-                            label=f"w[{i}]={weight:.2f}")
+                            label=label)
             handles.append(handle)
 
-        # Place the legend above the plot
+        # Compute number of columns (maximum 7 per row)
+        ncol = min(2, len(handles))
+
+        # Place the weight legend on the left side of the plot
         legend2 = ax.legend(
             handles=handles,
-            loc='upper center',
-            bbox_to_anchor=(0.5, 1.10),
-            ncol=len(handles),
+            loc='center left',
+            bbox_to_anchor=(-0.8, 0.8),
+            ncol=ncol,  # Wraps into multiple rows if necessary
             handlelength=1,
-            handletextpad=0.2,
-            columnspacing=0.5,
-            frameon=False
+            handletextpad=0.3,
+            columnspacing=0.7,
+            labelspacing=0.8,  # Adjusts vertical spacing between rows
+            frameon=False,
+            prop={'size': 8}
         )
 
     # Save the figure if a save_path is provided.
@@ -637,7 +644,7 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         plt.close(fig)
 
 
-def plot_all_fourier(activation_data, grid_size, env, skip_non_goal=False, cmap="Greys"):
+def plot_all_fourier(activation_data, grid_size, env, skip_non_goal=False, cmap="Greys", save_path=None):
     """
     Plots Fourier activations for each unique feature across all symbols.
 
