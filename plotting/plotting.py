@@ -627,7 +627,7 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
             columnspacing=0.7,
             labelspacing=0.8,  # Adjusts vertical spacing between rows
             frameon=False,
-            prop={'size': 8}
+            prop={'size': 7}
         )
 
     # Save the figure if a save_path is provided.
