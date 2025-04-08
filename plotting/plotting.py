@@ -702,8 +702,8 @@ def plot_all_fourier(activation_data, grid_size, env, skip_non_goal=False, cmap=
         for (y, x), value in activations_dict.items():
             activation_grid[y, x] = value
 
-        im = ax.imshow(activation_grid, cmap=cmap, origin="upper",
-                       extent=(0, grid_width, 0, grid_height))
+        im = ax.imshow(activation_grid, cmap=cmap, origin="upper", extent=(0, 1, 1, 0))
+
         # Title now only shows the (fx, fy) identifier.
         ax.set_title(f"{feature}", fontsize=14)
         ax.grid(False)
@@ -766,7 +766,7 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
                         activation_grid[y, x] = activation_value
 
             im = ax.imshow(activation_grid, cmap="hot", origin="upper",
-                           extent=(0, grid_width, 0, grid_height))
+                           extent=(0, grid_width, grid_height, 0))
             # Plot RBF centers without legend.
             center_color = colors_symbol_centers.get(symbol, "white")
             for (cy, cx, d) in features.keys():
@@ -805,7 +805,7 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
                         combined_activation_grid[y, x] = activation_value
 
         im = ax.imshow(combined_activation_grid, cmap="hot", origin="upper",
-                       extent=(0, grid_width, 0, grid_height))
+                       extent=(0, grid_width, grid_height, 0))
         # Plot RBF centers and add legend entry only once per symbol.
         legend_added = {}
         for symbol, features in rbf_data.items():
