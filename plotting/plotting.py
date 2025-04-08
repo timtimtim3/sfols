@@ -644,7 +644,7 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         plt.close(fig)
 
 
-def plot_all_fourier(activation_data, grid_size, env, skip_non_goal=False, cmap="Greys", save_path=None):
+def plot_all_fourier(activation_data, grid_size, env, skip_non_goal=False, cmap="Greys", save_dir=None):
     """
     Plots Fourier activations for each unique feature across all symbols.
 
@@ -716,11 +716,19 @@ def plot_all_fourier(activation_data, grid_size, env, skip_non_goal=False, cmap=
     # Increase padding between rows and columns to prevent overlap.
     plt.tight_layout(pad=3.0, w_pad=3.0, h_pad=3.0)
     fig.subplots_adjust(wspace=0.2, hspace=0.3)
+
+    # Save the figure if a save_path is provided.
+    if save_dir is not None:
+        directory = os.path.dirname(save_dir)
+        if directory and not os.path.exists(directory):
+            os.makedirs(directory)
+        plt.savefig(save_dir + "/feat_activations.png", bbox_inches='tight')
+
     plt.show()
 
 
 def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=True,
-                  colors_symbol_centers=None, seperate_plots_for_goals=True):
+                  colors_symbol_centers=None, seperate_plots_for_goals=True, save_dir=None):
     """
     Plots RBF activations. If `seperate_plots_for_goals` is True, creates a subplot for each symbol;
     otherwise, aggregates all activations into a single heatmap.
@@ -772,6 +780,14 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
         # Adjust layout: add extra horizontal spacing between the subplot groups.
         plt.tight_layout(pad=3.0, w_pad=3.0)
         fig.subplots_adjust(wspace=0.2)
+
+        # Save the figure if a save_path is provided.
+        if save_dir is not None:
+            directory = os.path.dirname(save_dir)
+            if directory and not os.path.exists(directory):
+                os.makedirs(directory)
+            plt.savefig(save_dir + "/feat_activations.png", bbox_inches='tight')
+
         plt.show()
     else:
         # Aggregated plot for all RBF activations in one heatmap.
@@ -808,4 +824,12 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
         ax.legend(unique_labels.values(), unique_labels.keys(), loc="upper left", fontsize=10)
         plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
         plt.tight_layout(pad=3.0)
+
+        # Save the figure if a save_path is provided.
+        if save_dir is not None:
+            directory = os.path.dirname(save_dir)
+            if directory and not os.path.exists(directory):
+                os.makedirs(directory)
+            plt.savefig(save_dir + "/feat_activations.png", bbox_inches='tight')
+
         plt.show()
