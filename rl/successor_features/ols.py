@@ -225,15 +225,34 @@ class OLS:
         return W_del
 
     def remove_obsolete_values(self, value: np.ndarray) -> List[int]:
+        # self.ccs holds previous average GPI SF vector (phi_dim,) over inital states under corresponding weight
+        # that was added in that iteration to self.css_weights
+
         removed_indx = []
+        # Loop in reverse over previous GPI SF vectors (each computed by maxing over actions under w', max_a phi * w')
+        # where w' is the one that was learned and added in that iteration to self.ccs_weights
         for i in reversed(range(len(self.ccs))):
-            best_in_all = True
+            current_gpi_best_in_all = True
+            gpi_sf_i = self.ccs[i]
+
+            # Loop over all previously learned w vectors
             for j in range(len(self.W)):
                 w = self.W[j]
-                if np.dot(value, w) < np.dot(self.ccs[i], w):
-                    best_in_all = False
+                if np.dot(value, w) < np.dot(gpi_sf_i, w):
+                    current_gpi_best_in_all = False
                     break
-            if best_in_all:
+
+            # if current_gpi_best_in_all is True this means it beats the average SF of gpi_sf_i in all tasks
+            # we have previously learned and we remove the gpi_sf_i
+
+            # I don't know if this makes sense though because the SF under current GPI policy depend on and are computed
+            # under a specific weight vector w (the one that just learned), the same goes for the GPI policy gpi_sf_i
+            # that we are comparing to, it was computed under its own w' vector and depends on it
+            # So then computing their value under some other weight vector w'' above using SF that depend on totally
+            # different weight vectors w' and w? Maybe makes more sense to compute SF of current_gpi_sf and gpi_sf_i
+            # using the weight vector w'' we're using to compute the value. e.g. if we're dealing with the last element
+            # of self.ccs (so -1) we would simply use self.policies[:-1] and for current_gpi_sf we use self.policies[:]?
+            if current_gpi_best_in_all:
                 print("removed value", self.ccs[i])
                 print("removed weights", self.ccs_weights[i])
                 removed_indx.append(i)
