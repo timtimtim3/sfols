@@ -27,7 +27,8 @@ class GPI(RLAlgorithm):
                  log: bool = True,
                  device: Union[th.device, str] = 'auto',
                  planning_constraint: Optional[dict] = None,
-                 psis_are_augmented=False):
+                 psis_are_augmented=False,
+                 ValueIteration=None):
 
         super(GPI, self).__init__(env, device, fsa_env=fsa_env, planning_constraint=planning_constraint)
 
@@ -40,6 +41,7 @@ class GPI(RLAlgorithm):
         self.log = log
         self.psis_are_augmented = psis_are_augmented
 
+        self.ValueIteration = ValueIteration
 
     def eval(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False) -> EvalReturnType:
         """
@@ -116,6 +118,11 @@ class GPI(RLAlgorithm):
     # Given obs returns
     def max_q(self, obs, w, tensor=False, exclude=None):
         if tensor:
+            if not isinstance(obs, th.Tensor):
+                obs = th.tensor(obs, dtype=th.float32, device=self.device)
+            if not isinstance(w, th.Tensor):
+                w = th.tensor(w, dtype=th.float32, device=self.device)
+
             with th.no_grad():
                 psi_values = th.stack([policy.target_psi_net(
                     obs) for policy in self.policies if policy is not exclude])
@@ -154,7 +161,6 @@ class GPI(RLAlgorithm):
               reset_learning_starts=True,
               new_policy=True,
               reuse_value_ind=None,
-              ValueIteration=None,
               **kwargs
               ):
 
@@ -201,7 +207,6 @@ class GPI(RLAlgorithm):
                                 total_episodes=total_episodes,
                                 reset_num_timesteps=reset_num_timesteps,
                                 eval_freq=eval_freq,
-                                ValueIteration=ValueIteration,
                                 **kwargs)
 
         self.learned_policies += 1
@@ -222,8 +227,11 @@ class GPI(RLAlgorithm):
 
         # Custom function to evaluate the so-far computed CCS,
         # on a given FSA.
-
-        if ValueIteration is None:
+        if ValueIteration is not None:
+            pass
+        elif self.ValueIteration is not None:
+            ValueIteration = self.ValueIteration
+        else:
             from fsa.planning import SFFSAValueIteration as ValueIteration
 
         planning = ValueIteration(fsa_env, self, constraint=self.planning_constraint)

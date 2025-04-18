@@ -194,10 +194,6 @@ class SF(RLAlgorithm):
             if self.use_replay and self.per:
                 log_dict[f"{self.log_prefix}mean_priority"] = new_priorities.mean()
             wandb.log(log_dict)
-
-
-        
-        
         return max_td_error
 
     def define_wandb_metrics(self):
@@ -234,7 +230,6 @@ class SF(RLAlgorithm):
               w=np.array([1.0,0.0]),
               avg_td_step=-1,
               avg_td_threshold=-1,
-              ValueIteration=None
               ):
         
         episode_length = 0
@@ -280,7 +275,7 @@ class SF(RLAlgorithm):
                     v = eval_mo(agent=self, env=self.fsa_env, w=w, render=False, gamma=self.gamma)[1]
                     wandb.log({f"{self.log_prefix}exp return": v, "learning/timestep": self.num_timesteps})
                 else:
-                    fsa_reward = self.gpi.evaluate_fsa(self.fsa_env, ValueIteration=ValueIteration)
+                    fsa_reward = self.gpi.evaluate_fsa(self.fsa_env)
                     wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps})
 
             if done:

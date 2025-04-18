@@ -109,10 +109,11 @@ def eval_mo(agent, env, w, gamma=1.0, render=False):
     return np.dot(w, total_vec_reward), np.dot(w, vec_return), total_vec_reward, vec_return
 
 
-def policy_eval_exact(agent, env, w):
+def policy_eval_exact(agent, env, w, using_dqn=False):
     v = 0
-    for start_state in env.initial:
-        v += agent.max_q(obs=start_state, w=w) / len(env.initial)
+    start_states = env.get_initial_state_distribution_sample()
+    for start_state in start_states:
+        v += agent.max_q(obs=start_state, w=w, tensor=using_dqn) / len(start_states)
     return np.round(v, 6)
 
 def policy_evaluation_mo(agent, env, w, rep=5, return_scalarized_value=False):
