@@ -1,3 +1,5 @@
+import json
+
 from sfols.rl.utils.prioritized_buffer import PrioritizedReplayBuffer
 from sfols.rl.utils.utils import eval_mo, linearly_decaying_epsilon
 from sfols.rl.successor_features.gpi import GPI
@@ -326,3 +328,25 @@ class SF(RLAlgorithm):
 
     def get_augmented_psis(self, uidx, state):
         return self.augmented_psi_table[uidx][state]
+
+    def save(self, base_dir, policy_idx):
+        q_table_serializable = {
+            str(k): v.tolist() if isinstance(v, np.ndarray) else v
+            for k, v in self.q_table.items()
+        }
+
+        q_table_path = f"{base_dir}/qtable_pol{policy_idx}.json"
+        with open(q_table_path, "w") as f:
+            json.dump(q_table_serializable, f, indent=4)
+
+    def load(self, path):
+        with open(path, "r") as f:
+            q_table_serialized = json.load(f)
+
+        # Convert back: keys from str to tuple, values from list to np.array (if necessary)
+        q_table_original = {
+            eval(k): np.array(v) if isinstance(v, list) else v
+            for k, v in q_table_serialized.items()
+        }
+
+        self.q_table = q_table_original  # Store in dict with policy index as key

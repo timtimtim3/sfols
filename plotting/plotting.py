@@ -833,3 +833,21 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
             plt.savefig(save_dir + "/feat_activations.png", bbox_inches='tight')
 
         plt.show()
+
+
+def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, unique_symbol_for_centers=False):
+    if verbose:
+        print("\nPlotting GPI q-values:")
+    w_arr = np.asarray(list(w_dict.values())).reshape(-1)
+    for (uidx, w) in enumerate(w_dict.values()):
+        if uidx == len(w_dict.keys()) - 1:
+            break
+
+        w_dot = w_arr if gpi_agent.psis_are_augmented else w
+
+        if verbose:
+            print(uidx, np.round(w, 2))
+        actions, policy_indices, qvals = gpi_agent.get_gpi_policy_on_w(w_dot, uidx=uidx)
+        arrow_data = get_plot_arrow_params_from_eval(actions, qvals, train_env)
+        plot_q_vals(w, train_env, arrow_data=arrow_data, activation_data=activation_data,
+                    policy_indices=policy_indices, unique_symbol_for_centers=unique_symbol_for_centers)

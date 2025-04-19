@@ -101,7 +101,14 @@ class OLS:
             if priority > self.epsilon:
                 self.queue.append((priority, wc))
         self.queue.sort(key=lambda t: t[0], reverse=True)  # Sort in descending order of priority
-        w_table = wandb.Table(columns=[f"w{i}" for i in range(self.m)], data=[(c.tolist()) for c in self.ccs])
+        rows = [
+            np.asarray(c).reshape(-1).tolist()
+            for c in self.ccs
+        ]
+        w_table = wb.Table(
+            columns=[f"w{i}" for i in range(self.m)],
+            data=rows
+        )
         wandb.log({
             "ols/|W_del|": len(W_del),
             "ols/|W_corner|": len(W_corner),

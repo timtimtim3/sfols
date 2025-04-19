@@ -169,16 +169,18 @@ class SFDQN(RLAlgorithm):
                 'buffer_size': self.buffer_size,
                 'learning_starts': self.learning_starts}
 
-    def save(self, save_replay_buffer=True, save_dir='weights/'):
-        if not os.path.isdir(save_dir):
-            os.makedirs(save_dir)
+    def save(self, base_dir, policy_idx, save_replay_buffer=True):
+        if not os.path.isdir(base_dir):
+            os.makedirs(base_dir)
         saved_params = {}
         saved_params['psi_net_state_dict'] = self.psi_net.state_dict()
         saved_params['target_psi_net_state_dict'] = self.target_psi_net.state_dict()
         saved_params['psi_nets_optimizer_state_dict'] = self.psi_optim.state_dict()
         if save_replay_buffer:
             saved_params['replay_buffer'] = self.replay_buffer
-        th.save(saved_params, save_dir + "/" + self.experiment_name + '.tar')
+
+        save_path = f"{base_dir}/dqn{policy_idx}.pt"
+        th.save(saved_params, save_path)
 
     def load(self, path, load_replay_buffer=True):
         params = th.load(path)
@@ -362,7 +364,7 @@ class SFDQN(RLAlgorithm):
                     print(
                         f"Episode: {self.num_episodes} Step: {self.num_timesteps}, Ep. Total Reward: {episode_reward}")
                 if self.log:
-                    wb.log({'metrics/policy_index': np.array(self.police_indices), 'global_step': self.num_timesteps})
+                    wb.log({'metrics/policy_index': np.array(self.police_indices)}, step=self.num_timesteps)
                     self.police_indices = []
                     wb.log({"metrics/episode": self.num_episodes}, step=self.num_timesteps)
                     wb.log({"metrics/episode_reward": episode_reward}, step=self.num_timesteps)

@@ -1,3 +1,4 @@
+import re
 import time
 import os
 import glob
@@ -433,31 +434,55 @@ class GPI(RLAlgorithm):
             self.tasks = []
             print(f"No tasks.pkl found in {task_dir}. self.tasks is set to an empty list.")
 
-    def load_policies(self, policy_dir: str, q_tables):
-        """
-        Loads saved policies and tasks from the specified directory and assigns them to self.policies and self.tasks.
+    def load_policies(self, policy_dir):
+        # collect (idx, filename) for any q‑table or DQN checkpoint
+        file_infos = []
+        for fname in os.listdir(policy_dir):
+            m_json = re.match(r"qtable_pol(\d+)\.json$", fname)
+            m_pt = re.match(r"dqn(\d+)\.(?:pt|pth)$", fname)  # or .pt / .pth
+            if m_json:
+                idx = int(m_json.group(1))
+                file_infos.append((idx, fname))
+            elif m_pt:
+                idx = int(m_pt.group(1))
+                file_infos.append((idx, fname))
 
-        Parameters:
-            policy_dir (str): The directory where the policy pickle files and tasks.pkl are stored.
-            q_tables (dict): Dictionary holding policy indicices mapped to q-table dictionaries.
-        """
-
-        # Load policy pickle files from the directory
-        pkl_files = sorted(glob.glob(os.path.join(policy_dir, "discovered_policy_*.pkl")))
-        print(f"Loading {len(pkl_files)} policies from {policy_dir}")
-        for i, pkl_path in enumerate(pkl_files):
-            with open(pkl_path, "rb") as fp:
-                policy_data = pkl.load(fp)
-            # Reconstruct a new policy by calling the algorithm constructor.
-            # This ensures that the policy object has the correct class and methods.
-            policy = self.algorithm_constructor(log_prefix="load-policy")
-            # Restore attributes from the unpickled dictionary
-            for k, v in policy_data.items():
-                if k == 'q_table':
-                    continue
-                setattr(policy, k, v)
-
-            policy.q_table = q_tables[i]
-            # Insert the policy into the GPI agent's policy list
+        # now sort by index and load
+        for idx, fname in sorted(file_infos, key=lambda x: x[0]):
+            path = os.path.join(policy_dir, fname)
+            policy = self.algorithm_constructor(log_prefix=f"load-policy-{idx}")
             self.policies.append(policy)
-        print(f"Loaded {len(self.policies)} policies into GPI agent.")
+            policy.load(path)
+
+    # def load_policies(self, policy_dir: str, q_tables):
+    #     """
+    #     Loads saved policies and tasks from the specified directory and assigns them to self.policies and self.tasks.
+    #
+    #     Parameters:
+    #         policy_dir (str): The directory where the policy pickle files and tasks.pkl are stored.
+    #         q_tables (dict): Dictionary holding policy indicices mapped to q-table dictionaries.
+    #     """
+    #
+    #     # Load policy pickle files from the directory
+    #     pkl_files = sorted(glob.glob(os.path.join(policy_dir, "discovered_policy_*.pkl")))
+    #     print(f"Loading {len(pkl_files)} policies from {policy_dir}")
+    #     for i, pkl_path in enumerate(pkl_files):
+    #         with open(pkl_path, "rb") as fp:
+    #             policy_data = pkl.load(fp)
+    #         # Reconstruct a new policy by calling the algorithm constructor.
+    #         # This ensures that the policy object has the correct class and methods.
+    #         policy = self.algorithm_constructor(log_prefix="load-policy")
+    #         # Restore attributes from the unpickled dictionary
+    #         for k, v in policy_data.items():
+    #             if k == 'q_table':
+    #                 continue
+    #             setattr(policy, k, v)
+    #
+    #         policy.q_table = q_tables[i]
+    #         # Insert the policy into the GPI agent's policy list
+    #         self.policies.append(policy)
+    #     print(f"Loaded {len(self.policies)} policies into GPI agent.")
+
+    def save_policies(self, base_dir):
+        for i, policy in enumerate(self.policies):
+            policy.save(base_dir, policy_idx=i)
