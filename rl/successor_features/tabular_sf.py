@@ -1,5 +1,6 @@
 import json
 
+from sfols.plotting.plotting import plot_q_vals, get_plot_arrow_params
 from sfols.rl.utils.prioritized_buffer import PrioritizedReplayBuffer
 from sfols.rl.utils.utils import eval_mo, linearly_decaying_epsilon
 from sfols.rl.successor_features.gpi import GPI
@@ -350,3 +351,7 @@ class SF(RLAlgorithm):
         }
 
         self.q_table = q_table_original  # Store in dict with policy index as key
+
+    def get_arrow_data(self, w):
+        arrow_data = get_plot_arrow_params(self.q_table, w, self.env)
+        return arrow_data

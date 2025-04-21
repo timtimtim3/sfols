@@ -4,6 +4,7 @@ import os
 import glob
 import pickle as pkl
 from fsa.planning import get_augmented_phi
+from sfols.plotting.plotting import plot_q_vals
 from sfols.rl.rl_algorithm import RLAlgorithm
 from typing import Union, Callable, Optional, List, Tuple, Any
 import numpy as np
@@ -117,7 +118,7 @@ class GPI(RLAlgorithm):
         return actions, policy_indices, qvals
 
     # Given obs returns
-    def max_q(self, obs, w, tensor=False, exclude=None):
+    def max_q(self, obs, w, tensor=False, exclude=None, return_np=False):
         if tensor:
             if not isinstance(obs, th.Tensor):
                 obs = th.tensor(obs, dtype=th.float32, device=self.device)
@@ -135,6 +136,10 @@ class GPI(RLAlgorithm):
                     1, -1, 1, 1).expand(1, psi_values.size(1), psi_values.size(2), psi_values.size(3))).squeeze(0)
                 max_psis = psi_i.gather(
                     1, max_acts.reshape(-1, 1, 1).expand(psi_i.size(0), 1, psi_i.size(2))).squeeze(1)
+                if max_psis.dim() == 2 and max_psis.size(0) == 1:
+                    max_psis = max_psis.squeeze(0)  # now [phi_dim]
+                if return_np:
+                    return max_psis.detach().cpu().numpy()
                 return max_psis
         else:
             # q_vals is now a matrix of (n_policies, action_dim) where each row is the Q-values for that policy for the
@@ -486,3 +491,10 @@ class GPI(RLAlgorithm):
     def save_policies(self, base_dir):
         for i, policy in enumerate(self.policies):
             policy.save(base_dir, policy_idx=i)
+
+    def plot_q_vals(self, activation_data, base_dir=None, unique_symbol_for_centers=False, show=True):
+        for i, (policy, w) in enumerate(zip(self.policies, self.tasks)):
+            save_path = f"{base_dir}/qvals_pol{i}.png" if base_dir is not None else None
+            arrow_data = policy.get_arrow_data(w)
+            plot_q_vals(w, self.env, arrow_data=arrow_data, activation_data=activation_data,
+                        save_path=save_path, show=show, unique_symbol_for_centers=unique_symbol_for_centers)

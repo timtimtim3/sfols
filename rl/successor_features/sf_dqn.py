@@ -1,6 +1,6 @@
 import os
 import time
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -375,3 +375,65 @@ class SFDQN(RLAlgorithm):
                 episode_vec_reward = np.zeros_like(w)
             else:
                 obs = next_obs
+
+    def best_actions_and_q(self,
+                           obs: Union[np.ndarray, th.Tensor],
+                           w:   Union[np.ndarray, th.Tensor]
+                          ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Given a single obs or a batch of obs, and a weight vector w,
+        returns (actions, q_max) where:
+
+          - actions: np.ndarray of shape (batch,)  — the argmax_a Q(s,a)
+          - q_max:   np.ndarray of shape (batch,)  — the corresponding max Q(s,a)
+
+        Internally converts numpy→Tensor, runs psi_net and einsum, then extracts.
+        """
+        # 1) Coerce obs into a float Tensor of shape [batch, obs_dim]
+        if not isinstance(obs, th.Tensor):
+            obs = th.tensor(obs, dtype=th.float32, device=self.device)
+        if obs.ndim == 1:
+            obs = obs.unsqueeze(0)
+
+        # 2) Coerce w into a float Tensor of shape [phi_dim]
+        if not isinstance(w, th.Tensor):
+            w = th.tensor(w, dtype=th.float32, device=self.device)
+
+        # 3) Compute Q‐values: shape [batch, action_dim]
+        with th.no_grad():
+            psi_vals = self.psi_net(obs)                           # [batch, A, φ]
+            q_vals   = th.einsum('r,sar->sa', w, psi_vals)         # [batch, A]
+            q_max, acts = q_vals.max(dim=1)                        # both [batch]
+
+        # 4) Move back to CPU+numpy
+        actions = acts.cpu().numpy()
+        q_max   = q_max.cpu().numpy()
+
+        # 5) If user passed a single obs (batch‐size 1), unwrap scalars
+        if actions.shape[0] == 1:
+            return actions[0], float(q_max[0])
+        return actions, q_max
+
+    def get_arrow_data(self, w: np.ndarray, batch_size: int = 256):
+        """
+        Returns the quiver‐plot params (X,Y,U,V,C) for the current policy under w.
+        """
+        # 1) grab all continuous centers
+        centers = self.env.get_all_valid_continuous_states_centers()
+        N = len(centers)
+
+        # 2) batch them through the network
+        all_actions = []
+        all_qvals = []
+        for i in range(0, N, batch_size):
+            batch = centers[i : i + batch_size]
+            obs_batch = np.array(batch, dtype=np.float32)
+            acts, qmax = self.best_actions_and_q(obs_batch, w)
+            all_actions.append(np.atleast_1d(acts))
+            all_qvals.append(np.atleast_1d(qmax))
+
+        actions = np.concatenate(all_actions, axis=0)  # shape [N,]
+        qvals = np.concatenate(all_qvals,    axis=0)  # shape [N,]
+
+        # 3) delegate to env to build the actual quiver arrays
+        return self.env.get_arrow_data(centers, actions, qvals)

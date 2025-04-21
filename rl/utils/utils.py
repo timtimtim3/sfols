@@ -113,7 +113,7 @@ def policy_eval_exact(agent, env, w, using_dqn=False):
     v = 0
     start_states = env.get_initial_state_distribution_sample()
     for start_state in start_states:
-        v += agent.max_q(obs=start_state, w=w, tensor=using_dqn) / len(start_states)
+        v += agent.max_q(obs=start_state, w=w, tensor=using_dqn, return_np=True) / len(start_states)
     return np.round(v, 6)
 
 def policy_evaluation_mo(agent, env, w, rep=5, return_scalarized_value=False):
