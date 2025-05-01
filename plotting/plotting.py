@@ -10,6 +10,7 @@ import matplotlib.patches as patches
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 from envs.utils import convert_map_to_grid
+from matplotlib.patches import FancyArrowPatch
 
 
 # Define a custom colormap from light gray to dark gray
@@ -638,6 +639,77 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         plt.savefig(save_path, bbox_inches='tight')
 
     # Show or close the plot.
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
+def plot_trajectories(env, trajectories,
+                      save_path=None, show=True,
+                      dot_size=10, arrow_width=1.5,
+                      dot_color='black',
+                      cmap_name='viridis'):
+    """
+    Plot one or more trajectories on top of the environment grid.
+
+    Args:
+        env:           Your environment object (used to get map/grid info).
+        trajectories:  List of trajectories, where each trajectory is a list of
+                       (state, action, q_val, new_state, reward, done).
+                       Here each state or new_state is a 2-tuple/array (y, x).
+        save_path:     Optional path to save the figure.
+        show:          If True, plt.show() at end, else plt.close(fig).
+        dot_size:      Marker size for state dots (default: 20).
+        arrow_width:   Line width for trajectory arrows (default: 1.5).
+        dot_color:     Color for the state dots (default: 'black').
+        cmap_name:     Name of a Matplotlib colormap for arrows (default: 'tab10').
+    """
+    # 1) Set up figure & grid
+    fig, ax = plt.subplots()
+    grid, mapping = convert_map_to_grid(env, custom_mapping=env.QVAL_COLOR_MAP)
+    create_grid_plot(ax, grid)
+    add_legend(ax, mapping)
+
+    # assume `grid` is a 2D array or list of rows×cols
+    n_rows = len(grid)
+    n_cols = len(grid[0])
+
+    # lock the axes so there’s no extra margin
+    ax.set_xlim(0, n_cols)
+    ax.set_ylim(n_rows, 0)         # flip y so (0,0) is top-left if that matches your grid
+    ax.set_aspect('equal', 'box')  # square cells
+    ax.margins(0)                  # no automatic padding
+
+    # prepare a colormap with as many distinct colors as trajectories
+    cmap = plt.cm.get_cmap(cmap_name, len(trajectories))
+
+    # 2) For each trajectory...
+    for idx, traj in enumerate(trajectories):
+        # choose arrow color
+        color = cmap(idx)
+
+        # Extract (y,x) directly from each state
+        coords = [tuple(entry[0]) for entry in traj]
+
+        # Plot dots at each visited state (all black)
+        ys, xs = zip(*coords)
+        ax.scatter(xs, ys, s=dot_size, c=dot_color, zorder=3)
+
+        # Draw arrows between successive states
+        for (y0, x0), (y1, x1) in zip(coords, coords[1:]):
+            arr = FancyArrowPatch(
+                (x0, y0), (x1, y1),
+                arrowstyle='->', mutation_scale=10,
+                lw=arrow_width, color=color,
+                zorder=2
+            )
+            ax.add_patch(arr)
+
+    # 3) Finalize
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, bbox_inches='tight')
     if show:
         plt.show()
     else:

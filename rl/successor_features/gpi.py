@@ -1,3 +1,4 @@
+import json
 import re
 import time
 import os
@@ -428,16 +429,27 @@ class GPI(RLAlgorithm):
         return acc_rewards
 
     def load_tasks(self, task_dir):
-        # Load tasks.pkl (if it exists) and assign to self.tasks
-        tasks_path = os.path.join(task_dir, "tasks.pkl")
-        if os.path.exists(tasks_path):
-            with open(tasks_path, "rb") as f:
+        # try pickle first
+        pkl_path = os.path.join(task_dir, "tasks.pkl")
+        json_path = os.path.join(task_dir, "tasks.json")
+
+        if os.path.exists(pkl_path):
+            with open(pkl_path, "rb") as f:
                 tasks_data = pkl.load(f)
             self.tasks = tasks_data
-            print(f"Loaded {len(self.tasks)} tasks from {tasks_path}")
+            print(f"Loaded {len(self.tasks)} tasks from {pkl_path} (pickle)")
+
+        elif os.path.exists(json_path):
+            with open(json_path, "r") as f:
+                tasks_list = json.load(f)
+            # rebuild numpy arrays
+            self.tasks = [np.array(item) for item in tasks_list]
+            print(f"Loaded {len(self.tasks)} tasks from {json_path} (JSON)")
+
         else:
             self.tasks = []
-            print(f"No tasks.pkl found in {task_dir}. self.tasks is set to an empty list.")
+            print(f"No tasks.pkl or tasks.json found in {task_dir}. " 
+                  "self.tasks is set to an empty list.")
 
     def load_policies(self, policy_dir):
         # collect (idx, filename) for any q‑table or DQN checkpoint
@@ -491,6 +503,24 @@ class GPI(RLAlgorithm):
     def save_policies(self, base_dir):
         for i, policy in enumerate(self.policies):
             policy.save(base_dir, policy_idx=i)
+
+    def save_tasks(self, base_dir, as_json=False, as_pickle=True):
+        os.makedirs(base_dir, exist_ok=True)
+
+        if as_json:
+            # Convert each numpy array to a regular list
+            tasks_list = [arr.tolist() for arr in self.tasks]
+            json_path = os.path.join(base_dir, "tasks.json")
+            with open(json_path, "w") as fp:
+                json.dump(tasks_list, fp, indent=2)
+            print(f"Saved {len(self.tasks)} tasks to {json_path} (JSON)")
+
+        if as_pickle:
+            tasks = self.tasks
+            tasks_path = os.path.join(base_dir, "tasks.pkl")
+            with open(tasks_path, "wb") as fp:
+                pkl.dump(tasks, fp)
+            print(f"Saved {len(tasks)} tasks to {tasks_path} (pickle)")
 
     def plot_q_vals(self, activation_data, base_dir=None, unique_symbol_for_centers=False, show=True):
         for i, (policy, w) in enumerate(zip(self.policies, self.tasks)):

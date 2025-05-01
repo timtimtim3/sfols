@@ -52,7 +52,7 @@ class OLS:
     def ended(self) -> bool:
         return len(self.queue) == 0 #or self.worst_case_weight_repeated
 
-    def add_solution(self, value, w, gpi_agent=None, env=None) -> int:
+    def add_solution(self, value, w, gpi_agent=None, env=None, learn_all_extremum=False) -> int:
         self.iteration += 1
         self.W.append(w)
 
@@ -85,22 +85,30 @@ class OLS:
                 print("Deleting new policy because it has same val as old one")
                 return [len(self.ccs)]  # delete new policy as it has same value as an old one
 
-        W_del = self.remove_obsolete_weights(new_value=value)
-        W_del.append(w)
+        if learn_all_extremum and len(self.queue) > 0 and self.queue[0][0] == float("inf"):
+            print("Skipping removing obsolete weights from queue")
+            W_del = []
+        else:
+            W_del = self.remove_obsolete_weights(new_value=value)
+            W_del.append(w)
 
         removed_indx = self.remove_obsolete_values(value)  # Not sure why this is here
-
-        W_corner = self.new_corner_weights(value, W_del)
-
         self.ccs.append(value)
         self.ccs_weights.append(w)
 
-        for wc in W_corner:
-            priority = self.get_priority(wc, gpi_agent, env)
-            print("improv.", priority)
-            if priority > self.epsilon:
-                self.queue.append((priority, wc))
-        self.queue.sort(key=lambda t: t[0], reverse=True)  # Sort in descending order of priority
+        if learn_all_extremum and len(self.queue) > 0 and self.queue[0][0] == float("inf"):
+            print("Skipping adding new weigths to queue")
+            W_corner = []
+        else:
+            W_corner = self.new_corner_weights(value, W_del)
+
+            for wc in W_corner:
+                priority = self.get_priority(wc, gpi_agent, env)
+                print("improv.", priority)
+                if priority > self.epsilon:
+                    self.queue.append((priority, wc))
+            self.queue.sort(key=lambda t: t[0], reverse=True)  # Sort in descending order of priority
+
         rows = [
             np.asarray(c).reshape(-1).tolist()
             for c in self.ccs

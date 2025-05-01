@@ -1,3 +1,4 @@
+import math
 import os
 import time
 from typing import List, Optional, Union, Tuple
@@ -288,6 +289,10 @@ class SFDQN(RLAlgorithm):
                               this_policy.tau)
 
     def q_values(self, obs: th.tensor, w: th.tensor) -> th.tensor:
+        if not isinstance(obs, th.Tensor):
+            obs = th.tensor(obs, dtype=th.float32, device=self.device)
+        if not isinstance(w, th.Tensor):
+            w = th.tensor(w, dtype=th.float32, device=self.device)
         with th.no_grad():
             psi_values = self.psi_net(obs)
             q = th.einsum('r,sar->sa', w, psi_values)
@@ -297,6 +302,7 @@ class SFDQN(RLAlgorithm):
         obs = th.tensor(obs).float().to(self.device)
         w = th.tensor(w).float().to(self.device)
         if self.gpi is not None:
+            print("self.gpi is not None! using gpi in eval()...")
             return self.gpi.eval(obs, w)
         else:
             return th.argmax(self.q_values(obs, w), dim=1).item()
@@ -437,3 +443,30 @@ class SFDQN(RLAlgorithm):
 
         # 3) delegate to env to build the actual quiver arrays
         return self.env.get_arrow_data(centers, actions, qvals)
+
+    def get_trajectories(self, w, n_trajectories=10, max_steps=20, method="random"):
+        if method == "grid":
+            n_sqrt = math.isqrt(n_trajectories)
+            assert n_sqrt * n_sqrt == n_trajectories, (
+                f"When using grid sampling, n_trajectories={n_trajectories} "
+                "must be a perfect square."
+            )
+            states = self.env.get_grid_states_on_env(base=n_sqrt)
+
+        trajectories = []
+        for n in range(n_trajectories):
+            trajectory = []
+            if method == "random":
+                state = self.env.reset()
+            else:
+                state = self.env.reset(state=states[n])
+            for i in range(max_steps):
+                action, q_val = self.best_actions_and_q(state, w)
+                new_state, reward, done, _ = self.env.step(action)
+                entry = (state, action, q_val, new_state, reward, done)
+                trajectory.append(entry)
+                state = new_state
+                if done:
+                    break
+            trajectories.append(trajectory)
+        return trajectories
