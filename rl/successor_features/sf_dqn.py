@@ -470,3 +470,20 @@ class SFDQN(RLAlgorithm):
                     break
             trajectories.append(trajectory)
         return trajectories
+
+    def set_augmented_psi_attributes(self, n_fsa_states, indicator_edge_has_proposition):
+        self.n_fsa_states = n_fsa_states
+        self.indicator_edge_has_proposition = indicator_edge_has_proposition
+
+    def get_augmented_psis(self, uidx, state):
+        augmented_psis = np.zeros((self.action_dim, self.n_fsa_states * self.phi_dim))
+
+        if not isinstance(state, th.Tensor):
+            state = th.tensor(state, dtype=th.float32, device=self.device)
+        psis = self.psi_net(state).detach().numpy().squeeze()
+        for i, psi in enumerate(psis):
+            # Repeat psi across n_fsa_states times
+            augmented_psi = np.tile(psi, self.n_fsa_states)
+            augmented_psi *= self.indicator_edge_has_proposition[uidx]
+            augmented_psis[i, :] = augmented_psi
+        return augmented_psis
