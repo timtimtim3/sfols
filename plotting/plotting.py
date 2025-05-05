@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
+from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 from matplotlib.ticker import FuncFormatter
 import matplotlib.patches as patches
@@ -541,6 +542,48 @@ def plot_maxqvals(w, env, q_table=None, arrow_data=None, policy_index=None, poli
     plt.show()
 
 
+# Helper: plot the RBF activation markers + weight legend
+def plot_weight_legend(ax, w, env, feat_colors, display_feat_ids):
+    """
+    After calling add_activations to get feat_colors, build and place
+the weight legend.
+    """
+    # Build mappings from weight index to color and feature id
+    weight_to_color = {}
+    feat_ids = {}
+    for prop in env.PHI_OBJ_TYPES:
+        for feat in env.FEAT_DATA[prop]:
+            idx = env.get_feat_idx(prop, feat)
+            feat_id = (prop, feat)
+            weight_to_color[idx] = feat_colors[feat_id]
+            feat_ids[idx] = feat_id
+
+    # Create legend handles
+    handles = []
+    for i, weight in enumerate(w):
+        color = weight_to_color.get(i, 'gray')
+        feat_id = feat_ids.get(i)
+        label = f"w[{i}]={weight:.2f}" if not display_feat_ids else f"w[{i}]={weight:.2f} {feat_id}"
+        handle = Line2D([], [], marker='s', color='none',
+                        markerfacecolor=color, markersize=8, label=label)
+        handles.append(handle)
+
+    # Layout: up to 2 columns
+    ncol = min(2, len(handles))
+    ax.legend(
+        handles=handles,
+        loc='center left',
+        bbox_to_anchor=(-0.8, 0.8),
+        ncol=ncol,
+        handlelength=1,
+        handletextpad=0.3,
+        columnspacing=0.7,
+        labelspacing=0.8,
+        frameon=False,
+        prop={'size': 7}
+    )
+
+
 def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy_indices=None, activation_data=None,
                 save_path=None, show=True, unique_symbol_for_centers=False, display_feat_ids=True):
     """
@@ -589,47 +632,7 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
     # If RBF data is provided, overlay the RBF activation markers
     if activation_data is not None:
         unique_feats, feat_colors = add_activations(ax, activation_data, env, unique_symbol_for_centers=unique_symbol_for_centers)
-
-        # Build a mapping from weight index to the color of its corresponding RBF
-        # env.rbf_indices maps center_coords -> weight index
-        weight_to_color = {}
-        feat_ids = {}
-        for prop in env.PHI_OBJ_TYPES:
-            for feat in env.FEAT_DATA[prop]:
-                weight_idx = env.get_feat_idx(prop, feat)
-                feat_id = (prop, feat)
-                weight_to_color[weight_idx] = feat_colors[feat_id]
-                feat_ids[weight_idx] = feat_id
-
-        from matplotlib.lines import Line2D
-
-        # Create custom legend handles using square markers
-        handles = []
-        for i, weight in enumerate(w):
-            color = weight_to_color.get(i, 'gray')
-            feat_id = feat_ids[i]
-            label = f"w[{i}]={weight:.2f}" if not display_feat_ids else f"w[{i}]={weight:.2f} {feat_id}"
-            handle = Line2D([], [], marker='s', color='none',
-                            markerfacecolor=color, markersize=8,
-                            label=label)
-            handles.append(handle)
-
-        # Compute number of columns (maximum 7 per row)
-        ncol = min(2, len(handles))
-
-        # Place the weight legend on the left side of the plot
-        legend2 = ax.legend(
-            handles=handles,
-            loc='center left',
-            bbox_to_anchor=(-0.8, 0.8),
-            ncol=ncol,  # Wraps into multiple rows if necessary
-            handlelength=1,
-            handletextpad=0.3,
-            columnspacing=0.7,
-            labelspacing=0.8,  # Adjusts vertical spacing between rows
-            frameon=False,
-            prop={'size': 7}
-        )
+        plot_weight_legend(ax, w, env, feat_colors, display_feat_ids)
 
     # Save the figure if a save_path is provided.
     if save_path is not None:
@@ -645,25 +648,23 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         plt.close(fig)
 
 
-def plot_trajectories(env, trajectories,
+def plot_trajectories(env, trajectories, w=None, activation_data=None,
+                      unique_symbol_for_centers=False, display_feat_ids=True,
                       save_path=None, show=True,
                       dot_size=10, arrow_width=1.5,
-                      dot_color='black',
-                      cmap_name='viridis'):
+                      dot_color='black', cmap_name='viridis'):
     """
-    Plot one or more trajectories on top of the environment grid.
+    Plot trajectories and optionally RBF activations + weight legend.
 
     Args:
-        env:           Your environment object (used to get map/grid info).
-        trajectories:  List of trajectories, where each trajectory is a list of
-                       (state, action, q_val, new_state, reward, done).
-                       Here each state or new_state is a 2-tuple/array (y, x).
-        save_path:     Optional path to save the figure.
-        show:          If True, plt.show() at end, else plt.close(fig).
-        dot_size:      Marker size for state dots (default: 20).
-        arrow_width:   Line width for trajectory arrows (default: 1.5).
-        dot_color:     Color for the state dots (default: 'black').
-        cmap_name:     Name of a Matplotlib colormap for arrows (default: 'tab10').
+        env: Environment object.
+        trajectories: list of (state, action, q_val, new_state, reward, done).
+        w: optional weight vector for legend.
+        activation_data: optional RBF activation data.
+        unique_symbol_for_centers: pass-through to add_activations.
+        display_feat_ids: whether to append feat_id in legend labels.
+        save_path, show: file output flags.
+        dot_size, arrow_width, dot_color, cmap_name: styling.
     """
     # 1) Set up figure & grid
     fig, ax = plt.subplots()
@@ -671,32 +672,43 @@ def plot_trajectories(env, trajectories,
     create_grid_plot(ax, grid)
     add_legend(ax, mapping)
 
-    # assume `grid` is a 2D array or list of rows×cols
     n_rows = len(grid)
     n_cols = len(grid[0])
 
-    # lock the axes so there’s no extra margin
     ax.set_xlim(0, n_cols)
-    ax.set_ylim(n_rows, 0)         # flip y so (0,0) is top-left if that matches your grid
-    ax.set_aspect('equal', 'box')  # square cells
-    ax.margins(0)                  # no automatic padding
+    ax.set_ylim(n_rows, 0)
+    ax.set_aspect('equal', 'box')
+    ax.margins(0)
 
-    # prepare a colormap with as many distinct colors as trajectories
     cmap = plt.cm.get_cmap(cmap_name, len(trajectories))
 
     # 2) For each trajectory...
     for idx, traj in enumerate(trajectories):
-        # choose arrow color
         color = cmap(idx)
+        coords = [tuple(entry[0]) for entry in traj] + [traj[-1][3]]
+        done = traj[-1][5]
 
-        # Extract (y,x) directly from each state
-        coords = [tuple(entry[0]) for entry in traj]
+        # Plot visited states: squares for terminal if done, else dots
+        if done:
+            # Plot non-terminal visits
+            if len(coords) > 1:
+                ys, xs = zip(*coords[:-1])
+                ax.scatter(xs, ys, s=dot_size, c=dot_color, zorder=3)
+            # Plot terminal state as a square in the same color as its arrows
+            # with a black outline
+            yt, xt = coords[-1]
+            ax.scatter(xt, yt,
+                       s=dot_size * 1.5,
+                       c=color,
+                       marker='s',
+                       edgecolors='black',
+                       linewidths=1.1,
+                       zorder=4)
+        else:
+            ys, xs = zip(*coords)
+            ax.scatter(xs, ys, s=dot_size, c=dot_color, zorder=3)
 
-        # Plot dots at each visited state (all black)
-        ys, xs = zip(*coords)
-        ax.scatter(xs, ys, s=dot_size, c=dot_color, zorder=3)
-
-        # Draw arrows between successive states
+        # Draw arrows for transitions
         for (y0, x0), (y1, x1) in zip(coords, coords[1:]):
             arr = FancyArrowPatch(
                 (x0, y0), (x1, y1),
@@ -706,7 +718,15 @@ def plot_trajectories(env, trajectories,
             )
             ax.add_patch(arr)
 
-    # 3) Finalize
+    # 3) Overlay activations & legend if requested
+    if activation_data is not None and w is not None:
+        unique_feats, feat_colors = add_activations(
+            ax, activation_data, env,
+            unique_symbol_for_centers=unique_symbol_for_centers
+        )
+        plot_weight_legend(ax, w, env, feat_colors, display_feat_ids)
+
+    # 4) Finalize
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, bbox_inches='tight')
