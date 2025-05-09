@@ -860,10 +860,10 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
             im = ax.imshow(activation_grid, cmap="hot", origin="upper",
                            extent=(0, grid_width, grid_height, 0))
             # Plot RBF centers without legend.
-            center_color = colors_symbol_centers.get(symbol, "white")
-            for (cy, cx, d) in features.keys():
-                ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
-                           edgecolors="black")
+            # center_color = colors_symbol_centers.get(symbol, "white")
+            # for (cy, cx, d) in features.keys():
+            #     ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
+            #                edgecolors="black")
             ax.set_title(f"RBF Activations for {symbol}", fontsize=14)
             ax.grid(False)
             # Add a colorbar without axis labels.
@@ -898,15 +898,15 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
 
         im = ax.imshow(combined_activation_grid, cmap="hot", origin="upper",
                        extent=(0, grid_width, grid_height, 0))
-        # Plot RBF centers and add legend entry only once per symbol.
-        legend_added = {}
-        for symbol, features in rbf_data.items():
-            center_color = colors_symbol_centers.get(symbol, "white")
-            for (cy, cx, d) in features.keys():
-                label = f"RBF {symbol}" if symbol not in legend_added else None
-                ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
-                           edgecolors="black", label=label)
-                legend_added[symbol] = True
+        # # Plot RBF centers and add legend entry only once per symbol.
+        # legend_added = {}
+        # for symbol, features in rbf_data.items():
+        #     center_color = colors_symbol_centers.get(symbol, "white")
+        #     for (cy, cx, d) in features.keys():
+        #         label = f"RBF {symbol}" if symbol not in legend_added else None
+        #         ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
+        #                    edgecolors="black", label=label)
+        #         legend_added[symbol] = True
 
         ax.set_title("All RBF Activations Combined", fontsize=14)
         ax.grid(False)
@@ -927,7 +927,8 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
         plt.show()
 
 
-def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, unique_symbol_for_centers=False):
+def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, unique_symbol_for_centers=False,
+                   base_dir=None):
     if verbose:
         print("\nPlotting GPI q-values:")
     w_arr = np.asarray(list(w_dict.values())).reshape(-1)
@@ -939,7 +940,11 @@ def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, 
 
         if verbose:
             print(uidx, np.round(w, 2))
+
+        save_path = f"{base_dir}/VI_u{uidx}.png" if base_dir is not None else None
+
         actions, policy_indices, qvals = gpi_agent.get_gpi_policy_on_w(w_dot, uidx=uidx)
         arrow_data = get_plot_arrow_params_from_eval(actions, qvals, train_env)
         plot_q_vals(w, train_env, arrow_data=arrow_data, activation_data=activation_data,
-                    policy_indices=policy_indices, unique_symbol_for_centers=unique_symbol_for_centers)
+                    policy_indices=policy_indices, unique_symbol_for_centers=unique_symbol_for_centers,
+                    save_path=save_path)
