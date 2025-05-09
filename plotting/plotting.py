@@ -376,13 +376,15 @@ def add_legend(ax, mapping, cmap=custom_gray):
     # Place the mapping legend above the plot
     legend1 = ax.legend(
         handles=legend_patches,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.125),  # above the plot
-        title="Tiles",
+        loc='lower center',
+        bbox_to_anchor=(0.5, 1.02),  # 1.0 is the top edge of the axes, +0.02 adds a little padding
+        borderaxespad=0,  # no extra pad beyond that 0.02
+        title='Tiles',
         fontsize=8,
         frameon=False,
-        ncol=len(legend_patches)  # all items in one row
+        ncol=len(legend_patches)
     )
+
     ax.add_artist(legend1)  # keep legend1 on the axes
 
 
@@ -569,18 +571,14 @@ the weight legend.
         handles.append(handle)
 
     # Layout: up to 2 columns
-    ncol = min(2, len(handles))
-    ax.legend(
+    ncol = min(1, len(handles))
+    legend = ax.legend(
         handles=handles,
-        loc='center left',
-        bbox_to_anchor=(-0.8, 0.8),
-        ncol=ncol,
-        handlelength=1,
-        handletextpad=0.3,
-        columnspacing=0.7,
-        labelspacing=0.8,
+        loc="center right",  # anchor the legend’s right‐center
+        bbox_to_anchor=(0.0, 0.5),  # x=0 is the left edge of the axes, y=0.5 is halfway up
+        borderaxespad=0.0,
         frameon=False,
-        prop={'size': 7}
+        prop={"size": 7}
     )
 
 
@@ -639,7 +637,7 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
         directory = os.path.dirname(save_path)
         if directory and not os.path.exists(directory):
             os.makedirs(directory)
-        plt.savefig(save_path, bbox_inches='tight')
+        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.5)
 
     # Show or close the plot.
     if show:
