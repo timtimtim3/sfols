@@ -926,7 +926,7 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
 
 
 def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, unique_symbol_for_centers=False,
-                   base_dir=None):
+                   base_dir=None, psis_are_augmented=False):
     if verbose:
         print("\nPlotting GPI q-values:")
     w_arr = np.asarray(list(w_dict.values())).reshape(-1)
@@ -934,14 +934,15 @@ def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, 
         if uidx == len(w_dict.keys()) - 1:
             break
 
-        w_dot = w_arr if gpi_agent.psis_are_augmented else w
+        w_dot = w_arr if psis_are_augmented else w
 
         if verbose:
             print(uidx, np.round(w, 2))
 
         save_path = f"{base_dir}/VI_u{uidx}.png" if base_dir is not None else None
 
-        actions, policy_indices, qvals = gpi_agent.get_gpi_policy_on_w(w_dot, uidx=uidx)
+        actions, policy_indices, qvals = gpi_agent.get_gpi_policy_on_w(w_dot, uidx=uidx,
+                                                                       psis_are_augmented=psis_are_augmented)
         arrow_data = get_plot_arrow_params_from_eval(actions, qvals, train_env)
         plot_q_vals(w, train_env, arrow_data=arrow_data, activation_data=activation_data,
                     policy_indices=policy_indices, unique_symbol_for_centers=unique_symbol_for_centers,

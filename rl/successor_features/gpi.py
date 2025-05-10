@@ -81,14 +81,15 @@ class GPI(RLAlgorithm):
                 return action, selected_qval
             return action
 
-    def eval_planning(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False, uidx=None) -> EvalReturnType:
+    def eval_planning(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False, uidx=None,
+                      psis_are_augmented=False) -> EvalReturnType:
         """
 
             This takes in an observation and a weight vector and returns an action.
             What this actually returns in the GPI policy given the current CCS.
 
         """
-        if self.psis_are_augmented:
+        if psis_are_augmented:
             all_policy_augmented_psis = np.stack([policy.get_augmented_psis(uidx, obs) for policy in self.policies])
 
             q_vals = np.stack([augmented_psis @ w for augmented_psis in all_policy_augmented_psis])
@@ -108,11 +109,13 @@ class GPI(RLAlgorithm):
             return self.eval(obs, w, return_policy_index=return_policy_index, exclude=exclude,
                              return_q_val=return_q_val)
 
-    def get_gpi_policy_on_w(self, w, uidx=None):
+    def get_gpi_policy_on_w(self, w, uidx=None, psis_are_augmented=False):
         actions, policy_indices, qvals = {}, {}, {}
         for state in self.policies[0].q_table.keys():
-            action, policy_index, selected_qval = self.eval_planning(state, w, return_policy_index=True, return_q_val=True,
-                                                            uidx=uidx)
+            action, policy_index, selected_qval = (
+                self.eval_planning(state, w, return_policy_index=True, return_q_val=True,
+                                   uidx=uidx, psis_are_augmented=psis_are_augmented)
+            )
             actions[state] = action
             policy_indices[state] = policy_index
             qvals[state] = selected_qval
@@ -255,7 +258,8 @@ class GPI(RLAlgorithm):
                  num_steps: Optional[int] = 200,
                  render=False,
                  initial_sleep=3,
-                 sleep_time=0.3) -> int:
+                 sleep_time=0.3,
+                 psis_are_augmented=False) -> int:
 
         env.reset()
         acc_reward = 0
@@ -267,12 +271,12 @@ class GPI(RLAlgorithm):
         for _ in range(num_steps):
 
             (f, state) = env.get_state()
-            if gpi.psis_are_augmented:
+            if psis_are_augmented:
                 w = np.asarray(list(W.values())).reshape(-1)
             else:
                 w = W[f]
 
-            action = gpi.eval_planning(state, w, uidx=int(f.split('u')[1]))
+            action = gpi.eval_planning(state, w, uidx=int(f.split('u')[1]), psis_are_augmented=psis_are_augmented)
 
             _, reward, done, _ = env.step(action)
             acc_reward += reward
