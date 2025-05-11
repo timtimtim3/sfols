@@ -442,7 +442,7 @@ class SFDQN(RLAlgorithm):
         qvals = np.concatenate(all_qvals,    axis=0)  # shape [N,]
 
         # 3) delegate to env to build the actual quiver arrays
-        return self.env.get_arrow_data(centers, actions, qvals)
+        return self.env.get_arrow_data(actions, qvals, states=centers)
 
     def get_trajectories(self, w, n_trajectories=10, max_steps=20, method="random"):
         if method == "grid":

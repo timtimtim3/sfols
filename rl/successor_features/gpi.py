@@ -46,7 +46,7 @@ class GPI(RLAlgorithm):
 
         self.ValueIteration = ValueIteration
 
-    def eval(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False) -> EvalReturnType:
+    def eval(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False, verbose=False) -> EvalReturnType:
         """
 
             This takes in an observation and a weight vector and returns an action.
@@ -54,17 +54,24 @@ class GPI(RLAlgorithm):
 
         """
         if not hasattr(self.policies[0], 'q_table'):
-            if isinstance(obs, np.ndarray):
+            if not isinstance(obs, th.Tensor):
                 obs = th.tensor(obs).float().to(self.device)
                 w = th.tensor(w).float().to(self.device)
             q_vals = th.stack([policy.q_values(obs, w)
-                               for policy in self.policies])
-            max_q, a = th.max(q_vals, dim=2)
+                               for policy in self.policies]).squeeze()
+            max_q, a = th.max(q_vals, dim=-1)
             policy_index = th.argmax(max_q)
+            action = a[policy_index].detach().long().item()
+            selected_qval = max_q[policy_index].detach().float().item()
+            policy_index = policy_index.item()
 
-            if return_policy_index:
-                return a[policy_index].detach().long().item(), policy_index.item()
-            return a[policy_index].detach().long().item()
+            if return_policy_index and return_q_val:
+                return action, policy_index, selected_qval
+            elif return_policy_index:
+                return action, policy_index
+            elif return_q_val:
+                return action, selected_qval
+            return action
         else:
             q_vals = np.stack([policy.q_values(obs, w)
                                for policy in self.policies if policy is not exclude])
@@ -82,7 +89,7 @@ class GPI(RLAlgorithm):
             return action
 
     def eval_planning(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False, uidx=None,
-                      psis_are_augmented=False) -> EvalReturnType:
+                      psis_are_augmented=False, verbose=False) -> EvalReturnType:
         """
 
             This takes in an observation and a weight vector and returns an action.
@@ -107,19 +114,20 @@ class GPI(RLAlgorithm):
             return action
         else:
             return self.eval(obs, w, return_policy_index=return_policy_index, exclude=exclude,
-                             return_q_val=return_q_val)
+                             return_q_val=return_q_val, verbose=verbose)
 
     def get_gpi_policy_on_w(self, w, uidx=None, psis_are_augmented=False):
-        actions, policy_indices, qvals = {}, {}, {}
-        for state in self.policies[0].q_table.keys():
+        actions, policy_indices, qvals = [], [], []
+        states = self.env.get_planning_states()
+        for state in states:
             action, policy_index, selected_qval = (
                 self.eval_planning(state, w, return_policy_index=True, return_q_val=True,
                                    uidx=uidx, psis_are_augmented=psis_are_augmented)
             )
-            actions[state] = action
-            policy_indices[state] = policy_index
-            qvals[state] = selected_qval
-        return actions, policy_indices, qvals
+            actions.append(action)
+            policy_indices.append(policy_index)
+            qvals.append(selected_qval)
+        return np.array(actions), np.array(policy_indices), np.array(qvals), states
 
     # Given obs returns
     def max_q(self, obs, w, tensor=False, exclude=None, return_np=False):

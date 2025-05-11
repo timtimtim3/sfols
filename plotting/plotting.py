@@ -13,7 +13,6 @@ import matplotlib.patches as mpatches
 from envs.utils import convert_map_to_grid
 from matplotlib.patches import FancyArrowPatch
 
-
 # Define a custom colormap from light gray to dark gray
 custom_gray = mcolors.LinearSegmentedColormap.from_list(
     "custom_gray", ["#D3D3D3", "#303030"]  # Light gray → Dark gray
@@ -48,7 +47,8 @@ def plot_options(ax, probs, coords, grid, title_suffix="", colorbar_size='10%'):
     mat = create_grid_plot_values(ax, grid, "YlGn", coords, probs.numpy())
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size=colorbar_size, pad=0.025)
-    plt.colorbar(mat, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0.0, 1.1, 0.25))
+    plt.colorbar(mat, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)),
+                 ticks=np.arange(0.0, 1.1, 0.25))
     # ax.set_title(("Probability of choosing an option in states" + title_suffix))
 
 
@@ -80,25 +80,25 @@ def plot_policy_alternative(ax, arrow_data, grid, title_suffix="", values=True, 
 
         x = float(x_pos[i])
         y = float(y_pos[i])
-        if x_dir[i] == 1 and y_dir[i] == 0: # right
+        if x_dir[i] == 1 and y_dir[i] == 0:  # right
             c = 'limegreen' if fixed_colors else cmap(color[i])
             ax.add_patch(patches.Polygon(np.array([[x + arrow_forward, y],
                                                    [x - arrow_backward, y - arrow_width / 2],
                                                    [x - arrow_backward, y + arrow_width / 2]]),
                                          edgecolor=c, facecolor=c))
-        elif x_dir[i] == -1 and y_dir[i] == 0: # left
+        elif x_dir[i] == -1 and y_dir[i] == 0:  # left
             c = 'magenta' if fixed_colors else cmap(color[i])
             ax.add_patch(patches.Polygon(np.array([[x - arrow_forward, y_pos[i]],
                                                    [x + arrow_backward, y_pos[i] - arrow_width / 2],
                                                    [x + arrow_backward, y_pos[i] + arrow_width / 2]]),
                                          edgecolor=c, facecolor=c))
-        elif x_dir[i] == 0 and y_dir[i] == 1: # top
+        elif x_dir[i] == 0 and y_dir[i] == 1:  # top
             c = 'b' if fixed_colors else cmap(color[i])
             ax.add_patch(patches.Polygon(np.array([[x, y + arrow_forward],
                                                    [x - arrow_width / 2, y - arrow_backward],
                                                    [x + arrow_width / 2, y - arrow_backward]]),
                                          edgecolor=c, facecolor=c))
-        elif x_dir[i] == 0 and y_dir[i] == -1: # bottom
+        elif x_dir[i] == 0 and y_dir[i] == -1:  # bottom
             c = 'r' if fixed_colors else cmap(color[i])
             ax.add_patch(patches.Polygon(np.array([[x, y - arrow_forward],
                                                    [x - arrow_width / 2, y + arrow_backward],
@@ -120,7 +120,8 @@ def plot_policy_alternative(ax, arrow_data, grid, title_suffix="", values=True, 
         cax = divider.append_axes("right", size=colorbar_size, pad=0.025)
         sm = cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
         sm._A = []
-        plt.colorbar(sm, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)), ticks=np.arange(0, 1.1, 0.25))
+        plt.colorbar(sm, cax=cax, ax=ax, format=FuncFormatter(lambda y, _: '{:.0%}'.format(y)),
+                     ticks=np.arange(0, 1.1, 0.25))
 
     ax.set_title(("Maximum likelihood actions in states" + title_suffix))
 
@@ -133,7 +134,7 @@ def get_plot_arrow_params(q_table, w, grid_env):
     color = []
     coords_list = []
 
-    for coords,q_vals in q_table.items():
+    for coords, q_vals in q_table.items():
         max_val = np.max(q_vals @ w)
         max_index = np.argmax(q_vals @ w)
 
@@ -150,36 +151,6 @@ def get_plot_arrow_params(q_table, w, grid_env):
             x_d = -1
         elif max_index == grid_env.TERMINATE:
             pass
-
-        x_pos.append(coords[1] + 0.5)
-        y_pos.append(coords[0] + 0.5)
-        x_dir.append(x_d)
-        y_dir.append(y_d)
-        color.append(max_val)
-        coords_list.append(coords)
-    # down, up , right, left
-    return np.array(x_pos), np.array(y_pos), np.array(x_dir), np.array(y_dir), np.array(color), coords_list
-
-
-def get_plot_arrow_params_from_eval(actions, qvals, grid_env):
-    x_pos = []
-    y_pos = []
-    x_dir = []
-    y_dir = []
-    color = []
-    coords_list = []
-
-    for coords, max_index in actions.items():
-        max_val = qvals[coords]
-        x_d = y_d = 0
-        if max_index == grid_env.DOWN:
-            y_d = 1
-        elif max_index == grid_env.UP:
-            y_d = -1
-        elif max_index == grid_env.RIGHT:
-            x_d = 1
-        elif max_index == grid_env.LEFT:
-            x_d = -1
 
         x_pos.append(coords[1] + 0.5)
         y_pos.append(coords[0] + 0.5)
@@ -393,8 +364,8 @@ def smooth(scalars, weight):  # Weight between 0 and 1
     smoothed = list()
     for point in scalars:
         smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
-        smoothed.append(smoothed_val)                        # Save it
-        last = smoothed_val                                  # Anchor the last smoothed value
+        smoothed.append(smoothed_val)  # Save it
+        last = smoothed_val  # Anchor the last smoothed value
 
     return smoothed
 
@@ -407,8 +378,8 @@ def add_activations(ax, activations, env, only_add_feat_on_its_goal=True, unique
     """
     # First, collect activations per cell and gather the unique feat identifiers.
     # A feat is uniquely identified by (symbol, feat).
-    cell_to_feats = {}   # key: (y,x) cell coordinate; value: list of tuples (feat_id, activation)
-    unique_feats = []    # list of all unique (symbol, feat) pairs
+    cell_to_feats = {}  # key: (y,x) cell coordinate; value: list of tuples (feat_id, activation)
+    unique_feats = []  # list of all unique (symbol, feat) pairs
 
     for symbol, features in activations.items():
         for feat, cell_dict in features.items():
@@ -451,7 +422,8 @@ def add_activations(ax, activations, env, only_add_feat_on_its_goal=True, unique
                        edgecolors='k', zorder=3)
     return unique_feats, feat_colors
 
-def add_policy_indices(ax, policy_indices, arrow_data, fontsize=4, color="black"):
+
+def add_policy_indices(ax, policy_indices, arrow_data, fontsize=4, color="white"):
     """
     Adds policy indices as text annotations to each cell in the grid.
     The position of the text depends on the arrow's direction in arrow_data:
@@ -469,29 +441,19 @@ def add_policy_indices(ax, policy_indices, arrow_data, fontsize=4, color="black"
     # Unpack the arrow_data tuple.
     x_pos, y_pos, x_dir, y_dir, arrow_colors, arrow_coords = arrow_data
 
-    for (y, x), index in policy_indices.items():
+    for y, x, yd, xd, index in zip(y_pos, x_pos, y_dir, x_dir, policy_indices):
         # Default placement if no arrow info is available.
-        text_x = x + 0.5
-        text_y = y + 0.5
+        text_x = x
+        text_y = y - 0.3  # near the top edge
 
-        try:
-            # Look for the cell in the arrow_coords.
-            idx = arrow_coords.index((y, x))
-            # Get the corresponding arrow direction.
-            xd = x_dir[idx]
-            yd = y_dir[idx]
-            # If the arrow is pointing left or right.
-            if abs(xd) == 1 and yd == 0:
-                text_x = x + 0.5  # center horizontally
-                text_y = y + 0.2  # near the top edge
-            # If the arrow is pointing up or down.
-            elif abs(yd) == 1 and xd == 0:
-                text_x = x + 0.8  # near the right edge
-                text_y = y + 0.5  # center vertically
-            # (You can add additional logic for diagonal arrows if needed.)
-        except ValueError:
-            # If the current cell is not in arrow_coords, keep the default.
-            pass
+        # # If the arrow is pointing left or right.
+        # if abs(xd) == 1 and yd == 0:
+        #     text_x = x + 0.5  # center horizontally
+        #     text_y = y + 0.2  # near the top edge
+        # # If the arrow is pointing up or down.
+        # elif abs(yd) == 1 and xd == 0:
+        #     text_x = x + 0.8  # near the right edge
+        #     text_y = y + 0.5  # center vertically
 
         ax.text(text_x, text_y, str(index),
                 horizontalalignment='center',
@@ -502,7 +464,7 @@ def add_policy_indices(ax, policy_indices, arrow_data, fontsize=4, color="black"
 
 
 def plot_maxqvals(w, env, q_table=None, arrow_data=None, policy_index=None, policy_indices=None, rbf_data=None,
-                save_path=None, show=True):
+                  save_path=None, show=True):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
     RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
@@ -530,7 +492,7 @@ def plot_maxqvals(w, env, q_table=None, arrow_data=None, policy_index=None, poli
 
     grid, mapping = convert_map_to_grid(env, custom_mapping=env.QVAL_COLOR_MAP)
     create_grid_plot(ax, grid)  # Draw the grid cells.
-    add_legend(ax, mapping)     # Add legend (obstacles, goals, etc.)
+    add_legend(ax, mapping)  # Add legend (obstacles, goals, etc.)
 
     # Format the weight vector as a string for the title
     if rbf_data is None:
@@ -611,14 +573,37 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
 
     grid, mapping = convert_map_to_grid(env, custom_mapping=env.QVAL_COLOR_MAP)
     create_grid_plot(ax, grid)  # Draw the grid cells.
-    add_legend(ax, mapping)     # Add legend (obstacles, goals, etc.)
+    add_legend(ax, mapping)  # Add legend (obstacles, goals, etc.)
 
     # Format the weight vector as a string for the title
     if activation_data is None:
-        rounded_weights = np.round(w, decimals=2)
-        weight_str = np.array2string(rounded_weights, precision=2, separator=", ")
-        title = f"Policy {policy_index} | Weights: {weight_str}" if policy_index is not None else f"Weights: {weight_str}"
-        ax.set_title(title)
+        # 1) build a vertical multiline string of your weights
+        weight_lines = [f"w[{i}]={wi:.2f}" for i, wi in enumerate(w)]
+        textstr      = "\n".join(weight_lines)
+
+        # 2) draw it just outside the left edge of the axes
+        text = ax.text(
+            -0.02, 0.5,             # x,y in axes coords: x<0 => left of the plot, y=0.5 => center vertically
+            textstr,
+            transform=ax.transAxes,
+            fontsize=7,
+            va="center",            # vertical alignment: center
+            ha="right",             # horizontal alignment: right‐justify the text
+            family="monospace"      # so digits line up nicely
+        )
+
+        # 3) force a draw so the text actually has a width
+        fig = ax.get_figure()
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        bbox = text.get_window_extent(renderer=renderer)
+
+        # 4) convert pixel‐width to fraction of figure width
+        fig_w   = fig.get_size_inches()[0] * fig.dpi
+        leftpad = bbox.width / fig_w + 0.02   # add a little extra 2% padding
+
+        # 5) shift the axes right by exactly that much
+        fig.subplots_adjust(left=leftpad)
 
     # Plot the arrows that indicate the policy's best actions
     quiv = plot_policy(ax, arrow_data, values=False)
@@ -629,7 +614,8 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
 
     # If RBF data is provided, overlay the RBF activation markers
     if activation_data is not None:
-        unique_feats, feat_colors = add_activations(ax, activation_data, env, unique_symbol_for_centers=unique_symbol_for_centers)
+        unique_feats, feat_colors = add_activations(ax, activation_data, env,
+                                                    unique_symbol_for_centers=unique_symbol_for_centers)
         plot_weight_legend(ax, w, env, feat_colors, display_feat_ids)
 
     # Save the figure if a save_path is provided.
@@ -941,9 +927,9 @@ def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, 
 
         save_path = f"{base_dir}/VI_u{uidx}.png" if base_dir is not None else None
 
-        actions, policy_indices, qvals = gpi_agent.get_gpi_policy_on_w(w_dot, uidx=uidx,
-                                                                       psis_are_augmented=psis_are_augmented)
-        arrow_data = get_plot_arrow_params_from_eval(actions, qvals, train_env)
+        actions, policy_indices, qvals, states = gpi_agent.get_gpi_policy_on_w(w_dot, uidx=uidx,
+                                                                               psis_are_augmented=psis_are_augmented)
+        arrow_data = train_env.get_arrow_data(actions, qvals, states)
         plot_q_vals(w, train_env, arrow_data=arrow_data, activation_data=activation_data,
                     policy_indices=policy_indices, unique_symbol_for_centers=unique_symbol_for_centers,
                     save_path=save_path)
