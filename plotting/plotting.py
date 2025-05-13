@@ -544,7 +544,7 @@ the weight legend.
     )
 
 
-def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy_indices=None, activation_data=None,
+def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=None,
                 save_path=None, show=True, unique_symbol_for_centers=False, display_feat_ids=True):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
@@ -554,21 +554,13 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
     Args:
         w: Weight vector.
         env: Environment object.
-        q_table: The Q-table (sf).
         arrow_data: Either pass Q-table or pass arrow data
-        policy_index: Index of the current policy.
         policy_indices: A dictionary mapping each state to the GPI policy index of the max Q-val over policies and
         actions.
         rbf_data: (Optional) RBF activation data.
         save_path: (Optional) Path to save the figure.
         show: (Optional) If True, display the plot (default True).
     """
-    if q_table is None and arrow_data is None:
-        raise Exception("Pass a q-table or arrow data")
-
-    if arrow_data is None:
-        arrow_data = get_plot_arrow_params(q_table, w, env)  # e.g., returns (x_pos, y_pos, x_dir, y_dir, color)
-
     fig, ax = plt.subplots()
 
     grid, mapping = convert_map_to_grid(env, custom_mapping=env.QVAL_COLOR_MAP)
@@ -576,7 +568,7 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
     add_legend(ax, mapping)  # Add legend (obstacles, goals, etc.)
 
     # Format the weight vector as a string for the title
-    if activation_data is None:
+    if activation_data is None and w is not None:
         # 1) build a vertical multiline string of your weights
         weight_lines = [f"w[{i}]={wi:.2f}" for i, wi in enumerate(w)]
         textstr      = "\n".join(weight_lines)
@@ -616,7 +608,8 @@ def plot_q_vals(w, env, q_table=None, arrow_data=None, policy_index=None, policy
     if activation_data is not None:
         unique_feats, feat_colors = add_activations(ax, activation_data, env,
                                                     unique_symbol_for_centers=unique_symbol_for_centers)
-        plot_weight_legend(ax, w, env, feat_colors, display_feat_ids)
+        if w is not None:
+            plot_weight_legend(ax, w, env, feat_colors, display_feat_ids)
 
     # Save the figure if a save_path is provided.
     if save_path is not None:
@@ -930,6 +923,6 @@ def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, 
         actions, policy_indices, qvals, states = gpi_agent.get_gpi_policy_on_w(w_dot, uidx=uidx,
                                                                                psis_are_augmented=psis_are_augmented)
         arrow_data = train_env.get_arrow_data(actions, qvals, states)
-        plot_q_vals(w, train_env, arrow_data=arrow_data, activation_data=activation_data,
+        plot_q_vals(train_env, w=w, arrow_data=arrow_data, activation_data=activation_data,
                     policy_indices=policy_indices, unique_symbol_for_centers=unique_symbol_for_centers,
                     save_path=save_path)

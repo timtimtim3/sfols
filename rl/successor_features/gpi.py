@@ -535,16 +535,16 @@ class GPI(RLAlgorithm):
             print(f"Saved {len(tasks)} tasks to {tasks_path} (pickle)")
 
     def plot_q_vals(self, activation_data, base_dir=None, unique_symbol_for_centers=False, show=True, policy_id=None):
-        if policy_id is not None:
-            policy = self.policies[policy_id]
-            w = self.tasks[policy_id]
+        def _plot_one(idx):
+            policy = self.policies[idx]
+            w = self.tasks[idx]
             save_path = f"{base_dir}/qvals_pol{policy_id}.png" if base_dir is not None else None
             arrow_data = policy.get_arrow_data(w)
-            plot_q_vals(w, self.env, arrow_data=arrow_data, activation_data=activation_data,
+            plot_q_vals(self.env, w=w, arrow_data=arrow_data, activation_data=activation_data,
                         save_path=save_path, show=show, unique_symbol_for_centers=unique_symbol_for_centers)
+
+        if policy_id is not None:
+            _plot_one(policy_id)
         else:
-            for i, (policy, w) in enumerate(zip(self.policies, self.tasks)):
-                save_path = f"{base_dir}/qvals_pol{i}.png" if base_dir is not None else None
-                arrow_data = policy.get_arrow_data(w)
-                plot_q_vals(w, self.env, arrow_data=arrow_data, activation_data=activation_data,
-                            save_path=save_path, show=show, unique_symbol_for_centers=unique_symbol_for_centers)
+            for i in range(len(self.policies)):
+                _plot_one(i)

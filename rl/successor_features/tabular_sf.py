@@ -353,5 +353,13 @@ class SF(RLAlgorithm):
         self.q_table = q_table_original  # Store in dict with policy index as key
 
     def get_arrow_data(self, w):
-        arrow_data = get_plot_arrow_params(self.q_table, w, self.env)
-        return arrow_data
+        actions, qvals, states = [], [], []
+
+        for coords, sf in self.q_table.items():
+            max_qval = np.max(sf @ w)
+            max_action = np.argmax(sf @ w)
+            qvals.append(max_qval)
+            actions.append(max_action)
+            states.append(coords)
+
+        return self.env.get_arrow_data(np.array(actions), np.array(qvals), states)
