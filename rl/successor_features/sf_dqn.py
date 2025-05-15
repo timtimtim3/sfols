@@ -298,6 +298,16 @@ class SFDQN(RLAlgorithm):
             q = th.einsum('r,sar->sa', w, psi_values)
             return q
 
+    def get_psis(self, obs):
+        if not isinstance(obs, th.Tensor):
+            obs = th.tensor(obs, dtype=th.float32, device=self.device)
+        if obs.ndim == 1:
+            obs = obs.unsqueeze(0)
+
+        with th.no_grad():
+            psi_vals = self.psi_net(obs)  # [batch, A, φ]
+        return psi_vals
+
     def eval(self, obs: np.array, w: np.array) -> int:
         obs = th.tensor(obs).float().to(self.device)
         w = th.tensor(w).float().to(self.device)
@@ -395,19 +405,13 @@ class SFDQN(RLAlgorithm):
 
         Internally converts numpy→Tensor, runs psi_net and einsum, then extracts.
         """
-        # 1) Coerce obs into a float Tensor of shape [batch, obs_dim]
-        if not isinstance(obs, th.Tensor):
-            obs = th.tensor(obs, dtype=th.float32, device=self.device)
-        if obs.ndim == 1:
-            obs = obs.unsqueeze(0)
-
         # 2) Coerce w into a float Tensor of shape [phi_dim]
         if not isinstance(w, th.Tensor):
             w = th.tensor(w, dtype=th.float32, device=self.device)
 
         # 3) Compute Q‐values: shape [batch, action_dim]
         with th.no_grad():
-            psi_vals = self.psi_net(obs)                           # [batch, A, φ]
+            psi_vals = self.get_psis(obs)                         # [batch, A, φ]
             q_vals   = th.einsum('r,sar->sa', w, psi_vals)         # [batch, A]
             q_max, acts = q_vals.max(dim=1)                        # both [batch]
 
