@@ -61,8 +61,9 @@ class GPI(RLAlgorithm):
                                for policy in self.policies]).squeeze()
             max_q, a = th.max(q_vals, dim=-1)
             policy_index = th.argmax(max_q)
-            action = a[policy_index].detach().long().item()
-            selected_qval = max_q[policy_index].detach().float().item()
+            action = a.detach().long().item() if a.ndim < 1 else a[policy_index].detach().long().item()
+            selected_qval = max_q.detach().float().item() if max_q.ndim < 1 else (
+                max_q[policy_index].detach().float().item())
             policy_index = policy_index.item()
 
             if return_policy_index and return_q_val:
