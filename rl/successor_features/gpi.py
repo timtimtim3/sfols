@@ -539,8 +539,9 @@ class GPI(RLAlgorithm):
         def _plot_one(idx):
             policy = self.policies[idx]
             w = self.tasks[idx]
-            save_path = f"{base_dir}/qvals_pol{policy_id}.png" if base_dir is not None else None
+            save_path = f"{base_dir}/qvals_pol{idx}.png" if base_dir is not None else None
             arrow_data = policy.get_arrow_data(w)
+            print(arrow_data)
             plot_q_vals(self.env, w=w, arrow_data=arrow_data, activation_data=activation_data,
                         save_path=save_path, show=show, unique_symbol_for_centers=unique_symbol_for_centers)
 
