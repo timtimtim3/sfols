@@ -17,7 +17,8 @@ class FlatQ(RLAlgorithm):
                  final_epsilon: float = 0.1,
                  epsilon_decay_steps: int = 10000,
                  log: bool = True,
-                 log_prefix: str = ""):
+                 log_prefix: str = "",
+                 **kwargs):
         super().__init__(env, device=None, fsa_env=None, log_prefix=log_prefix)
         self.eval_env = eval_env
         self.n_fsa_states = n_fsa_states
