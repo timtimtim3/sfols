@@ -270,7 +270,7 @@ class GPI(RLAlgorithm):
                  sleep_time=0.3,
                  psis_are_augmented=False) -> int:
 
-        env.reset()
+        env.reset(use_low_level_init_state=True)
         acc_reward = 0
 
         if render:
@@ -541,7 +541,6 @@ class GPI(RLAlgorithm):
             w = self.tasks[idx]
             save_path = f"{base_dir}/qvals_pol{idx}.png" if base_dir is not None else None
             arrow_data = policy.get_arrow_data(w)
-            print(arrow_data)
             plot_q_vals(self.env, w=w, arrow_data=arrow_data, activation_data=activation_data,
                         save_path=save_path, show=show, unique_symbol_for_centers=unique_symbol_for_centers)
 
