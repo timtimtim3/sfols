@@ -31,7 +31,8 @@ class GPI(RLAlgorithm):
                  device: Union[th.device, str] = 'auto',
                  planning_constraint: Optional[dict] = None,
                  psis_are_augmented=False,
-                 ValueIteration=None):
+                 ValueIteration=None,
+                 planning_kwargs=None):
 
         super(GPI, self).__init__(env, device, fsa_env=fsa_env, planning_constraint=planning_constraint)
 
@@ -45,6 +46,7 @@ class GPI(RLAlgorithm):
         self.psis_are_augmented = psis_are_augmented
 
         self.ValueIteration = ValueIteration
+        self.planning_kwargs = planning_kwargs if planning_kwargs is not None else {}
 
     def eval(self, obs, w, return_policy_index=False, exclude=None, return_q_val=False, verbose=False) -> EvalReturnType:
         """
@@ -220,6 +222,10 @@ class GPI(RLAlgorithm):
             # Copy replay buffer
             self.policies[-1].replay_buffer = self.policies[-2].replay_buffer
 
+        eval_env = None
+        if "eval_env" in kwargs:
+            eval_env = kwargs.pop("eval_env")
+
         # New policy learns using new w
         self.policies[-1].learn(w=w,
                                 total_timesteps=total_timesteps,
@@ -229,6 +235,9 @@ class GPI(RLAlgorithm):
                                 **kwargs)
 
         self.learned_policies += 1
+
+        if eval_env is not None:
+            print(self.evaluate_fsa(eval_env, render=True))
 
     @property
     def gamma(self):
@@ -242,7 +251,7 @@ class GPI(RLAlgorithm):
             return self.policies[0].get_config()
         return {}
 
-    def evaluate_fsa(self, fsa_env, ValueIteration=None) -> int:
+    def evaluate_fsa(self, fsa_env, ValueIteration=None, render=False) -> int:
 
         # Custom function to evaluate the so-far computed CCS,
         # on a given FSA.
@@ -253,10 +262,10 @@ class GPI(RLAlgorithm):
         else:
             from fsa.planning import SFFSAValueIteration as ValueIteration
 
-        planning = ValueIteration(fsa_env, self, constraint=self.planning_constraint)
+        planning = ValueIteration(fsa_env, self, constraint=self.planning_constraint, **self.planning_kwargs)
         W, _ = planning.traverse(None, num_iters=15)
 
-        acc_reward = GPI.evaluate(self, fsa_env, W, num_steps=200)
+        acc_reward = GPI.evaluate(self, fsa_env, W, num_steps=200, render=render)
 
         return acc_reward
 
@@ -272,6 +281,7 @@ class GPI(RLAlgorithm):
 
         env.reset(use_low_level_init_state=True)
         acc_reward = 0
+        old_state, same_state_counter = None, 0
 
         if render:
             env.env.render()
@@ -296,6 +306,16 @@ class GPI(RLAlgorithm):
 
             if done:
                 break
+
+            if state == old_state:
+                same_state_counter += 1
+            else:
+                same_state_counter = 0
+
+            if render and same_state_counter >= 10:
+                acc_reward = -num_steps
+                break
+            old_state = state
 
         return acc_reward
 
