@@ -334,7 +334,7 @@ class DQN(RLAlgorithm):
     @classmethod
     def load(cls, env, eval_env, n_fsa_states: int, path: str, **init_kwargs):
         agent = cls(env, eval_env, n_fsa_states, **init_kwargs)
-        data = th.load(path)
+        data = th.load(os.path.join(path, "dqn_policy.pt"))
         agent.q_net.load_state_dict(data['q_state'])
         agent.target_q_net.load_state_dict(data['target_q_state'])
         agent.optimizer.load_state_dict(data['optimizer'])
@@ -346,7 +346,7 @@ class DQN(RLAlgorithm):
         in FSA‐state `uidx` over all continuous centers.
         """
         # 1) collect all cell‐centers
-        centers = self.env.get_all_valid_continuous_states_centers()  # list of (y,x)
+        centers = self.env.env.get_all_valid_continuous_states_centers()  # list of (y,x)
         N = len(centers)
 
         # 2) build a tensor input for each center
@@ -374,7 +374,7 @@ class DQN(RLAlgorithm):
         qvals   = np.concatenate(all_qvals,   axis=0)  # [N,]
 
         # 5) hand off to your env’s quiver‐builder
-        return self.env.get_arrow_data(actions, qvals, states=centers)
+        return self.env.env.get_arrow_data(actions, qvals, states=centers)
 
     def plot_q_vals(self, activation_data=None, base_dir=None, show=True):
         def _plot_one(uidx):
