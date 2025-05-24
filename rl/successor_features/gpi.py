@@ -12,6 +12,7 @@ import numpy as np
 import torch as th
 from copy import deepcopy
 from typing import Union, Tuple
+import imageio
 
 EvalReturnType = Union[
     int,  # Only the action is returned
@@ -251,7 +252,7 @@ class GPI(RLAlgorithm):
             return self.policies[0].get_config()
         return {}
 
-    def evaluate_fsa(self, fsa_env, ValueIteration=None, render=False) -> int:
+    def evaluate_fsa(self, fsa_env, ValueIteration=None, render=False, base_dir=None) -> int:
 
         # Custom function to evaluate the so-far computed CCS,
         # on a given FSA.
@@ -265,7 +266,7 @@ class GPI(RLAlgorithm):
         planning = ValueIteration(fsa_env, self, constraint=self.planning_constraint, **self.planning_kwargs)
         W, _ = planning.traverse(None, num_iters=15)
 
-        acc_reward = GPI.evaluate(self, fsa_env, W, num_steps=200, render=render)
+        acc_reward = GPI.evaluate(self, fsa_env, W, num_steps=200, render=render, base_dir=base_dir)
 
         return acc_reward
 
@@ -277,32 +278,46 @@ class GPI(RLAlgorithm):
                  render=False,
                  initial_sleep=3,
                  sleep_time=0.3,
-                 psis_are_augmented=False) -> int:
+                 psis_are_augmented=False,
+                 base_dir: Optional[str] = None) -> int:
+
+        # 1) detect headless:
+        headless = ('DISPLAY' not in os.environ) and render
 
         env.reset(use_low_level_init_state=True)
         acc_reward = 0
         old_state, same_state_counter = None, 0
 
-        if render:
+        frames = []    # for headless video
+
+        if render and not headless:
             env.env.render()
-            time.sleep(initial_sleep)  # Add delay for better visualization
+            time.sleep(initial_sleep)
 
         for _ in range(num_steps):
-
             (f, state) = env.get_state()
             if psis_are_augmented:
                 w = np.asarray(list(W.values())).reshape(-1)
             else:
                 w = W[f]
 
-            action = gpi.eval_planning(state, w, uidx=int(f.split('u')[1]), psis_are_augmented=psis_are_augmented)
+            action = gpi.eval_planning(
+                state, w,
+                uidx=int(f.split('u')[1]),
+                psis_are_augmented=psis_are_augmented
+            )
 
             _, reward, done, _ = env.step(action)
             acc_reward += reward
 
             if render:
-                env.env.render()
-                time.sleep(sleep_time)  # Add delay for better visualization
+                if headless:
+                    # capture a frame
+                    frame = env.env.render(mode='rgb_array', headless=True)
+                    frames.append(frame)
+                else:
+                    env.env.render()
+                    time.sleep(sleep_time)
 
             if done:
                 break
@@ -315,7 +330,16 @@ class GPI(RLAlgorithm):
             if render and same_state_counter >= 10:
                 acc_reward = -num_steps
                 break
+
             old_state = state
+
+        # 4) if headless+render, write video
+        if headless and base_dir is not None and frames:
+            save_path = os.path.join(base_dir, "evaluate_render.mp4")
+            fps = 1.0 / sleep_time
+            # use imageio-ffmpeg under the hood
+            imageio.mimwrite(save_path, frames, fps=fps, quality=8)
+            print(f"[evaluate] headless video saved to {save_path}")
 
         return acc_reward
 
