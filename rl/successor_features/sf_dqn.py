@@ -184,9 +184,18 @@ class SFDQN(RLAlgorithm):
         th.save(saved_params, save_path)
 
     def load(self, path, load_replay_buffer=True):
-        params = th.load(path)
+        # pick the device we want to load to
+        device = th.device("cuda") if th.cuda.is_available() else th.device("cpu")
+
+        # load all tensors onto that device
+        params = th.load(path, map_location=device)
+
+        # now you may have to move your networks to the device manually
         self.psi_net.load_state_dict(params['psi_net_state_dict'])
+        self.psi_net.to(device)
         self.target_psi_net.load_state_dict(params['target_psi_net_state_dict'])
+        self.target_psi_net.to(device)
+
         self.psi_optim.load_state_dict(params['psi_nets_optimizer_state_dict'])
         if load_replay_buffer and 'replay_buffer' in params:
             self.replay_buffer = params['replay_buffer']

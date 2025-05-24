@@ -333,11 +333,30 @@ class DQN(RLAlgorithm):
 
     @classmethod
     def load(cls, env, eval_env, n_fsa_states: int, path: str, **init_kwargs):
+        # re-instantiate
         agent = cls(env, eval_env, n_fsa_states, **init_kwargs)
-        data = th.load(os.path.join(path, "dqn_policy.pt"))
+
+        # pick device
+        device = th.device("cuda") if th.cuda.is_available() else th.device("cpu")
+
+        # load everything onto that device
+        data = th.load(os.path.join(path, "dqn_policy.pt"), map_location=device)
+
+        # restore and move nets
         agent.q_net.load_state_dict(data['q_state'])
+        agent.q_net.to(device)
+
         agent.target_q_net.load_state_dict(data['target_q_state'])
+        agent.target_q_net.to(device)
+
+        # optimizer state is already on CPU; 
+        # if you want its tensors on GPU you’ll need to loop through its state:
         agent.optimizer.load_state_dict(data['optimizer'])
+        for state in agent.optimizer.state.values():
+            for k, v in state.items():
+                if isinstance(v, th.Tensor):
+                    state[k] = v.to(device)
+
         return agent
 
     def get_arrow_data(self, uidx: int, batch_size: int = 256):
