@@ -308,20 +308,20 @@ class SFDQN(RLAlgorithm):
             psi_vals = self.psi_net(obs)  # [batch, A, φ]
         return psi_vals
 
-    def eval(self, obs: np.array, w: np.array) -> int:
+    def eval(self, obs: np.array, w: np.array, use_gpi=False) -> int:
         obs = th.tensor(obs).float().to(self.device)
         w = th.tensor(w).float().to(self.device)
-        if self.gpi is not None:
+        if self.gpi is not None and use_gpi:
             print("self.gpi is not None! using gpi in eval()...")
             return self.gpi.eval(obs, w)
         else:
             return th.argmax(self.q_values(obs, w), dim=1).item()
 
-    def act(self, obs: th.tensor, w: th.tensor) -> np.array:
+    def act(self, obs: th.tensor, w: th.tensor, use_gpi=False) -> np.array:
         if np.random.random() < self.epsilon:
             return self.env.action_space.sample()
         else:
-            if self.gpi is not None:
+            if self.gpi is not None and use_gpi:
                 action, policy_index = self.gpi.eval(obs, w, return_policy_index=True)
                 self.police_indices.append(policy_index)
                 return action
@@ -361,13 +361,15 @@ class SFDQN(RLAlgorithm):
             if self.num_timesteps >= self.learning_starts:
                 self.train(tensor_w)
 
-            if eval_env is not None and self.log and self.num_timesteps % eval_freq == 0:
-                total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
-                wb.log({"eval/total_reward": total_reward}, step=self.num_timesteps)
-                wb.log({"eval/discounted_return": discounted_return}, step=self.num_timesteps)
-                for i in range(episode_vec_reward.shape[0]):
-                    wb.log({f"eval/total_reward_obj{i}": total_vec_r[i]}, step=self.num_timesteps)
-                    wb.log({f"eval/return_obj{i}": total_vec_return[i]}, step=self.num_timesteps)
+            if self.log and self.num_timesteps % eval_freq == 0:
+                # total_reward, discounted_return, total_vec_r, total_vec_return = eval_mo(self, eval_env, w)
+                # wb.log({"eval/total_reward": total_reward}, step=self.num_timesteps)
+                # wb.log({"eval/discounted_return": discounted_return}, step=self.num_timesteps)
+                # for i in range(episode_vec_reward.shape[0]):
+                #     wb.log({f"eval/total_reward_obj{i}": total_vec_r[i]}, step=self.num_timesteps)
+                #     wb.log({f"eval/return_obj{i}": total_vec_return[i]}, step=self.num_timesteps)
+                fsa_reward = self.gpi.evaluate_fsa(self.fsa_env)
+                wb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps})
 
             episode_reward += reward
             episode_vec_reward += info['phi']
@@ -380,7 +382,7 @@ class SFDQN(RLAlgorithm):
                     print(
                         f"Episode: {self.num_episodes} Step: {self.num_timesteps}, Ep. Total Reward: {episode_reward}")
                 if self.log:
-                    wb.log({'metrics/policy_index': np.array(self.police_indices)}, step=self.num_timesteps)
+                    # wb.log({'metrics/policy_index': np.array(self.police_indices)}, step=self.num_timesteps)
                     self.police_indices = []
                     wb.log({"metrics/episode": self.num_episodes}, step=self.num_timesteps)
                     wb.log({"metrics/episode_reward": episode_reward}, step=self.num_timesteps)
@@ -484,7 +486,7 @@ class SFDQN(RLAlgorithm):
 
         if not isinstance(state, th.Tensor):
             state = th.tensor(state, dtype=th.float32, device=self.device)
-        psis = self.psi_net(state).detach().numpy().squeeze()
+        psis = self.psi_net(state).detach().cpu().numpy().squeeze()
         for i, psi in enumerate(psis):
             # Repeat psi across n_fsa_states times
             augmented_psi = np.tile(psi, self.n_fsa_states)
