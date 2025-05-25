@@ -545,7 +545,7 @@ the weight legend.
 
 
 def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=None,
-                save_path=None, show=True, unique_symbol_for_centers=False, display_feat_ids=True):
+                save_path=None, show=True, unique_symbol_for_centers=False, display_feat_ids=True, goal_prop=None):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
     RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
@@ -557,9 +557,12 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
         arrow_data: Either pass Q-table or pass arrow data
         policy_indices: A dictionary mapping each state to the GPI policy index of the max Q-val over policies and
         actions.
-        rbf_data: (Optional) RBF activation data.
+        activation_data: (Optional) RBF activation data.
         save_path: (Optional) Path to save the figure.
         show: (Optional) If True, display the plot (default True).
+        unique_symbol_for_centers: (Optional) Flag for unique symbols in activations.
+        display_feat_ids: (Optional) Show feature IDs in legend.
+        goal_prop: (Optional) Single-character proposition label to display alongside weights when no activations.
     """
     fig, ax = plt.subplots()
 
@@ -595,6 +598,17 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
         leftpad = bbox.width / fig_w + 0.02   # add a little extra 2% padding
 
         # 5) shift the axes right by exactly that much
+        fig.subplots_adjust(left=leftpad)
+    
+    elif activation_data is None and goal_prop is not None:
+        text = ax.text(-0.02, 0.5, f"prop={goal_prop}",
+                       transform=ax.transAxes, fontsize=12,
+                       va="center", ha="right", family="monospace")
+
+        fig = ax.get_figure(); fig.canvas.draw()
+        renderer = fig.canvas.get_renderer(); bbox = text.get_window_extent(renderer)
+        fig_w = fig.get_size_inches()[0] * fig.dpi
+        leftpad = bbox.width / fig_w + 0.02
         fig.subplots_adjust(left=leftpad)
 
     # Plot the arrows that indicate the policy's best actions
