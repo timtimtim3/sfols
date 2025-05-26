@@ -601,7 +601,7 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
         fig.subplots_adjust(left=leftpad)
     
     elif activation_data is None and goal_prop is not None:
-        text = ax.text(-0.02, 0.5, f"prop={goal_prop}",
+        text = ax.text(-0.02, 0.5, f"{goal_prop}",
                        transform=ax.transAxes, fontsize=12,
                        va="center", ha="right", family="monospace")
 

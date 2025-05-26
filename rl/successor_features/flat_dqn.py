@@ -400,7 +400,7 @@ class DQN(RLAlgorithm):
             save_path = f"{base_dir}/qvals_{uidx}.png" if base_dir is not None else None
             arrow_data = self.get_arrow_data(uidx)
             plot_q_vals(self.env.env, arrow_data=arrow_data, activation_data=activation_data,
-                        save_path=save_path, show=show)
+                        save_path=save_path, show=show, goal_prop=f"u{uidx}")
 
         for i in range(self.n_fsa_states - 1):
             _plot_one(i)
