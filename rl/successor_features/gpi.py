@@ -266,9 +266,9 @@ class GPI(RLAlgorithm):
         planning = ValueIteration(fsa_env, self, constraint=self.planning_constraint, **self.planning_kwargs)
         W, _ = planning.traverse(None, num_iters=15)
 
-        acc_reward = GPI.evaluate(self, fsa_env, W, num_steps=200, render=render, base_dir=base_dir)
+        acc_reward, neg_step_r = GPI.evaluate(self, fsa_env, W, num_steps=200, render=render, base_dir=base_dir)
 
-        return acc_reward
+        return acc_reward, neg_step_r
 
     @staticmethod
     def evaluate(gpi,
@@ -286,6 +286,7 @@ class GPI(RLAlgorithm):
 
         env.reset(use_low_level_init_state=True)
         acc_reward = 0
+        neg_step_r = 0
         old_state, same_state_counter = None, 0
 
         frames = []    # for headless video
@@ -309,6 +310,7 @@ class GPI(RLAlgorithm):
 
             _, reward, done, _ = env.step(action)
             acc_reward += reward
+            neg_step_r -= 1
 
             if render:
                 if headless:
@@ -328,7 +330,7 @@ class GPI(RLAlgorithm):
                 same_state_counter = 0
 
             if render and same_state_counter >= 10:
-                acc_reward = -num_steps
+                neg_step_r = -num_steps
                 break
 
             old_state = state
@@ -341,7 +343,7 @@ class GPI(RLAlgorithm):
             imageio.mimwrite(save_path, frames, fps=fps, quality=8)
             print(f"[evaluate] headless video saved to {save_path}")
 
-        return acc_reward
+        return acc_reward, neg_step_r
 
     def do_rollout(self,
                    gpi,

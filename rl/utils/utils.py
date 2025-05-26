@@ -30,9 +30,14 @@ def polyak_update(params: Iterable[th.nn.Parameter], target_params: Iterable[th.
                        alpha=tau, out=target_param.data)
 
 
-def huber(x, min_priority=0.01):
-    return th.where(x < min_priority, 0.5 * x.pow(2), min_priority * x).mean()
+# def huber(x, min_priority=0.01):
+#     return th.where(x < min_priority, 0.5 * x.pow(2), min_priority * x).mean()
 
+def huber(x, min_priority=1):
+    abs_x = x.abs()
+    quadratic = 0.5 * abs_x.pow(2)
+    linear    = min_priority * (abs_x - 0.5 * min_priority)
+    return th.where(abs_x < min_priority, quadratic, linear).mean()
 
 def generate_weights(count=1, n=3, m=1):
     """Source: https://github.com/axelabels/DynMORL/blob/db15c29bc2cf149c9bda6b8890fee05b1ac1e19e/utils.py#L281"""

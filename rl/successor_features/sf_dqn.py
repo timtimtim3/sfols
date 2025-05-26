@@ -235,7 +235,7 @@ class SFDQN(RLAlgorithm):
                                                                                       psi_value.size(2)))
             psi_value = psi_value.reshape(-1, self.phi_dim)
             td_error = (psi_value - target_psi)
-            critic_loss = huber(td_error.abs(), min_priority=self.min_priority)
+            critic_loss = huber(td_error, min_priority=self.min_priority)
 
             self.psi_optim.zero_grad()
             critic_loss.backward()
@@ -286,7 +286,7 @@ class SFDQN(RLAlgorithm):
                                                                                       psi_value.size(2)))
             psi_value = psi_value.reshape(-1, self.phi_dim)
             td_error = (psi_value - target_psi)
-            critic_loss = huber(td_error.abs(), min_priority=self.min_priority)
+            critic_loss = huber(td_error, min_priority=self.min_priority)
 
             this_policy.psi_optim.zero_grad()
             critic_loss.backward()
@@ -377,8 +377,9 @@ class SFDQN(RLAlgorithm):
                 # for i in range(episode_vec_reward.shape[0]):
                 #     wb.log({f"eval/total_reward_obj{i}": total_vec_r[i]}, step=self.num_timesteps)
                 #     wb.log({f"eval/return_obj{i}": total_vec_return[i]}, step=self.num_timesteps)
-                fsa_reward = self.gpi.evaluate_fsa(self.fsa_env)
-                wb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps})
+                fsa_reward, neg_step_r = self.gpi.evaluate_fsa(self.fsa_env)
+                wb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps, 
+                        "learning/fsa_neg_step_reward": neg_step_r})
 
             episode_reward += reward
             episode_vec_reward += info['phi']

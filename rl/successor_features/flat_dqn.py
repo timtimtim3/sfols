@@ -220,16 +220,31 @@ class DQN(RLAlgorithm):
 
             # update
             if self.num_timesteps >= self.learning_starts:
-                obs_b, act_b, rew_b, nxt_b, done_b = self.sample_batch()
+                batch = self.sample_batch()
+                obs_b, act_b, rew_b, nxt_b, done_b = batch[:5]
+                idxes = batch[5] if self.per else None
                 q_vals = self.q_net(obs_b).gather(1, act_b.long()).squeeze(1)
 
                 with th.no_grad():
                     next_q = self.target_q_net(nxt_b).max(1)[0]
-                    target = rew_b + self.gamma * (1 - done_b) * next_q
-                td = q_vals - target
-                loss = huber(td)
+                    target = rew_b.squeeze(1) + self.gamma * (1 - done_b.squeeze(1)) * next_q
+
+                # 1) Compute the raw TD‐error tensor (still connected to q_net)
+                td_error = q_vals - target                       # requires_grad=True
+
+                # 2) Build your loss from that tensor  
+                loss = huber(td_error)                           # gradients flow back into q_net
+
+                # 3) Separately, make a detached copy for PER priorities  
+                priority_values = td_error.abs().detach().cpu().numpy()
+
+                # 4) Update your buffer  
+                if self.per:
+                    self.replay_buffer.update_priorities(idxes, priority_values)
+
+                # 5) Finally do your backward step on the loss  
                 self.optimizer.zero_grad()
-                loss.mean().backward()
+                loss.backward()
                 self.optimizer.step()
 
                 # target update
@@ -250,12 +265,13 @@ class DQN(RLAlgorithm):
                     )
                 # logging
                 if self.log and t % eval_freq == 0:
-                    fsa_reward = self.evaluate()
+                    fsa_reward, fsa_neg_step_reward = self.evaluate()
                     wandb.log({
                         f"{self.log_prefix}epsilon": self.epsilon,
                         f"{self.log_prefix}critic_loss": loss.mean().item(),
                         "learning/timestep": self.num_timesteps,
-                        "learning/fsa_reward": fsa_reward
+                        "learning/fsa_reward": fsa_reward,
+                        "learning/fsa_neg_step_reward": fsa_neg_step_reward
                     })
 
             # episode bookkeeping
@@ -265,7 +281,6 @@ class DQN(RLAlgorithm):
                 self.num_episodes += 1
                 if self.log:
                     wandb.log({
-                        f"{self.log_prefix}episode_return": ep_ret,
                         f"{self.log_prefix}episode": self.num_episodes,
                         "learning/timestep": self.num_timesteps
                     })
@@ -304,15 +319,17 @@ class DQN(RLAlgorithm):
     def evaluate(self, num_steps: int = 200) -> float:
         state = self.eval_env.reset(use_low_level_init_state=True, use_fsa_init_state=True)
         acc = 0.0
+        neg_step_r = 0
         done = False
         for _ in range(num_steps):
             fsa_idx, cont = state[0], np.array((state[1], state[2]))
             a = self.eval((fsa_idx, cont))
             state, r, done, _ = self.eval_env.step(a)
             acc += r
+            neg_step_r -= 1
             if done:
                 break
-        return acc
+        return acc, neg_step_r
 
     def eval(self, state: Tuple[int, np.ndarray]) -> int:
         fsa_idx, cont = state
