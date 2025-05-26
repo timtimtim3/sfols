@@ -209,8 +209,6 @@ class DQN(RLAlgorithm):
             fsa_idx, cont = state[0], np.array((state[1], state[2]))
             a = self.act((fsa_idx, cont))
             next_state, reward, done, _ = self.env.step(a)
-            if reward != -1:
-                print(reward)
             next_idx, next_cont = next_state[0], np.array((next_state[1], next_state[2]))
 
             # store to buffer
@@ -224,6 +222,7 @@ class DQN(RLAlgorithm):
             if self.num_timesteps >= self.learning_starts:
                 obs_b, act_b, rew_b, nxt_b, done_b = self.sample_batch()
                 q_vals = self.q_net(obs_b).gather(1, act_b.long()).squeeze(1)
+
                 with th.no_grad():
                     next_q = self.target_q_net(nxt_b).max(1)[0]
                     target = rew_b + self.gamma * (1 - done_b) * next_q
