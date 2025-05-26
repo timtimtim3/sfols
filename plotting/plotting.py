@@ -215,7 +215,13 @@ def plot_policy(ax, arrow_data, values=False, headwidth=6, headlength=10, headax
 
     x_pos, y_pos, x_dir, y_dir, color, coords_list = arrow_data
     color = np.array(color)
-    normed_color = (color - color.min()) / (color.max() - color.min())
+    cmin = color.min()
+    cmax = color.max()
+    if cmax > cmin:
+        normed_color = (color - cmin) / (cmax - cmin)
+    else:
+        # all values are equal → map everything to 0.5 (middle of the colormap)
+        normed_color = np.full_like(color, 0.5, dtype=float)
     cmap = cm.get_cmap('viridis')
 
     # Identify indices for normal actions and terminate actions
@@ -237,6 +243,7 @@ def plot_policy(ax, arrow_data, values=False, headwidth=6, headlength=10, headax
 
     # Plot termination actions with a smaller hollow circle ("donut" marker)
     if len(term_indices) > 0:
+        print("h2i")
         scatter = ax.scatter(
             np.array(x_pos)[term_indices],
             np.array(y_pos)[term_indices],
