@@ -925,8 +925,8 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
         plt.show()
 
 
-def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, unique_symbol_for_centers=False,
-                   base_dir=None, psis_are_augmented=False):
+def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, fsa_name="", verbose=True,
+                   unique_symbol_for_centers=False, base_dir=None, psis_are_augmented=False):
     if verbose:
         print("\nPlotting GPI q-values:")
     w_arr = np.asarray(list(w_dict.values())).reshape(-1)
@@ -939,7 +939,7 @@ def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, verbose=True, 
         if verbose:
             print(uidx, np.round(w, 2))
 
-        save_path = f"{base_dir}/VI_u{uidx}.png" if base_dir is not None else None
+        save_path = f"{base_dir}/VI_{fsa_name}_u{uidx}.png" if base_dir is not None else None
 
         actions, policy_indices, qvals, states = gpi_agent.get_gpi_policy_on_w(w_dot, uidx=uidx,
                                                                                psis_are_augmented=psis_are_augmented)
