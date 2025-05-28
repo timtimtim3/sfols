@@ -42,6 +42,7 @@ class GPI(RLAlgorithm):
         self.tasks = []
         self.learned_policies = 0
         self.num_timesteps = 0
+        self.total_steps = 0
 
         self.log = log
         self.psis_are_augmented = psis_are_augmented

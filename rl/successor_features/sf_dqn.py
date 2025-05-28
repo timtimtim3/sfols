@@ -356,6 +356,7 @@ class SFDQN(RLAlgorithm):
                 break
 
             self.num_timesteps += 1
+            self.gpi.total_steps += 1
 
             if self.num_timesteps < self.learning_starts:
                 action = self.env.action_space.sample()
@@ -378,8 +379,10 @@ class SFDQN(RLAlgorithm):
                 #     wb.log({f"eval/total_reward_obj{i}": total_vec_r[i]}, step=self.num_timesteps)
                 #     wb.log({f"eval/return_obj{i}": total_vec_return[i]}, step=self.num_timesteps)
                 fsa_reward, neg_step_r = self.gpi.evaluate_fsa(self.fsa_env)
-                wb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps, 
-                        "learning/fsa_neg_step_reward": neg_step_r})
+                wb.log({"learning/fsa_reward": fsa_reward,
+                        "learning/timestep":self.num_timesteps,
+                        "learning/fsa_neg_step_reward": neg_step_r,
+                        "learning/total_timestep": self.gpi.total_steps})
 
             episode_reward += reward
             episode_vec_reward += info['phi']

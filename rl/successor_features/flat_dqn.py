@@ -270,6 +270,7 @@ class DQN(RLAlgorithm):
                         f"{self.log_prefix}epsilon": self.epsilon,
                         f"{self.log_prefix}critic_loss": loss.mean().item(),
                         "learning/timestep": self.num_timesteps,
+                        "learning/total_timestep": self.num_timesteps,
                         "learning/fsa_reward": fsa_reward,
                         "learning/fsa_neg_step_reward": fsa_neg_step_reward
                     })
