@@ -253,6 +253,27 @@ class GPI(RLAlgorithm):
             return self.policies[0].get_config()
         return {}
 
+    def evaluate_all_fsa(self):
+        log_dict, fsa_rewards, fsa_neg_step_rewards = {}, [], []
+        if not isinstance(self.fsa_env, list):
+            eval_envs = [self.fsa_env]
+        else:
+            eval_envs = self.fsa_env
+
+        for eval_env in eval_envs:
+            fsa_reward, fsa_neg_step_reward = self.evaluate_fsa(eval_env)
+            log_dict[f"learning/fsa_reward/{eval_env.fsa.name}"] = fsa_reward
+            log_dict[f"learning/fsa_neg_reward/{eval_env.fsa.name}"] = fsa_neg_step_reward
+            fsa_rewards.append(fsa_reward)
+            fsa_neg_step_rewards.append(fsa_neg_step_reward)
+
+        if len(eval_envs) > 1:
+            average_fsa_reward = sum(fsa_rewards) / len(eval_envs)
+            average_fsa_neg_step_reward = sum(fsa_neg_step_rewards) / len(eval_envs)
+            log_dict[f"learning/fsa_reward_average"] = average_fsa_reward
+            log_dict[f"learning/fsa_neg_reward_average"] = average_fsa_neg_step_reward
+        return log_dict
+
     def evaluate_fsa(self, fsa_env, ValueIteration=None, render=False, base_dir=None) -> int:
 
         # Custom function to evaluate the so-far computed CCS,
