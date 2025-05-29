@@ -552,7 +552,8 @@ the weight legend.
 
 
 def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=None,
-                save_path=None, show=True, unique_symbol_for_centers=False, display_feat_ids=True, goal_prop=None):
+                save_path=None, show=True, unique_symbol_for_centers=False, display_feat_ids=True, goal_prop=None,
+                fsa_name=""):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
     RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
@@ -631,6 +632,21 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
                                                     unique_symbol_for_centers=unique_symbol_for_centers)
         if w is not None:
             plot_weight_legend(ax, w, env, feat_colors, display_feat_ids)
+
+    if fsa_name:
+        # # 1) bump up the bottom margin so there’s room for our text
+        # fig.subplots_adjust(bottom=0.15)
+
+        # 2) draw the FSA name centered in figure‐coordinates
+        fig.text(
+            0.5,            # x = center of figure
+            0.03,           # y = 3% up from bottom
+            f"FSA: {fsa_name}",
+            ha="center",    # horizontal alignment
+            va="center",    # vertical alignment
+            fontsize=10,
+            color="gray"
+        )
 
     # Save the figure if a save_path is provided.
     if save_path is not None:
@@ -946,4 +962,4 @@ def plot_gpi_qvals(w_dict, gpi_agent, train_env, activation_data, fsa_name="", v
         arrow_data = train_env.get_arrow_data(actions, qvals, states)
         plot_q_vals(train_env, w=w, arrow_data=arrow_data, activation_data=activation_data,
                     policy_indices=policy_indices, unique_symbol_for_centers=unique_symbol_for_centers,
-                    save_path=save_path)
+                    save_path=save_path, fsa_name=fsa_name)

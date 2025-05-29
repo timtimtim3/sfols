@@ -384,7 +384,7 @@ class SFDQN(RLAlgorithm):
                     "learning/timestep": self.num_timesteps,
                     "learning/total_timestep": self.gpi.total_steps,
                     **fsa_reward_log_dict
-                })
+                }, step=self.num_timesteps)
 
             episode_reward += reward
             episode_vec_reward += info['phi']
