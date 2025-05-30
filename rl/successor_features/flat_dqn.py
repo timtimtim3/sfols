@@ -71,7 +71,6 @@ class DQN(RLAlgorithm):
     def __init__(self,
                  env,
                  eval_env,
-                 n_fsa_states: int,
                  net_arch: List[int] = [256, 256],
                  learning_rate: float = 3e-4,
                  gamma: float = 0.99,
@@ -92,7 +91,7 @@ class DQN(RLAlgorithm):
                  **kwargs) -> None:
         super().__init__(env, device, fsa_env=None, log_prefix=log_prefix)
         self.eval_env = eval_env
-        self.n_fsa_states = n_fsa_states
+        self.n_fsa_states = self.eval_env.fsa.num_states
         self.gamma = gamma
         self.initial_epsilon = initial_epsilon
         self.epsilon = initial_epsilon
@@ -110,7 +109,7 @@ class DQN(RLAlgorithm):
         # Build Q-net and target Q-net
         self.q_net = QNet(
             cont_dim=obs_low.shape[0],
-            fsa_dim=n_fsa_states,
+            fsa_dim=self.n_fsa_states,
             action_dim=env.action_space.n,
             net_arch=net_arch,
             normalize_inputs=normalize_inputs,
@@ -119,7 +118,7 @@ class DQN(RLAlgorithm):
         ).to(self.device)
         self.target_q_net = QNet(
             cont_dim=obs_low.shape[0],
-            fsa_dim=n_fsa_states,
+            fsa_dim=self.n_fsa_states,
             action_dim=env.action_space.n,
             net_arch=net_arch,
             normalize_inputs=normalize_inputs,
@@ -135,14 +134,14 @@ class DQN(RLAlgorithm):
         # replay buffer
         if per:
             self.replay_buffer = PrioritizedReplayBuffer(
-                obs_dim=obs_low.shape[0] + n_fsa_states,
+                obs_dim=obs_low.shape[0] + self.n_fsa_states,
                 action_dim=1,
                 rew_dim=1,
                 max_size=buffer_size
             )
         else:
             self.replay_buffer = ReplayBuffer(
-                obs_dim=obs_low.shape[0] + n_fsa_states,
+                obs_dim=obs_low.shape[0] + self.n_fsa_states,
                 action_dim=1,
                 rew_dim=1,
                 max_size=buffer_size
@@ -265,14 +264,14 @@ class DQN(RLAlgorithm):
                     )
                 # logging
                 if self.log and t % eval_freq == 0:
-                    fsa_reward, fsa_neg_step_reward = self.evaluate()
+                    fsa_reward_log_dict = self.evaluate_all_fsa()
+
                     wandb.log({
                         f"{self.log_prefix}epsilon": self.epsilon,
                         f"{self.log_prefix}critic_loss": loss.mean().item(),
                         "learning/timestep": self.num_timesteps,
                         "learning/total_timestep": self.num_timesteps,
-                        "learning/fsa_reward": fsa_reward,
-                        "learning/fsa_neg_step_reward": fsa_neg_step_reward
+                        **fsa_reward_log_dict
                     })
 
             # episode bookkeeping
@@ -282,8 +281,7 @@ class DQN(RLAlgorithm):
                 self.num_episodes += 1
                 if self.log:
                     wandb.log({
-                        f"{self.log_prefix}episode": self.num_episodes,
-                        "learning/timestep": self.num_timesteps
+                        f"learning/timestep": self.num_timesteps
                     })
                 state = self.env.reset()
                 done = False
@@ -317,15 +315,34 @@ class DQN(RLAlgorithm):
             "normalize_inputs": self.q_net.normalize_inputs,
         }
 
-    def evaluate(self, num_steps: int = 200) -> float:
-        state = self.eval_env.reset(use_low_level_init_state=True, use_fsa_init_state=True)
+    def evaluate_all_fsa(self):
+        log_dict, fsa_rewards, fsa_neg_step_rewards = {}, [], []
+        if not isinstance(self.eval_env, list):
+            eval_envs = [self.eval_env]
+
+        for eval_env in eval_envs:
+            fsa_reward, fsa_neg_step_reward = self.evaluate(eval_env)
+            log_dict[f"learning/fsa_reward/{eval_env.fsa.name}"] = fsa_reward
+            log_dict[f"learning/fsa_neg_reward/{eval_env.fsa.name}"] = fsa_neg_step_reward
+            fsa_rewards.append(fsa_reward)
+            fsa_neg_step_rewards.append(fsa_neg_step_reward)
+
+        if len(eval_envs) > 1:
+            average_fsa_reward = sum(fsa_rewards) / len(eval_envs)
+            average_fsa_neg_step_reward = sum(fsa_neg_step_rewards) / len(eval_envs)
+            log_dict[f"learning/fsa_reward_average"] = average_fsa_reward
+            log_dict[f"learning/fsa_neg_reward_average"] = average_fsa_neg_step_reward
+        return log_dict
+
+    def evaluate(self, eval_env, num_steps: int = 200) -> Tuple[float, float]:
+        state = eval_env.reset(use_low_level_init_state=True, use_fsa_init_state=True)
         acc = 0.0
-        neg_step_r = 0
+        neg_step_r = 0.0
         done = False
         for _ in range(num_steps):
             fsa_idx, cont = state[0], np.array((state[1], state[2]))
             a = self.eval((fsa_idx, cont))
-            state, r, done, _ = self.eval_env.step(a)
+            state, r, done, _ = eval_env.step(a)
             acc += r
             neg_step_r -= 1
             if done:
@@ -341,7 +358,7 @@ class DQN(RLAlgorithm):
 
     def save(self, base_dir: str):
         os.makedirs(base_dir, exist_ok=True)
-        path = os.path.join(base_dir, f"dqn_policy.pt")
+        path = os.path.join(base_dir, f"dqn_policy_{self.eval_env.fsa.name}.pt")
         th.save({
             'q_state': self.q_net.state_dict(),
             'target_q_state': self.target_q_net.state_dict(),
@@ -349,15 +366,15 @@ class DQN(RLAlgorithm):
         }, path)
 
     @classmethod
-    def load(cls, env, eval_env, n_fsa_states: int, path: str, **init_kwargs):
+    def load(cls, env, eval_env, path: str, fsa_name: str, **init_kwargs):
         # re-instantiate
-        agent = cls(env, eval_env, n_fsa_states, **init_kwargs)
+        agent = cls(env, eval_env, **init_kwargs)
 
         # pick device
         device = th.device("cuda") if th.cuda.is_available() else th.device("cpu")
 
         # load everything onto that device
-        data = th.load(os.path.join(path, "dqn_policy.pt"), map_location=device)
+        data = th.load(os.path.join(path, f"dqn_policy_{fsa_name}.pt"), map_location=device)
 
         # restore and move nets
         agent.q_net.load_state_dict(data['q_state'])
@@ -414,7 +431,7 @@ class DQN(RLAlgorithm):
 
     def plot_q_vals(self, activation_data=None, base_dir=None, show=True):
         def _plot_one(uidx):
-            save_path = f"{base_dir}/qvals_{uidx}.png" if base_dir is not None else None
+            save_path = f"{base_dir}/qvals_{self.eval_env.fsa.name}_u{uidx}.png" if base_dir is not None else None
             arrow_data = self.get_arrow_data(uidx)
             plot_q_vals(self.env.env, arrow_data=arrow_data, activation_data=activation_data,
                         save_path=save_path, show=show, goal_prop=f"u{uidx}")
