@@ -13,6 +13,7 @@ import torch as th
 from copy import deepcopy
 from typing import Union, Tuple
 import imageio
+from omegaconf import ListConfig
 
 EvalReturnType = Union[
     int,  # Only the action is returned
@@ -255,7 +256,7 @@ class GPI(RLAlgorithm):
 
     def evaluate_all_fsa(self):
         log_dict, fsa_rewards, fsa_neg_step_rewards = {}, [], []
-        if not isinstance(self.fsa_env, list):
+        if not isinstance(self.fsa_env, list) or isinstance(self.fsa_env, ListConfig):
             eval_envs = [self.fsa_env]
         else:
             eval_envs = self.fsa_env

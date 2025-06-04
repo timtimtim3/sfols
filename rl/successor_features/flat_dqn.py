@@ -12,6 +12,7 @@ from sfols.rl.utils.buffer import ReplayBuffer
 from sfols.rl.utils.prioritized_buffer import PrioritizedReplayBuffer
 from sfols.rl.utils.utils import linearly_decaying_epsilon, polyak_update, huber
 from sfols.rl.utils.nets import mlp
+from omegaconf import ListConfig
 
 
 class QNet(nn.Module):
@@ -153,6 +154,12 @@ class DQN(RLAlgorithm):
             wandb.define_metric(f"{log_prefix}epsilon", step_metric="learning/timestep")
             wandb.define_metric(f"{log_prefix}critic_loss", step_metric="learning/timestep")
             wandb.define_metric(f"eval/reward", step_metric="learning/timestep")
+
+            for eval_env in self.eval_env:
+                wandb.define_metric(f"learning/fsa_reward/{eval_env.fsa.name}", step_metric="learning/total_timestep")
+                wandb.define_metric(f"learning/fsa_neg_reward/{eval_env.fsa.name}", step_metric="learning/total_timestep")
+                wandb.define_metric(f"learning/fsa_reward_average/{eval_env.fsa.name}", step_metric="learning/total_timestep")
+                wandb.define_metric(f"learning/fsa_neg_reward_average/{eval_env.fsa.name}", step_metric="learning/total_timestep")
 
     def _build_input(self, fsa_idx: int, cont: np.ndarray) -> th.Tensor:
         """
@@ -317,7 +324,7 @@ class DQN(RLAlgorithm):
 
     def evaluate_all_fsa(self):
         log_dict, fsa_rewards, fsa_neg_step_rewards = {}, [], []
-        if not isinstance(self.eval_env, list):
+        if not isinstance(self.eval_env, list) or isinstance(self.eval_env, ListConfig):
             eval_envs = [self.eval_env]
 
         for eval_env in eval_envs:
