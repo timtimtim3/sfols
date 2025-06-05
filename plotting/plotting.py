@@ -243,7 +243,6 @@ def plot_policy(ax, arrow_data, values=False, headwidth=6, headlength=10, headax
 
     # Plot termination actions with a smaller hollow circle ("donut" marker)
     if len(term_indices) > 0:
-        print("h2i")
         scatter = ax.scatter(
             np.array(x_pos)[term_indices],
             np.array(y_pos)[term_indices],
