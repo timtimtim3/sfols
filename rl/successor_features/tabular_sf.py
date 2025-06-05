@@ -278,7 +278,7 @@ class SF(RLAlgorithm):
                     v = eval_mo(agent=self, env=self.fsa_env, w=w, render=False, gamma=self.gamma)[1]
                     wandb.log({f"{self.log_prefix}exp return": v, "learning/timestep": self.num_timesteps})
                 else:
-                    fsa_reward = self.gpi.evaluate_fsa(self.fsa_env)
+                    fsa_reward = self.gpi.evaluate_fsa(self.fsa_env[0])
                     wandb.log({"learning/fsa_reward": fsa_reward, "learning/timestep":self.num_timesteps})
 
             if done:
