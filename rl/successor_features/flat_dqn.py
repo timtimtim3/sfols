@@ -155,11 +155,10 @@ class DQN(RLAlgorithm):
             wandb.define_metric(f"{log_prefix}critic_loss", step_metric="learning/timestep")
             wandb.define_metric(f"eval/reward", step_metric="learning/timestep")
 
-            for eval_env in self.eval_env:
-                wandb.define_metric(f"learning/fsa_reward/{eval_env.fsa.name}", step_metric="learning/total_timestep")
-                wandb.define_metric(f"learning/fsa_neg_reward/{eval_env.fsa.name}", step_metric="learning/total_timestep")
-                wandb.define_metric(f"learning/fsa_reward_average/{eval_env.fsa.name}", step_metric="learning/total_timestep")
-                wandb.define_metric(f"learning/fsa_neg_reward_average/{eval_env.fsa.name}", step_metric="learning/total_timestep")
+            wandb.define_metric(f"learning/fsa_reward/{eval_env.fsa.name}", step_metric="learning/total_timestep")
+            wandb.define_metric(f"learning/fsa_neg_reward/{eval_env.fsa.name}", step_metric="learning/total_timestep")
+            wandb.define_metric(f"learning/fsa_reward_average/{eval_env.fsa.name}", step_metric="learning/total_timestep")
+            wandb.define_metric(f"learning/fsa_neg_reward_average/{eval_env.fsa.name}", step_metric="learning/total_timestep")
 
     def _build_input(self, fsa_idx: int, cont: np.ndarray) -> th.Tensor:
         """
