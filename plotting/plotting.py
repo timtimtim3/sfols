@@ -574,7 +574,48 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
     fig, ax = plt.subplots()
 
     grid, mapping = convert_map_to_grid(env, custom_mapping=env.QVAL_COLOR_MAP)
-    create_grid_plot(ax, grid)  # Draw the grid cells.
+    mat = create_grid_plot(ax, grid)  # Draw the grid cells.
+    size_y, size_x = grid.shape
+
+    if hasattr(env, "TELEPORT_COORDS"):
+        # 1) Get the flipped‐grid that was actually shown by matshow:
+        flipped = np.flip(grid, 0)
+
+        # 2) Grab the Normalize + Colormap that matshow used:
+        norm = mat.norm
+        cmap = mat.get_cmap()
+
+        # 3) Build a (H×W×4) RGBA array from the flipped data:
+        rgba = cmap(norm(flipped))
+
+        teleport_coords = set()
+        teleport_to_coords = set()
+        for tele_coord, transition_data in env.TELEPORT_TRANSITIONS.items():
+            teleport_coords.add(tele_coord)
+            tele_to_coords = transition_data["coords"]
+            for tele_to_coord in tele_to_coords:
+                teleport_to_coords.add(tele_to_coord)
+
+        # 4) For each teleporter (ty, tx), compute its pixel index in `flipped`:
+        for (ty, tx) in teleport_coords:
+            # Because create_grid_plot did `np.flip(grid,0)` and `ax.set_ylim(size_y, 0)`,
+            # the original row ty ended up at row_index = size_y – ty – 1 in `flipped`:
+            y_plot = size_y - ty - 1
+            x_plot = tx
+
+            # 5) Overwrite that cell’s RGBA to pure red:
+            rgba[y_plot, x_plot, :] = [1.0, 0.0, 0.0, 0.4]
+
+        for (ty, tx) in teleport_to_coords:
+            y_plot = size_y - ty - 1
+            x_plot = tx
+
+            # 5) Overwrite that cell’s RGBA to pure blue:
+            rgba[y_plot, x_plot, :] = [0, 0.1, 0.9, 0.4]
+
+        # 6) Push the modified RGBA array back into the AxesImage:
+        mat.set_data(rgba)
+
     add_legend(ax, mapping)  # Add legend (obstacles, goals, etc.)
 
     # Format the weight vector as a string for the title
