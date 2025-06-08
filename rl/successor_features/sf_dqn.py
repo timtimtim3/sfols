@@ -170,7 +170,7 @@ class SFDQN(RLAlgorithm):
                 'buffer_size': self.buffer_size,
                 'learning_starts': self.learning_starts}
 
-    def save(self, base_dir, policy_idx, save_replay_buffer=True):
+    def save(self, base_dir, policy_idx, save_replay_buffer=False):
         if not os.path.isdir(base_dir):
             os.makedirs(base_dir)
         saved_params = {}
@@ -183,7 +183,7 @@ class SFDQN(RLAlgorithm):
         save_path = f"{base_dir}/dqn{policy_idx}.pt"
         th.save(saved_params, save_path)
 
-    def load(self, path, load_replay_buffer=True):
+    def load(self, path, load_replay_buffer=False):
         # pick the device we want to load to
         device = th.device("cuda") if th.cuda.is_available() else th.device("cpu")
 
