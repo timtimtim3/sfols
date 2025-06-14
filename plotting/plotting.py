@@ -588,16 +588,8 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
         # 3) Build a (H×W×4) RGBA array from the flipped data:
         rgba = cmap(norm(flipped))
 
-        teleport_coords = set()
-        teleport_to_coords = set()
-        for tele_coord, transition_data in env.TELEPORT_TRANSITIONS.items():
-            teleport_coords.add(tele_coord)
-            tele_to_coords = transition_data["coords"]
-            for tele_to_coord in tele_to_coords:
-                teleport_to_coords.add(tele_to_coord)
-
         # 4) For each teleporter (ty, tx), compute its pixel index in `flipped`:
-        for (ty, tx) in teleport_coords:
+        for (ty, tx) in env.teleport_start_coords:
             # Because create_grid_plot did `np.flip(grid,0)` and `ax.set_ylim(size_y, 0)`,
             # the original row ty ended up at row_index = size_y – ty – 1 in `flipped`:
             y_plot = size_y - ty - 1
@@ -606,7 +598,7 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
             # 5) Overwrite that cell’s RGBA to pure red:
             rgba[y_plot, x_plot, :] = [1.0, 0.0, 0.0, 0.4]
 
-        for (ty, tx) in teleport_to_coords:
+        for (ty, tx) in env.teleport_to_coords:
             y_plot = size_y - ty - 1
             x_plot = tx
 
