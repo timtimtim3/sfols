@@ -677,6 +677,7 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
         add_policy_indices(ax, policy_indices, arrow_data)
 
     # If RBF data is provided, overlay the RBF activation markers
+    weight_legend = None
     if activation_data is not None:
         unique_feats, feat_colors = add_activations(ax, activation_data, env,
                                                     unique_symbol_for_centers=unique_symbol_for_centers)
@@ -703,11 +704,14 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
         directory = os.path.dirname(save_path)
         if directory and not os.path.exists(directory):
             os.makedirs(directory)
+        artists = [tile_legend]
+        if weight_legend is not None:
+            artists.append(weight_legend)
         fig.savefig(
             save_path,
             bbox_inches='tight',
             pad_inches=0.0,
-            bbox_extra_artists=[tile_legend, weight_legend]
+            bbox_extra_artists=artists
         )
 
     # Show or close the plot.
