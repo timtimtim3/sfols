@@ -357,12 +357,27 @@ def add_legend(ax, mapping, cmap=custom_gray):
         bbox_to_anchor=(0.5, 1.02),  # 1.0 is the top edge of the axes, +0.02 adds a little padding
         borderaxespad=0,  # no extra pad beyond that 0.02
         title='Tiles',
-        fontsize=8,
+        # fontsize=8,
         frameon=False,
         ncol=len(legend_patches)
     )
 
     ax.add_artist(legend1)  # keep legend1 on the axes
+
+    # # Force a draw to calculate legend size
+    # fig = ax.figure
+    # fig.canvas.draw()
+    # renderer = fig.canvas.get_renderer()
+    # bbox = legend1.get_window_extent(renderer=renderer)
+
+    # # Convert bbox height from pixels to figure-relative units
+    # bbox_inches = bbox.transformed(fig.transFigure.inverted())
+    # top_pad = bbox_inches.height + 0.02  # add a little extra padding
+
+    # # Adjust the top margin (shrink the plot vertically to make space above)
+    # fig.subplots_adjust(top=1 - top_pad)
+
+    return legend1
 
 
 def smooth(scalars, weight):  # Weight between 0 and 1
@@ -513,7 +528,7 @@ def plot_maxqvals(w, env, q_table=None, arrow_data=None, policy_index=None, poli
 
 
 # Helper: plot the RBF activation markers + weight legend
-def plot_weight_legend(ax, w, env, feat_colors, display_feat_ids):
+def plot_weight_legend(ax, w, env, feat_colors, display_feat_ids, display_only_symbols=False):
     """
     After calling add_activations to get feat_colors, build and place
 the weight legend.
@@ -533,6 +548,8 @@ the weight legend.
     for i, weight in enumerate(w):
         color = weight_to_color.get(i, 'gray')
         feat_id = feat_ids.get(i)
+        if display_only_symbols:
+            feat_id = f"({feat_id[0]})"
         label = f"w[{i}]={weight:.2f}" if not display_feat_ids else f"w[{i}]={weight:.2f} {feat_id}"
         handle = Line2D([], [], marker='s', color='none',
                         markerfacecolor=color, markersize=8, label=label)
@@ -546,13 +563,14 @@ the weight legend.
         bbox_to_anchor=(0.0, 0.5),  # x=0 is the left edge of the axes, y=0.5 is halfway up
         borderaxespad=0.0,
         frameon=False,
-        prop={"size": 7}
+        # prop={"size": 7}
     )
+    return legend
 
 
 def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=None,
                 save_path=None, show=True, unique_symbol_for_centers=False, display_feat_ids=True, goal_prop=None,
-                fsa_name=""):
+                fsa_name="", display_only_symbols=True):
     """
     Plot the Q-values (with arrows) on top of a grid, and optionally also plot the
     RBF activation markers in the cell corners. Optionally save the plot if save_path is given,
@@ -608,7 +626,7 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
         # 6) Push the modified RGBA array back into the AxesImage:
         mat.set_data(rgba)
 
-    add_legend(ax, mapping)  # Add legend (obstacles, goals, etc.)
+    tile_legend = add_legend(ax, mapping)  # Add legend (obstacles, goals, etc.)
 
     # Format the weight vector as a string for the title
     if activation_data is None and w is not None:
@@ -663,7 +681,7 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
         unique_feats, feat_colors = add_activations(ax, activation_data, env,
                                                     unique_symbol_for_centers=unique_symbol_for_centers)
         if w is not None:
-            plot_weight_legend(ax, w, env, feat_colors, display_feat_ids)
+            weight_legend = plot_weight_legend(ax, w, env, feat_colors, display_feat_ids, display_only_symbols)
 
     if fsa_name:
         # # 1) bump up the bottom margin so there’s room for our text
@@ -685,7 +703,12 @@ def plot_q_vals(env, arrow_data, w=None, policy_indices=None, activation_data=No
         directory = os.path.dirname(save_path)
         if directory and not os.path.exists(directory):
             os.makedirs(directory)
-        plt.savefig(save_path, bbox_inches='tight', pad_inches=0.5)
+        fig.savefig(
+            save_path,
+            bbox_inches='tight',
+            pad_inches=0.0,
+            bbox_extra_artists=[tile_legend, weight_legend]
+        )
 
     # Show or close the plot.
     if show:
@@ -871,104 +894,102 @@ def plot_all_rbfs(rbf_data, grid_size, env, aggregation="sum", skip_non_goal=Tru
     Plots RBF activations. If `seperate_plots_for_goals` is True, creates a subplot for each symbol;
     otherwise, aggregates all activations into a single heatmap.
 
-    Args:
-        rbf_data: Dictionary of RBF activations per center.
-        grid_size: Tuple (grid_height, grid_width) of the environment.
-        env: Environment object that contains the MAP attribute.
-        aggregation: Method to combine overlapping activations ("sum" or "max").
-        skip_non_goal: If True, ignores activations where the map cell doesn't match the symbol.
-        colors_symbol_centers: Mapping from symbol to color for the center markers.
-        seperate_plots_for_goals: If True, plots each symbol on a separate subplot.
+    This version uses 2-unit tick spacing on both axes.
     """
+    import matplotlib as mpl
+
     if colors_symbol_centers is None:
         colors_symbol_centers = RBF_COLORS
+
+    # Pull global font sizes
+    title_fs   = mpl.rcParams["axes.titlesize"]
+    xtick_fs   = mpl.rcParams["xtick.labelsize"]
+    ytick_fs   = mpl.rcParams["ytick.labelsize"]
+    cbar_fs    = mpl.rcParams["ytick.labelsize"]
+    legend_fs  = mpl.rcParams["legend.fontsize"]
 
     grid_height, grid_width = grid_size
 
     if seperate_plots_for_goals:
         num_symbols = len(rbf_data)
-        # Create one row of subplots for each symbol, with an increased overall figure size.
-        fig, axes = plt.subplots(nrows=1, ncols=num_symbols, figsize=(10 * num_symbols, 8), squeeze=False)
-        axes = axes[0]  # Only one row of subplots
+        fig, axes = plt.subplots(1, num_symbols, figsize=(5*num_symbols, 4), squeeze=False)
+        axes = axes[0]
 
         for ax, (symbol, features) in zip(axes, rbf_data.items()):
             activation_grid = np.zeros((grid_height, grid_width))
-            # Compute activations for this symbol.
             for _, activations in features.items():
-                for (y, x), activation_value in activations.items():
-                    if skip_non_goal and not env.MAP[y, x] == symbol:
-                        activation_value = 0  # Ignore activations not matching the symbol.
+                for (y, x), val in activations.items():
+                    if skip_non_goal and env.MAP[y, x] != symbol:
+                        continue
                     if aggregation == "sum":
-                        activation_grid[y, x] += activation_value
-                    elif aggregation == "max" and activation_value > activation_grid[y, x]:
-                        activation_grid[y, x] = activation_value
+                        activation_grid[y, x] += val
+                    else:
+                        activation_grid[y, x] = max(activation_grid[y, x], val)
 
             im = ax.imshow(activation_grid, cmap="hot", origin="upper",
                            extent=(0, grid_width, grid_height, 0))
-            # Plot RBF centers without legend.
-            # center_color = colors_symbol_centers.get(symbol, "white")
-            # for (cy, cx, d) in features.keys():
-            #     ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
-            #                edgecolors="black")
-            ax.set_title(f"RBF Activations for {symbol}", fontsize=14)
+
+            # 2-unit ticks
+            ax.set_xticks(np.arange(0, grid_width+1, 2))
+            ax.set_yticks(np.arange(0, grid_height+1, 2))
+            ax.tick_params(axis="x", labelsize=xtick_fs)
+            ax.tick_params(axis="y", labelsize=ytick_fs)
+
+            ax.set_title(f"RBF Activations for {symbol}", fontsize=title_fs)
             ax.grid(False)
-            # Add a colorbar without axis labels.
-            fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
-        # Adjust layout: add extra horizontal spacing between the subplot groups.
-        plt.tight_layout(pad=3.0, w_pad=3.0)
-        fig.subplots_adjust(wspace=0.2)
+            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            cbar.ax.tick_params(labelsize=cbar_fs)
 
-        # Save the figure if a save_path is provided.
-        if save_dir is not None:
-            directory = os.path.dirname(save_dir)
-            if directory and not os.path.exists(directory):
-                os.makedirs(directory)
-            plt.savefig(save_dir + "/feat_activations.png", bbox_inches='tight')
+        plt.tight_layout(pad=2.0, w_pad=2.0)
+        fig.subplots_adjust(wspace=0.3)
+
+        if save_dir:
+            os.makedirs(os.path.dirname(save_dir), exist_ok=True)
+            fig.savefig(os.path.join(save_dir, "feat_activations.png"),
+                        bbox_inches="tight", pad_inches=0.1)
 
         plt.show()
+
     else:
-        # Aggregated plot for all RBF activations in one heatmap.
-        combined_activation_grid = np.zeros((grid_height, grid_width))
-        fig, ax = plt.subplots(figsize=(10, 10))
+        combined = np.zeros((grid_height, grid_width))
+        fig, ax = plt.subplots(figsize=(6, 5))
 
         for symbol, features in rbf_data.items():
             for _, activations in features.items():
-                for (y, x), activation_value in activations.items():
-                    if skip_non_goal and not env.MAP[y, x] == symbol:
-                        activation_value = 0
+                for (y, x), val in activations.items():
+                    if skip_non_goal and env.MAP[y, x] != symbol:
+                        continue
                     if aggregation == "sum":
-                        combined_activation_grid[y, x] += activation_value
-                    elif aggregation == "max" and activation_value > combined_activation_grid[y, x]:
-                        combined_activation_grid[y, x] = activation_value
+                        combined[y, x] += val
+                    else:
+                        combined[y, x] = max(combined[y, x], val)
 
-        im = ax.imshow(combined_activation_grid, cmap="hot", origin="upper",
+        im = ax.imshow(combined, cmap="hot", origin="upper",
                        extent=(0, grid_width, grid_height, 0))
-        # # Plot RBF centers and add legend entry only once per symbol.
-        # legend_added = {}
-        # for symbol, features in rbf_data.items():
-        #     center_color = colors_symbol_centers.get(symbol, "white")
-        #     for (cy, cx, d) in features.keys():
-        #         label = f"RBF {symbol}" if symbol not in legend_added else None
-        #         ax.scatter(cx + 0.5, grid_height - cy - 0.5, color=center_color, s=100,
-        #                    edgecolors="black", label=label)
-        #         legend_added[symbol] = True
 
-        ax.set_title("All RBF Activations Combined", fontsize=14)
+        # 2-unit ticks
+        ax.set_xticks(np.arange(0, grid_width+1, 2))
+        ax.set_yticks(np.arange(0, grid_height+1, 2))
+        ax.tick_params(axis="x", labelsize=xtick_fs)
+        ax.tick_params(axis="y", labelsize=ytick_fs)
+
+        ax.set_title("All RBF Activations Combined", fontsize=title_fs)
         ax.grid(False)
-        # Remove duplicate legend entries.
-        handles, labels = ax.get_legend_handles_labels()
-        unique_labels = dict(zip(labels, handles))
-        ax.legend(unique_labels.values(), unique_labels.keys(), loc="upper left", fontsize=10)
-        plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-        plt.tight_layout(pad=3.0)
 
-        # Save the figure if a save_path is provided.
-        if save_dir is not None:
-            directory = os.path.dirname(save_dir)
-            if directory and not os.path.exists(directory):
-                os.makedirs(directory)
-            plt.savefig(save_dir + "/feat_activations.png", bbox_inches='tight')
+        handles, labels = ax.get_legend_handles_labels()
+        if handles:
+            ax.legend(handles, labels, loc="upper left", fontsize=legend_fs)
+
+        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=cbar_fs)
+
+        plt.tight_layout(pad=2.0)
+
+        if save_dir:
+            os.makedirs(os.path.dirname(save_dir), exist_ok=True)
+            fig.savefig(os.path.join(save_dir, "feat_activations.png"),
+                        bbox_inches="tight", pad_inches=0.1)
 
         plt.show()
 
